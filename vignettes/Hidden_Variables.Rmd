@@ -1,0 +1,57 @@
+---
+title: "Hidden Variables"
+author: "Robin J. Evans"
+date: "27/05/2021"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Hidden Variables}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(causl)
+```
+
+## Main Body
+
+We begin by setting up the formulas, families and parameter values:
+```{r setup_model}
+formulas = list(list(U ~ 1, L ~ A0), list(A0 ~ 1, A1 ~ A0*L), Y ~ A0*A1, ~A0*A1)
+fam = list(c(4,3), c(5,5), c(3), c(1,1,1))
+
+pars <- list(A0 = list(beta = 0),
+             U = list(beta = 0, phi=1),
+             L = list(beta = c(0.3,-0.2), phi=1),
+             A1 = list(beta = c(-0.3,0.4,0.3,0)),
+             Y = list(beta = c(-0.5,0.2,0.3,0), phi=1),
+             cop = list(beta = matrix(c(1,0,0,0,
+                                 1,0,0,0,
+                                 0.5,0,0,0), nrow=4)))
+```
+
+```{r simulate}
+set.seed(125)
+n <- 1e4
+dat <- causalSamp(n, formulas, family=fam, pars=pars)
+```
+We can then check that the parameter values match their intended values:
+```{r check_data}
+summary(glm(L ~ A0, family=Gamma(link="log"), data=dat))$coef
+glmA1 <- glm(A1 ~ A0*L, family=binomial, data=dat)
+summary(glmA1)$coef
+w <- predict(glmA1, type="response")
+w[dat$A1 == 0] <- 1 - w[dat$A1 == 0]
+summary(glm(Y ~ A0*A1, family=Gamma(link="log"), weights = 1/w, data=dat))$coef
+```
+Indeed, they are all within two standard errors of their nominal values.
+
+We can also fit the data using maximum likelihood directly.
+```{r fit_data, eval=FALSE}
+out <- fitCausal(dat, formulas = list(L ~ A0, Y ~ A0*A1, ~1), family = c(3,3,1))
+out
+```
+Again, all estimates are within two standard errors of the true values.
+
+

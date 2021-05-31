@@ -1,0 +1,32 @@
+Package: causl
+Type: Package
+Title: Methods for Specifying, Simulating from and Fitting Causal Models
+Version: 0.1.1
+Authors@R: c(
+  person("Robin", "Evans", , "evans@stats.ox.ac.uk", role = c("aut", "cre")))
+Description: Model multivariate distributions using causal parameters.
+License: GPL-2
+LazyData: TRUE
+RoxygenNote: 7.1.1
+Encoding: UTF-8
+Depends: R (>= 3.5.0), 
+  rje, 
+  VineCopula
+Imports: copula, 
+  dplyr,
+  numDeriv,
+  MASS,
+  mvtnorm,
+  Rcpp,
+  stats
+LinkingTo: Rcpp, RcppArmadillo, mvtnorm
+Suggests: 
+    abind,
+    kableExtra,
+    knitr,
+    purrr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+NeedsCompilation: yes
+Config/testthat/edition: 3

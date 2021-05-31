@@ -1,0 +1,15 @@
+CXX_STD = CXX11
+
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS = $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+
+C_OBJS = mvtnorm.o
+FT_OBJS = mvt.o
+
+all:
+	@$(MAKE) $(SHLIB)
+	@rm -f *.mod *.o
+
+$(SHLIB): $(FT_OBJS) $(C_OBJS)
+
+mvtnorm.o: mvt.o
