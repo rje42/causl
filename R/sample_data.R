@@ -1,5 +1,8 @@
 ##' Sample from a causal model
 ##'
+##' Obtain samples from a causal model using the rejection sampling approach of
+##' Evans and Didelez (2021).
+##'
 ##' @param n number of samples required
 ##' @param formulas list of lists of formulas
 ##' @param pars list of lists of parameters
@@ -13,11 +16,17 @@
 ##' @details Samples from a given causal model using rejection sampling (or,
 ##' if everything is discrete, direct sampling).
 ##'
-##' The order of variables should be \code{z}, \code{x} then \code{y} (possibly
-##' followed by \code{cop}).
+##' The entries for  \code{formula} and \code{family} should each be a
+##' list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and
+##' the copula.  \code{formula} determines the model, so it is crucial that
+##' every variable to be simulated is represented there exactly once.  Each
+##' entry of that list can either be a single formula, or a list of formulae.
+##' Each corresponding entry in \code{family} should be the same length as the
+##' list in \code{formula} or of length 1 (in which case it will be repeated
+##' for all the variables therein).
 ##'
 ##' We use the following codes for different families of distributions:
-##' 0 = binary
+##' 0 or 5 = binary
 ##' 1 = normal
 ##' 2 = t-distribution
 ##' 3 = gamma
@@ -31,7 +40,9 @@
 ##' \code{x}, \code{y} and \code{cop}, or variable names that correspond to the LHS of
 ##' formulae in \code{formulas}.  Each of these should themselves be a list
 ##' containing \code{beta} (a vector of regression parameters) and (possibly)
-##' \code{phi}, a dispersion parameter.
+##' \code{phi}, a dispersion parameter.  For any discrete variable that is a
+##' treatment, you can also specify \code{p}, an initial proportion to simulate
+##' from (otherwise this defaults to 0.5).
 ##'
 ##' Currently link functions are assumed to be the identity for a Gaussian or
 ##' t-distribution, the log-link for a Gamma distribution, and the logit link
