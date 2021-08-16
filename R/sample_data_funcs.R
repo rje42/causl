@@ -95,17 +95,19 @@ rescaleVar <- function(U, X, pars, family=1, link) {
     Y <- 1*(eta + qlogis(U) > 0)
   }
   else if (family == 5) {
-    trunc <- pars$trunc
-    trnc <- 1
+    Y <- 1*(eta + qlogis(U) > 0)
 
-    stop("Not finished family==5 yet")
-    mat <- matrix(NA, length(U), length(trunc))
-    for (j in seq_along(trunc[[trnc]])) {
-      mat[,j] <- 1*(U > trunc[[trnc]][j])
-    }
-    Y <- rowSums(mat)
+    # trunc <- pars$trunc
+    # trnc <- 1
+    #
+    # stop("Not finished family==5 yet")
+    # mat <- matrix(NA, length(U), length(trunc))
+    # for (j in seq_along(trunc[[trnc]])) {
+    #   mat[,j] <- 1*(U > trunc[[trnc]][j])
+    # }
+    # Y <- rowSums(mat)
   }
-  else stop("family must be 1, 2 or 3")
+  else stop("family must be between 0 and 5")
 
   ### get Z values to correct families
   # nms <- names(dat)[grep("z", names(dat))]

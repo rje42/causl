@@ -38,7 +38,7 @@ test_that("simulation works 2", {
   expect_lt(abs(x_p[2]-0.5), 0.1)
 })
 
-
+## check that binomial works OK
 fam <- c(0,1,1,1)
 forms <- list(z ~ 1, x ~ z, y ~ x, ~ 1)
 pars <- list(z = list(beta=0),
@@ -52,7 +52,20 @@ dat <- causalSamp(1e4, formulas = forms, family=fam, par=pars)
 z_p <- chisq.test(table(dat$z), p=c(0.5,0.5))$p.value
 x_p <- lm(x ~ z, data=dat)$coef
 
-test_that("simulation works 3", {
+test_that("simulation works 3a", {
+  expect_gt(z_p, 0.02)
+  expect_lt(abs(x_p[2]-0.5), 0.01)
+})
+
+fam <- c(5,1,1,1)
+
+set.seed(125)
+dat <- causalSamp(1e4, formulas = forms, family=fam, par=pars)
+
+z_p <- chisq.test(table(dat$z), p=c(0.5,0.5))$p.value
+x_p <- lm(x ~ z, data=dat)$coef
+
+test_that("simulation works 3b", {
   expect_gt(z_p, 0.02)
   expect_lt(abs(x_p[2]-0.5), 0.01)
 })
