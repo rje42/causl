@@ -91,6 +91,9 @@ rescaleVar <- function(U, X, pars, family=1, link) {
   else if (family == 4) {
     Y <- qbeta(U, shape1 = 1, shape2 = 1)
   }
+  else if (family == 0) {
+    Y <- 1*(eta + qlogis(U) > 0)
+  }
   else if (family == 5) {
     trunc <- pars$trunc
     trnc <- 1
