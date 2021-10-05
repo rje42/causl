@@ -24,7 +24,7 @@ causalSamp(
 
 \item{family}{families for Z,X,Y and copula}
 
-\item{link}{list of link functions (not currently used)}
+\item{link}{list of link functions}
 
 \item{dat}{data frame of covariates}
 
@@ -53,10 +53,12 @@ list in \code{formula} or of length 1 (in which case it will be repeated
 for all the variables therein).
 
 We use the following codes for different families of distributions:
-0 or 5 = binary
-1 = normal
-2 = t-distribution
-3 = gamma
+0 or 5 = binary;
+1 = normal;
+2 = t-distribution;
+3 = gamma;
+4 = beta;
+6 = log-normal.
 
 The family variables for the copula are also numeric and taken from
 \code{VineCopula}.
@@ -71,9 +73,10 @@ containing \code{beta} (a vector of regression parameters) and (possibly)
 treatment, you can also specify \code{p}, an initial proportion to simulate
 from (otherwise this defaults to 0.5).
 
-Currently link functions are assumed to be the identity for a Gaussian or
-t-distribution, the log-link for a Gamma distribution, and the logit link
-for the Bernoulli distribution.
+Link functions for the Gaussian, t and Gamma distributions can be the
+identity, inverse or log functions.  Gaussian and t-distributions default to
+the identity, ad Gamma to the log link.  For the Bernoulli the logit and
+probit links are available.
 
 Control parameters are \code{oversamp} (default value 10),
 \code{max_oversamp} (default value 1000), \code{warn} (which currently does

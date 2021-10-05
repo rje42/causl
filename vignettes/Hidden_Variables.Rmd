@@ -9,12 +9,15 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+In this example we use the `survey` package to get robust standard errors when 
+reweighting.  We start by loading the libraries.
+```{r setup, echo=2:3, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE); options(digits=3)
 library(causl)
+library(survey)
 ```
 
-## Main Body
+## Set Up the Model
 
 We begin by setting up the formulas, families and parameter values:
 ```{r setup_model}
@@ -38,14 +41,20 @@ dat <- causalSamp(n, formulas, family=fam, pars=pars)
 ```
 We can then check that the parameter values match their intended values:
 ```{r check_data}
-summary(glm(L ~ A0, family=Gamma(link="log"), data=dat))$coef
+summary(svyglm(L ~ A0, family=Gamma(link="log"), 
+               design=svydesign(id=~1, weights=~1, data=dat)))$coef
 glmA1 <- glm(A1 ~ A0*L, family=binomial, data=dat)
 summary(glmA1)$coef
 w <- predict(glmA1, type="response")
-w[dat$A1 == 0] <- 1 - w[dat$A1 == 0]
-summary(glm(Y ~ A0*A1, family=Gamma(link="log"), weights = 1/w, data=dat))$coef
+dat$wt <- dat$A1/w + (1-dat$A1)/(1-w)
+
+summary(svyglm(Y ~ A0*A1, family=Gamma(link="log"), 
+               design=svydesign(id=~1, weights=~wt, data=dat)))$coef
 ```
 Indeed, they are all within two standard errors of their nominal values.
+```{r, echo=FALSE, eval=FALSE}
+# summary(glm(Y ~ A0*A1, family=Gamma(link="log"), weights = wt, data=dat))$coef
+```
 
 We can also fit the data using maximum likelihood directly.
 ```{r fit_data, eval=FALSE}
@@ -53,5 +62,4 @@ out <- fitCausal(dat, formulas = list(L ~ A0, Y ~ A0*A1, ~1), family = c(3,3,1))
 out
 ```
 Again, all estimates are within two standard errors of the true values.
-
 

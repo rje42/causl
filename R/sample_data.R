@@ -8,7 +8,7 @@
 ##' @param pars list of lists of parameters
 ## @param data optional data frame of covariates
 ##' @param family families for Z,X,Y and copula
-##' @param link list of link functions (not currently used)
+##' @param link list of link functions
 ##' @param dat data frame of covariates
 ##' @param control options for the algorithm
 ##' @param seed random seed used for replication
@@ -26,10 +26,12 @@
 ##' for all the variables therein).
 ##'
 ##' We use the following codes for different families of distributions:
-##' 0 or 5 = binary
-##' 1 = normal
-##' 2 = t-distribution
-##' 3 = gamma
+##' 0 or 5 = binary;
+##' 1 = normal;
+##' 2 = t-distribution;
+##' 3 = gamma;
+##' 4 = beta;
+##' 6 = log-normal.
 ##'
 ##' The family variables for the copula are also numeric and taken from
 ##' \code{VineCopula}.
@@ -44,9 +46,10 @@
 ##' treatment, you can also specify \code{p}, an initial proportion to simulate
 ##' from (otherwise this defaults to 0.5).
 ##'
-##' Currently link functions are assumed to be the identity for a Gaussian or
-##' t-distribution, the log-link for a Gamma distribution, and the logit link
-##' for the Bernoulli distribution.
+##' Link functions for the Gaussian, t and Gamma distributions can be the
+##' identity, inverse or log functions.  Gaussian and t-distributions default to
+##' the identity, ad Gamma to the log link.  For the Bernoulli the logit and
+##' probit links are available.
 ##'
 ##' Control parameters are \code{oversamp} (default value 10),
 ##' \code{max_oversamp} (default value 1000), \code{warn} (which currently does
@@ -99,7 +102,8 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   dim <- lengths(formulas[1:3])
 
   if (missing(family)) {
-    family = lapply(lengths(formulas), function(x) rep.int(1,x))
+    ## assume everything is Gaussian
+    family = lapply(lengths(formulas), rep.int, x=1)
   }
 
   ## set seed to 'seed'
@@ -136,6 +140,9 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   }
   if (anyDuplicated(na.omit(vars))) stop("duplicated variable names")
 
+  ## set up link functions
+  link <- linkSetUp(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
+
   # ## get names for three main variables
   # nmZ <- LHS[1]
   # nmX <- LHS[2]
@@ -170,6 +177,9 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
     else if (famX[i] == 1 || famX[i] == 2) {
       theta <- 2*pars[[LHS_X[i]]]$phi
     }
+    else if (famX[i] == 6) {
+      theta <- 1.5*pars[[LHS_X[i]]]$phi
+    }
     else if (famX[i] == 3) {
       theta <- 2*pars[[LHS_X[i]]]$phi
     }
@@ -202,7 +212,12 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   #   etas[[i]] <- mapply(function(x, y) x %*% pars[[y]]$beta, mms[[i]], lhs(formulas[[i]]), SIMPLIFY = FALSE)
   # }
   copMM <- model.matrix(formulas[[4]][[1]], out)
-  if (is.matrix(pars$cop$beta) && (nrow(pars$cop$beta) != ncol(copMM))) stop(paste0("dimension of model matrix for copula (", ncol(copMM), ") does not match number of coefficients provided (", nrow(pars$cop$beta),")"))
+  if (is.matrix(pars$cop$beta)) {
+    if (nrow(pars$cop$beta) != ncol(copMM)) stop(paste0("dimension of model matrix for copula (", ncol(copMM), ") does not match number of coefficients provided (", nrow(pars$cop$beta),")"))
+  }
+  else if (is.atomic(pars$cop$beta)) {
+    if (length(pars$cop$beta) != ncol(copMM)) stop(paste0("dimension of model matrix for copula (", ncol(copMM), ") does not match number of coefficients provided (", length(pars$cop$beta),")"))
+  }
 
   # eta <- list()
   # eta$z <- mms[[1]] %*% pars2$z$beta
@@ -218,14 +233,16 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   out[,output] <- sim_CopVal(out[,output], family=famCop,
                              par = pars$cop, par2=pars$cop$par2, model_matrix=copMM)
   for (i in seq_along(LHS_Z)) out[[LHS_Z[i]]] <- rescaleVar(out[[LHS_Z[i]]], X=mms[[1]][[i]],
-                                                            family=famZ[i], pars=pars[[LHS_Z[i]]])
+                                                            family=famZ[i], pars=pars[[LHS_Z[i]]],
+                                                            link=link[[1]][i])
   for (i in seq_along(LHS_Y)) out[[LHS_Y[i]]] <- rescaleVar(out[[LHS_Y[i]]], X=mms[[3]][[i]],
-                                                            family=famY[i], pars=pars[[LHS_Y[i]]])
+                                                            family=famY[i], pars=pars[[LHS_Y[i]]],
+                                                            link=link[[3]][i])
 
   mms[[2]] = lapply(formulas[[2]], model.matrix, data=out)
 
   ## perform rejection sampling
-  wts <- rejectionWeights(out[LHS_X], mms[[2]], family=famX, pars=pars[LHS_X], qden = qden)
+  wts <- rejectionWeights(out[LHS_X], mms[[2]], family=famX, pars=pars[LHS_X], qden = qden, link=link[[2]])
   con$max_wt <- max(max(wts), con$max_wt)
   wts <- wts/con$max_wt
   # if (mean(wts > 0.2) < 0.01) {
@@ -242,7 +259,8 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
     # nr <- sum(colSums(done) > 0)
   }
   else {
-    out2 <- out[runif(nrow(out)) < wts, ]
+    kp <- runif(nrow(out)) < wts
+    out2 <- out[kp, ]
     nr2 <- nrow(out2)
 
     if (nr2 < n) {

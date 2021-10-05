@@ -29,8 +29,44 @@ rhs_vars <- function (formulas) {
   vars[nores] <- lapply(vars[nores], function(x) as.character(x[-1]))
 
   # if (any(lengths(vars) >= 2)) resp[lengths(vars) >= 3] <- lapply(vars[lengths(vars) >= 3], function(x) as.character(x))
-
   # resp[mis] <- rep()
 
   vars
 }
+
+merge_formulas <- function (formulas) {
+  if (!is.list(formulas)) formulas <- list(formulas)
+  formulas <- unlist(formulas)
+  term <- lapply(formulas, terms)
+  LHSs <- lhs(formulas)
+  # if (any(is.na(LHSs))) warning("some formulae did not have a left-hand side, output will be unlabelled")
+
+  elems_lst <- lapply(term, attr, which="term.labels")
+  elems <- unlist(elems_lst)
+  ords <- unlist(lapply(term, attr, which="order"))
+  intcpt <- sapply(term, attr, which="intercept")
+
+  if (length(elems) != length(ords)) stop("length of labels and orders do not match")
+
+  ## remove duplicates and reorder
+  ords <- ords[!duplicated(elems)]
+  elems <- elems[!duplicated(elems)]
+
+  elems <- elems[order(ords)]
+  ords <- ords[order(ords)]
+
+  wh <- vector(mode="list", length=length(formulas))
+  if (!any(is.na(LHSs))) names(wh) <- LHSs
+
+  ## now get columns relevant for each formula
+  for (i in seq_along(formulas)) {
+    wh[[i]] <- match(elems_lst[[i]], elems) + 1
+    if (intcpt[i] == 1) wh[[i]] <- c(1, wh[[i]])
+  }
+  if (length(elems) == 0) elems = "1"
+
+  full_form <- formula(paste("~", paste(unlist(elems), collapse=" + ")))
+  list(formula=full_form, wh=wh)
+}
+
+

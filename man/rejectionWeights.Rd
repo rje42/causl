@@ -4,7 +4,7 @@
 \alias{rejectionWeights}
 \title{Get weights for rejection sampling}
 \usage{
-rejectionWeights(dat, mms, family, pars, qden)
+rejectionWeights(dat, mms, family, pars, qden, link)
 }
 \arguments{
 \item{dat}{data frame of variables to change conditional distribution of}
@@ -16,6 +16,8 @@ rejectionWeights(dat, mms, family, pars, qden)
 \item{pars}{parameters for new distributions}
 
 \item{qden}{functions for densities used to simulate variables}
+
+\item{link}{link functions for GLMs}
 }
 \value{
 a numeric vector of weights

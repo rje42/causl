@@ -1,5 +1,7 @@
 ---
 title: "Copula Simulation"
+author: "Robin J. Evans"
+date: "27/05/2021"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Copula Simulation}
@@ -23,14 +25,14 @@ library(causl)
 
 ## Simulation
 
-The main function for simulating data is `causalSamp()`.  Suppose we wish to 
-have 
+The main function for simulating data is `causalSamp()`.  Suppose we wish to
+have
 \begin{align*}
 Z &\sim N(0, \; \sigma_z^2)\\
 X \mid Z=z &\sim N(\mu_x, \; \sigma_x^2)\\
 Y \mid \operatorname{do}(X=x) &\sim N(\mu_y, \; \sigma_y^2)
 \end{align*}
-with $\mu_x = 0.5 z$, $\mu_y = 0.3 x$, and $\sigma_z^2 = \sigma_x^2 = \sigma_y^2 = 1$.  
+with $\mu_x = 0.5 z$, $\mu_y = 0.3 x$, and $\sigma_z^2 = \sigma_x^2 = \sigma_y^2 = 1$.
 Then we set:
 ```{r parameters}
 pars <- list(z = list(beta = 0, phi=1),
@@ -38,9 +40,9 @@ pars <- list(z = list(beta = 0, phi=1),
              y = list(beta = c(0,0.3), phi=1),
              cop = list(beta = matrix(c(0.5,0.25), ncol=1)))
 ```
-Note that the copula parameters have been selected for a linear predictor of the 
-form $\eta = 0.5 + 0.25x$, and the default link function for the Gaussian 
-copula is $g(\eta) = \operatorname{logit}((\eta+1)/2)$.  
+Note that the copula parameters have been selected for a linear predictor of the
+form $\eta = 0.5 + 0.25x$, and the default link function for the Gaussian
+copula is $g(\eta) = \operatorname{logit}((\eta+1)/2)$.
 
 Then we simulate as follows:
 ```{r simulate}
@@ -56,8 +58,8 @@ summary(lmXZ)$coef
 # lmYX <- lm(y ~ x, data=dat, weights = 1/dnorm(predict(lmXZ)))
 # summary(lmYX)
 ```
-Note that it is not necessary to use the standard variable names `z`, `x` and 
-`y`, but if you choose not to then you must specify the names you want to use 
+Note that it is not necessary to use the standard variable names `z`, `x` and
+`y`, but if you choose not to then you must specify the names you want to use
 with the `formulas` argument.
 ```{r abc}
 pars <- list(a = list(beta = 0, phi=1),
@@ -69,11 +71,11 @@ dat2 <- causalSamp(1e3, formulas=list(a ~ 1, b ~ a, c ~ b,  ~ b), pars=pars)
 pairs(dat2)
 ```
 
-`causalSamp()` has various default settings.  The copula $C_{YZ}$, and the 
-distribution families of $X$, $Y$ and $Z$ all default to Gaussian.  It 
-over-samples by a factor of 10 so that some may be rejected later, though this 
-is increased later on if necessary up to the control parameter `max_oversamp` 
-(with default value 1000).  
+`causalSamp()` has various default settings.  The copula $C_{YZ}$, and the
+distribution families of $X$, $Y$ and $Z$ all default to Gaussian.  It
+over-samples by a factor of 10 so that some may be rejected later, though this
+is increased later on if necessary up to the control parameter `max_oversamp`
+(with default value 1000).
 
 ## Fitting Models
 
