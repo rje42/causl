@@ -325,7 +325,11 @@ rejectionWeights <- function (dat, mms,# formula,
       mu <- eta[[i]]
       wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi))/(dat[,i]*qden[[i]](dat[,i]))
     }
+<<<<<<< HEAD
     else stop("family[2] must be in the range 1 to 6")
+=======
+    else stop("family[2] must be 1--6")
+>>>>>>> a6e5c56c9ba096e6e249c745433705f4d90a269d
   }
 
   if (any(is.na(wts))) stop("Problem with weights")
