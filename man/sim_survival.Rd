@@ -28,6 +28,8 @@ sim_survival(
 
 \item{lags}{numeric not currently used}
 
+\item{dat}{data frame...}
+
 \item{control}{list of control parameters}
 }
 \description{

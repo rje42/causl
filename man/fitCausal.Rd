@@ -46,9 +46,15 @@ predictors of y-margin, z-margin(s) and interaction
 parameters.  Fit is by maximum likelihood.
 
 \code{control} has the same arguments as the argument in \code{optim}, as well
-as \code{newton}, a logical which controls whether Newton iterates should be performed at the end.
+as \code{newton}, a logical which controls whether Newton iterates should be
+performed at the end, and \code{cop} which can edit the restricted variable name
+for the left-hand side of formulae.
 Useful for altering are \code{trace} (1 shows steps of optimization) and
 \code{maxit} for the number of steps, as well as \code{fact} which controls
 the proportion of correlation put into a Gaussian or t-Copula's starting
 values.
+
+**Warning** By default, none of the variables should be called \code{cop}, as
+this is reserved for the copula.  The reserved word can be changed using
+the argument \code{cop} within control.
 }

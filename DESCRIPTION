@@ -1,7 +1,7 @@
 Package: causl
 Type: Package
 Title: Methods for Specifying, Simulating from and Fitting Causal Models
-Version: 0.1.4
+Version: 0.1.6
 Authors@R: c(
   person("Robin", "Evans", , "evans@stats.ox.ac.uk", role = c("aut", "cre")))
 Description: Model multivariate distributions using causal parameters.
@@ -13,9 +13,9 @@ Depends: R (>= 3.5.0),
   rje, 
   VineCopula
 Imports: copula, 
-  dplyr,
   numDeriv,
   MASS,
+  Matrix,
   mvtnorm,
   Rcpp,
   stats
@@ -26,6 +26,7 @@ Suggests:
     knitr,
     purrr,
     rmarkdown,
+    survey,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 NeedsCompilation: yes

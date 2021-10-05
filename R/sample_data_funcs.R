@@ -21,20 +21,24 @@
 sim_X <- function(n, fam_x, theta) {
 
   if (fam_x == 1) {
-    dat <- rnorm(n, sd=sqrt(theta))
+    X <- rnorm(n, sd=sqrt(theta))
     qden <- function(x) dnorm(x, sd=sqrt(theta))
   }
+  else if (fam_x == 6) {
+    X <- exp(rnorm(n, sd=sqrt(theta)))
+    qden <- function(x) dnorm(log(x), sd=sqrt(theta))/x
+  }
   else if (fam_x == 2) {
-    dat <- theta[1]*rt(n, df=theta[2])
+    X <- theta[1]*rt(n, df=theta[2])
     qden <- function(x) dt(x/theta[1], df=theta[2])/theta[1]
   }
   else if (fam_x == 3) {
-    dat <- rgamma(n, shape=1, rate=1/theta)
+    X <- rgamma(n, shape=1, rate=1/theta)
     qden <- function(x) dgamma(x, shape=1, rate=1/theta)
   }
   else if (fam_x == 4) {
     if (length(theta) == 1) theta <- c(theta, theta)
-    dat <- rbeta(n, theta[1], theta[2])
+    X <- rbeta(n, theta[1], theta[2])
     qden <- function(x) dbeta(x, theta[1], theta[2])
   }
   else if (fam_x == 5) {
@@ -45,12 +49,12 @@ sim_X <- function(n, fam_x, theta) {
       warning("Parameters do not sum to 1, rescaling")
       theta <- theta/sum(theta)
     }
-    dat <- sample(length(theta), size=n, replace=TRUE, prob=theta)-1
+    X <- sample(length(theta), size=n, replace=TRUE, prob=theta)-1
     qden <- function(x) theta[x+1]
   }
   else stop("X distribution must be normal (1), t (2), Gamma (3), Beta (4) or categorical (5)")
 
-  return(list(x=dat, qden=qden))
+  return(list(x=X, qden=qden))
 }
 
 ##' Rescale quantiles to arbitrary random variable.
@@ -80,22 +84,36 @@ rescaleVar <- function(U, X, pars, family=1, link) {
 
   ## make U normal, t or gamma
   if (family == 1) {
-    Y <- qnorm(U, mean = eta, sd=sqrt(phi))
+    if (link == "identity") Y <- qnorm(U, mean = eta, sd=sqrt(phi))
+    else if (link == "log") Y <- qnorm(U, mean = exp(eta), sd=sqrt(phi))
+    else if (link == "inverse") Y <- qnorm(U, mean = 1/eta, sd=sqrt(phi))
+    else stop("invalid link function for Gaussian distribution")
   }
   else if (family == 2) {
-    Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
+    # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
+
+    if (link == "identity") Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
+    else if (link == "log") Y <- sqrt(phi)*qt(U, df=pars$par2) + exp(eta)
+    else if (link == "inverse") Y <- sqrt(phi)*qt(U, df=pars$par2) + 1/eta
+    else stop("invalid link function for t-distribution")
   }
   else if (family == 3) {
-    Y <- qexp(U, rate = 1/(exp(eta)*sqrt(phi)))
+    # Y <- qexp(U, rate = 1/(exp(eta)*sqrt(phi)))
+
+    if (link == "log") mu <- exp(eta)
+    else if (link == "identity") mu <- eta
+    else if (link == "inverse") mu <- 1/eta
+    else stop("invalid link function for Gamma distribution")
+
+    Y <- qgamma(U, shape = 1/phi, rate = 1/(mu*phi))
   }
   else if (family == 4) {
     Y <- qbeta(U, shape1 = 1, shape2 = 1)
   }
-  else if (family == 0) {
-    Y <- 1*(eta + qlogis(U) > 0)
-  }
-  else if (family == 5) {
-    Y <- 1*(eta + qlogis(U) > 0)
+  else if (family == 0 || family == 5) {
+    if (link == "probit") Y <- 1*(eta + qnorm(U) > 0)
+    else if (link == "logit") Y <- 1*(eta + qlogis(U) > 0)
+    else stop("invalid link function for binomial distribution")
 
     # trunc <- pars$trunc
     # trnc <- 1
@@ -287,10 +305,111 @@ rejectionWeights <- function (dat, mms,# formula,
       mu <- expit(eta[[i]])
       wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]](dat[,i])
     }
-    else stop("family[2] must be 1, 2, 3 or 4")
+    else if (family[i] == 6) {
+      mu <- eta[[i]]
+      wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi))/(dat[,i]*qden[[i]](dat[,i]))
+    }
+    else stop("family[2] must be 1--6")
   }
 
   if (any(is.na(wts))) stop("Problem with weights")
 
   wts
 }
+
+## Set up link functions
+##
+## @param link the input given to causalSamp()
+## @param family the list of families for Z,X and Y variables
+## @param vars a list of vectors of variable names with the same structure as \code{family}
+linkSetUp <- function(link, family, vars) {
+
+  if (!missing(vars) && !all(lengths(vars) == lengths(family))) stop("length of variable names vector does not match number of families provided")
+
+  ## set up output
+  link_out <- lapply(family, function(x) {
+    familyVals$family[match(x, familyVals$val)]
+  })
+  if (any(is.na(unlist(link_out)))) stop("Invalid family variable specified")
+  link_out <- lapply(link_out, function(x) sapply(x, function(y) linksList[[y]][1]))
+
+  if (!missing(vars)) {
+    ## set names to match vars
+    nms_list <- relist(unlist(vars), family)
+    for (i in seq_along(link_out)) names(link_out[[i]]) <- nms_list[[i]]
+  }
+
+  ## if no link argument supplied, then just return this list
+  if (missing(link) || is.null(link)) return(link_out)
+
+  tmp <- unlist(linksList)
+
+  ## now add in any modifications made in 'link'
+  if (is.list(link)) {
+    if (all(lengths(link) == lengths(family))) {
+      ## if lengths the same, assume in same position as family variables
+      for (i in seq_along(link_out)) {
+        link_out[[i]][] <- tmp[pmatch(link[[i]], tmp)]
+        if (any(is.na(link_out[[i]]))) stop("link not properly matched")
+      }
+      return(link_out)
+    }
+  }
+
+  ## otherwise try to use names to deduce which is which
+  if (!missing(vars)) {
+    link <- unlist(link)
+    if (is.null(names(link))) stop("names must be supplied for links in order to match with them")
+    nms <- names(link)
+    wh_set <- subsetmatch(as.list(nms), vars)
+    if (any(is.na(wh_set))) stop("names must be supplied for links in order to match with them")
+
+    ## now get particular entry in vector
+    wh_val <- NA*wh_set
+    for (i in seq_along(wh_set)) {
+      wh_val[i] <- match(nms[i], vars[[wh_set[i]]])
+      if (is.na(wh_val[i])) stop("some links not matched")
+      link_out[[wh_set[i]]][wh_val[i]] <- tmp[pmatch(link[i], tmp)]
+    }
+    if (any(is.na(unlist(link_out)))) stop("some links not matched")
+    #
+    #
+    # for (j in seq_along(vars)) {
+    #   mask <- wh_set == j
+    #
+    #   for (i in seq_along(linksList)) {
+    #     lki <- link[mask && fam_nm == nms[i]]
+    #     linknm <- pmatch(lki, linksList[[i]])
+    #     lki2 <- linksList[[i]][linknm]
+    #     if (any(is.na(lki2))) stop("link ", paste(lki[which(is.na(lki2))], sep=", "), " not supported")
+    #     lki[]
+    #   }
+    #   chk <- wh_set
+    # }
+  }
+  else stop("variable names must be provided to match using them")
+
+  # ## matching
+  # fam_nm <- familyVals$family[familyVals$val==fams]
+  # nms <- names(linksList)
+  # for (i in seq_along(linksList)) {
+  #   lki <- link[fam_nm == nms[i]]
+  #   linknm <- pmatch(lki, linksList[[i]])
+  #   lki2 <- linksList[[i]][linknm]
+  #   if (any(is.na(lki2))) stop("link ", paste(lki[which(is.na(lki2))], sep=", "), " not supported")
+  #
+
+  return(link_out)
+}
+
+linksList <- list(
+  gaussian = c("identity", "inverse", "log"),
+  t = c("identity", "inverse", "log"),
+  Gamma = c("log", "inverse", "identity"),
+  beta = c("logit", "probit"),
+  binomial = c("logit", "probit"),
+  lognormal = c("exp", "identity")
+)
+
+familyVals <- data.frame(val=0:6,
+                         family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"))
