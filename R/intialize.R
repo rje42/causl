@@ -61,15 +61,35 @@ initializeParams <- function(dat, formulas, family, init, LHS, wh) {
   return(beta_start)
 }
 
-initializeParams2 <- function(dat, formulas, family=rep(1,nc), init, LHS, wh) {
+## NEEDS TO ACCOUNT FOR LINK FUNCTIONS
+initializeParams2 <- function(dat, formulas, family=rep(1,nv), init, full_form, kwd) {
 
   # d <- ncol(dat)
   # fam_y <- family[1]
   # fam_z <- family[1+seq_len(d)]
   # fam_cop <- last(family)
   nc <- ncol(dat)
+  nv <- length(formulas) - 1
 
-  beta <- beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=length(family))
+  if (length(family) != nv+1) stop("Must have family parameter for every variable and copula")
+
+  ## get terms labels
+  trms <- terms(full_form$formula)
+  labs <- if (attr(trms, "intercept") == 1) c("(intercept)")
+  else character(0)
+  labs <- c(labs, attr(trms, "term.labels"))
+
+  wh <- full_form$wh
+
+  ## define output matrix/vector for beta,phi
+  LHS <- lhs(formulas)
+  LHS <- LHS[-match(kwd, LHS)]
+  if (length(LHS) != nv) stop("Formula for copula causing problems!")
+
+  c2 <- combn(length(LHS), 2)
+  colnms <- c(LHS, mapply(function(x,y) paste0(kwd,"_",LHS[x],"_",LHS[y]), c2[1,],c2[2,]))
+
+  beta <- beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nv+choose(nv,2), dimnames = list(labs,colnms))
   phi <- phi_m <- numeric(length(LHS))
 
 # FIGURE OUT HOW TO MAKE THIS WORK WITH NOT EVERYTHING IN THE COPULA
@@ -93,42 +113,135 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nc), init, LHS, wh) {
     beta_m[wh[[i]],i] <- 1
   }
 
-
   ## initialize copula parameters
-  cp <- length(phi) + 1
-  beta_m[wh[[cp]], cp] <- 1
+  cp <- length(phi)
+  beta_m[wh[[cp+1]], cp+seq_len(choose(nv,2))] <- 1
   # beta[-wh[[i]],i] <- 0
 
-  # ## get parameters for z variable(s)
-  # for (i in seq_len(d)) {
-  #   if (family[i] <= 2 || family[i] == 5) {
-  #     if (init) {
-  #       lm_z[[i]] <- summary(lm(formulas[[i]], data=dat))
-  #       beta_start[wh[[2*i - 1]]] <- lm_z[[i]]$coefficients[,1]
-  #       beta_start[wh[[2*i]]] <- lm_z[[i]]$sigma
-  #     }
-  #     else beta_start[wh[[2*i]]] = sd(dat[[LHS[i]]])
-  #   }
-  #   else if (family[i] == 3) {
-  #     if (init) {
-  #       lm_z[[i]] <- glm(formulas[[i]], family = Gamma(link = "log"),
-  #                        data = dat)
-  #       beta_start[wh[[2*i - 1]]] = lm_z[[i]]$residuals
-  #       beta_start[wh[[2*i]]] = summary(lm_z[[i]])$dispersion
-  #     }
-  #     else beta_start[wh[[2*i]]] = sd(dat[[LHS[i]]])
-  #   }
-  #   else stop("fam_z must be 1, 2, 3 or 5")
-  # }
-
-  # if (init && fam_cop <= 2) {
-  #   resids <- lapply(lm_z, function(x) x$residuals)
-  #   tmp <- cor(do.call(data.frame, resids))
-  #   tmp <- tmp[upper.tri(tmp)]
-  #   for (i in seq_len(choose(d,2))) {
-  #     beta_start[wh[[2*d + i]][1]] <- logit((tmp[i]+1)/2)
-  #   }
-  # }
 
   return(list(beta=beta, phi=phi, beta_m=beta_m, phi_m=phi_m))
+}
+
+masks <- function(formulas, family=rep(1,nc), wh, LHS) {
+
+  if (is.list(family)) family <- unlist(family[1:3])
+  formulas <- unlist(formulas)
+  nc <- length(formulas)
+
+  beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nc)
+  phi_m <- numeric(length(family))
+
+  # LHSs <- lhs(formulas)
+
+  ## intialize parameters for each variable
+  for (i in seq_along(phi_m)) {
+    if (family[i] >= 1 && family[i] <= 3) {
+      phi_m[i] <- 1
+    }
+
+    beta_m[wh[[i]],i] <- 1
+  }
+
+  ## initialize copula parameters
+  cp <- length(phi_m) + 1
+  beta_m[wh[[cp]], cp] <- 1
+
+  return(list(beta_m=beta_m, phi_m=phi_m))
+}
+
+pars2mask <- function(pars, masks) {
+  out <- masks
+
+  wh <- pmatch(c("beta", "phi"), names(masks))
+
+  if (!is.na(wh[1])) {
+    names(out)[wh[1]] <- "beta"
+    for (i in seq_along(pars)) {
+      out$beta[masks[[wh[1]]][,i] > 0,i] <- pars[[i]]$beta
+    }
+  }
+  if (!is.na(wh[2])) {
+    names(out)[wh[2]] <- "phi"
+    for (i in seq_along(out$phi)) {
+      if (masks[[wh[2]]][i] > 0) out$phi[i] <- pars[[i]]$phi
+    }
+  }
+
+  return(out)
+}
+
+## Tidy up formulae, ensure they have LHSs etc.
+tidy_formulas <- function(formulas, kwd) {
+  forms <- formulas
+  nf <- length(forms)
+
+  ## make sure all the univariate formulae have left-hand sides
+  wh <- which(lengths(forms) < 3)
+
+  if (any(lengths(forms) < 3)) {
+    if (last(wh) == nf) wh2 <- wh[-length(wh)]
+    else wh2 <- wh
+    for (i in seq_along(wh2)) {
+      tmp_form <- formula(paste("V", i, " ~ .", sep=""))
+      forms[[wh[i]]] <- update.formula(forms[[wh[i]]], tmp_form)
+    }
+  }
+
+  ## give copula formula the keyword as its left-hand side
+  if (length(wh) > 0 && last(wh) == nf) {
+    tmp_form <- formula(paste(kwd, "~ ."))
+    forms[[nf]] <- update.formula(forms[[nf]], tmp_form)
+  }
+  else if (lhs(last(forms)) != kwd) stop("Error: keyword does not match left-hand side of copula formula")
+
+  return(forms)
+}
+
+## Get theta vector from pars
+theta <- function (pars, formulas, full_form, kwd="cop") {
+
+  ## get terms labels
+  # trms <- terms(full_form$formula)
+  # labs <- if (attr(trms, "intercept") == 1) c("(intercept)")
+  # else character(0)
+  # labs <- c(labs, attr(trms, "term.labels"))
+
+  nv <- length(formulas) - 1
+  wh <- full_form$wh
+
+  ## define output matrix/vector for beta,phi
+  LHS <- lhs(formulas)
+  # LHS <- LHS[-match(kwd, LHS)]
+  # if (length(LHS) != nv) stop("Formula for copula causing problems!")
+
+  wh_par <- match(LHS, names(pars))
+
+  # c2 <- combn(length(LHS), 2)
+  # colnms <- c(LHS, mapply(function(x,y) paste0(kwd,"_",LHS[x],"_",LHS[y]), c2[1,],c2[2,]))
+
+  beta <- beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nv+choose(nv,2))
+  phi <- phi_m <- numeric(nv)
+
+  # FIGURE OUT HOW TO MAKE THIS WORK WITH NOT EVERYTHING IN THE COPULA
+
+  # LHSs <- lhs(formulas)
+
+  ## intialize parameters for each variable
+  for (i in seq_along(phi)) {
+    beta_m[wh[[i]],i] <- 1
+    beta[wh[[i]],i] <- pars[[wh_par[i]]]$beta
+
+    if (!is.null(pars[[wh_par[i]]]$phi)) {
+      phi_m[i] <- 1
+      phi[i] <- pars[[wh_par[i]]]$phi
+    }
+  }
+
+  ## get copula parameters
+  beta[wh[[length(phi)+1]], nv+seq_len(choose(nv,2))] <- pars[[kwd]]$beta
+  beta_m[wh[[length(phi)+1]], nv+seq_len(choose(nv,2))] <- 1
+
+  theta <- c(beta[beta_m > 0], phi[phi_m > 0])
+
+  return(theta)
 }

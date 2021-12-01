@@ -1,9 +1,10 @@
 ##' Get univariate densities and uniform order statistics
 ##'
 ##' @param x vector of observations
-##' @param mu,phi mean and dispersion parameters
+##' @param eta,phi linear component and dispersion parameters
 ##' @param df degrees of freedom (only for t-distribution)
 ##' @param family numeric indicator of family
+##' @param link link function
 ##'
 ##' @details \code{fam} follows the usual numeric pattern: 1=normal,
 ##' 2=t-distribution and 3=Gamma with a log-link.
@@ -12,26 +13,47 @@
 ##' quantiles of the input values) and \code{ld} (the log density of each
 ##' observation).
 ##'
-univarDens <- function (x, mu, phi, df, family=1) {
+univarDens <- function (x, eta, phi, df, family=1, link) {
+
+  if (missing(link)) link <- linksList[[familyVals[familyVals$val==family,"family"]]][1]
 
   ## get the densities for x
   if (family == 1) {
+    if (link=="identity") mu <- eta
+    else if (link=="inverse") mu <- 1/eta
+    else if (link=="log") mu <- exp(eta)
+    else stop("Not a valid link function for Gaussian distribution")
+
     lp <- dnorm(x, mu, sd=sqrt(phi), log=TRUE)
     u <- pnorm(x, mu, sd=sqrt(phi))
   }
   else if (family == 2) {
+    if (link=="identity") mu <- eta
+    else if (link=="inverse") mu <- 1/eta
+    else if (link=="log") mu <- exp(eta)
+    else stop("Not a valid link function for t-distribution")
+
     lp <- dt((x - mu)/sqrt(phi), df=df, log=TRUE) - log(sqrt(phi))
     u <- pt((x - mu)/sqrt(phi), df=df)
   }
   else if (family == 3) {
-    lp <- dgamma(x, shape=1/phi, scale=phi*exp(mu), log=TRUE)
-    u <- pgamma(x, shape=1/phi, scale=phi*exp(mu))
+    if (link=="log") mu <- exp(eta)
+    else if (link=="identity") mu <- eta
+    else if (link=="inverse") mu <- 1/eta
+    else stop("Not a valid link function for gamma distribution")
+
+    lp <- dgamma(x, shape=1/phi, scale=phi*mu, log=TRUE)
+    u <- pgamma(x, shape=1/phi, scale=phi*mu)
   }
   else if (family == 5) {
+    if (link=="logit") mu <- expit(eta)
+    else if (link=="probit") mu <- pnorm(eta)
+    else stop("Not a valid link function for Bernoulli distribution")
+
     lp <- log(mu[x+1])
     u <- x
   }
-  else stop("Only t, normal and gamma distributions are allowed")
+  else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
 
   return(list(u=u, ld=lp))
 }
@@ -160,6 +182,7 @@ nll <- function(beta, dat, mms, fam_cop=1, fam=rep(1,nc), par2=NULL, useC=TRUE) 
 ##' @param phi vector of dispersion parameters
 ##' @param inCop vector of integers giving variables in \code{dat} to be included in copula
 ##' @param fam_cop,family integer and integer vector for copula and distribution families respectively
+##' @param link vector of link functions
 ##' @param par2 degrees of freedom for t-distribution
 ##' @param useC logical: should Rcpp functions be used?
 ##'
@@ -173,13 +196,26 @@ nll <- function(beta, dat, mms, fam_cop=1, fam=rep(1,nc), par2=NULL, useC=TRUE) 
 ## @importFrom Matrix Matrix
 ##'
 nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
-                 family=rep(1,nc), par2=NULL, useC=TRUE) {
-
-  if (missing(inCop)) inCop <- seq_along(dat)
+                 family=rep(1,nc), link, par2=NULL, useC=TRUE) {
   np <- sum(beta > 0)
 
   beta[beta > 0] <- theta[seq_len(np)]
   phi[phi > 0] <- theta[-seq_len(np)]
+
+  -sum(ll(dat, mm=mm, beta=beta, phi=phi, inCop=inCop, fam_cop=fam_cop,
+      family=family, link=link, par2=par2, useC=useC))
+}
+
+
+ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
+                 family=rep(1,nc), link, par2=NULL, useC=TRUE) {
+
+  if (missing(inCop)) inCop <- seq_along(dat)
+
+  if (missing(link)) {
+    fams <- familyVals[match(family, familyVals$val),2]
+    link <- sapply(fams, function(x) linksList[[x]][1])
+  }
 
   nv <- length(phi)
   nc <- ncol(dat)
@@ -196,7 +232,7 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
   # if (length(family) < nc) family <- rep_len(family, nc)
 
   for (i in which(family != 5)) {
-    tmp <- univarDens(dat[[i]], eta[,i], phi=phi[i], family=family[i])
+    tmp <- univarDens(dat[,i], eta[,i], phi=phi[i], family=family[i])
     log_den[,i] <- tmp$ld
     dat_u[,i] <- tmp$u
   }
@@ -266,7 +302,7 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
     cop <- log(causl::dfgmCopula(dat_u[,1], dat_u[,2], alpha=par[[1]]))
   }
 
-  out <- -sum(cop) - sum(log_den)
+  out <- cop + rowSums(log_den)
 
   out
 }
@@ -275,37 +311,46 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
 ##'
 ##' @param fit output of \code{optim}
 ##' @param beta output of \code{initializeParams2}
-##' @param nms optional character vector of variable names
+##' @param formulas list of formulae used in function call
 ##'
 ##'
-ests_ses <- function(fit, beta, nms) {
-  pars <- vector(mode="list", length=ncol(beta$beta_m))
-  if (!missing(nms)) names(pars) <- nms
+ests_ses <- function(fit, beta, merged_formula, kwd) {
 
   if (is.null(fit$par)) {
     warning("No fitted values found")
     return(fit)
   }
 
+  ## get number of parameters and varible
   np <- sum(beta$beta_m > 0)
+  nv <- sum(regexpr(kwd, colnames(beta$beta_m)) != 1L)
+  if (sum(regexpr(kwd, colnames(beta$beta_m)[seq_len(nv)]) != 1L) != nv) stop("beta_m poorly formatted")
+
+  pars <- vector(mode="list", length=nv+1)
+  if (!missing(merged_formula)) names(pars) <- c(colnames(beta$beta_m)[seq_len(nv)], kwd)
+
   nphi <- length(beta$phi_m)
+  if (nphi != nv) stop("Something has gone wrong here!")
 
   beta_out <- beta$beta_m
   beta_out[beta_out > 0] <- fit$par[seq_len(np)]
-  for (i in seq_along(pars)) {
+  for (i in seq_len(nv)) {
     pars[[i]]$beta <- beta_out[beta$beta_m[,i] > 0, i]
     if (i <= nphi && beta$phi_m[i] > 0) pars[[i]]$phi <- fit$par[np+i]
   }
+  pars[[nv+1]]$beta <- beta_out[beta$beta_m[,nv+1] > 0, nv+seq_len(ncol(beta$beta_m)-nv), drop=FALSE]
 
   ## now deal with standard errors
   if (!is.null(fit$se)) {
     beta_out <- beta$beta_m
     beta_out[beta_out > 0] <- fit$se[seq_len(np)]
 
-    for (i in seq_along(pars)) {
+    for (i in seq_len(nv)) {
       pars[[i]]$beta_se <- beta_out[beta$beta_m[,i] > 0, i]
-      if (i <= nphi && beta$phi_m[i] > 0) pars[[i]]$phi_se <- fit$se[np+i]
+      if (beta$phi_m[i] > 0) pars[[i]]$phi_se <- fit$se[np+i]
     }
+    pars[[nv+1]]$beta_se <- beta_out[beta$beta_m[,nv+1] > 0, nv+seq_len(ncol(beta$beta_m)-nv), drop=FALSE]
+    # if (ncol(pars[[nv+1]]$beta_se) == 1) pars[[nv+1]]$beta_se <- c(pars[[nv+1]]$beta_se)
   }
 
   ## now deal with sandwich standard errors
@@ -313,10 +358,36 @@ ests_ses <- function(fit, beta, nms) {
     beta_out <- beta$beta_m
     beta_out[beta_out > 0] <- fit$sandwich_se[seq_len(np)]
 
-    for (i in seq_along(pars)) {
+    for (i in seq_len(nv)) {
       pars[[i]]$beta_sandwich <- beta_out[beta$beta_m[,i] > 0, i]
-      if (i <= nphi && beta$phi_m[i] > 0) pars[[i]]$phi_sandwich <- fit$sandwich_se[np+i]
+      if (beta$phi_m[i] > 0) pars[[i]]$phi_sandwich <- fit$sandwich_se[np+i]
     }
+    pars[[nv+1]]$beta_sandwich <- beta_out[beta$beta_m[,nv+1] > 0, nv+seq_len(ncol(beta$beta_m)-nv), drop=FALSE]
+  }
+
+  for (i in seq_len(nv)) {
+    rnms <- if(attr(merged_formula$old_forms[[i]],"intercept") == 1) "(intercept)" else character(0)
+    rnms <- c(rnms, attr(merged_formula$old_forms[[i]],"term.labels"))
+
+    ## reorder tables according to original formulas
+    pars[[i]]$beta <- pars[[i]]$beta[rank(merged_formula$wh[[i]])]
+    names(pars[[i]]$beta) <- rnms
+    if (!is.null(fit$se)) {
+      pars[[i]]$beta_se <- pars[[i]]$beta_se[rank(merged_formula$wh[[i]])]
+      names(pars[[i]]$beta_se) <- rnms
+    }
+    if (!is.null(fit$sandwich_se)) {
+      pars[[i]]$beta_sandwich <- pars[[i]]$beta_sandwich[rank(merged_formula$wh[[i]])]
+      names(pars[[i]]$beta_sandwich) <- rnms
+    }
+
+    ### CHECK IF THIS SHOULD BE order()!!!
+  }
+
+  {
+    ## do the above for copula params
+    # dimnames(pars[[nv+1]]) <- list(rownames(beta_m[beta_m[,nv+1] > 0,,drop=FALSE]),
+    #                                colnames(beta_m[,nv+seq_len(ncol(beta_m)-nv)]))
   }
 
   fit$pars <- pars

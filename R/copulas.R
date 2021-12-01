@@ -87,7 +87,7 @@ dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE) {
   N <- length(Sigma)/d^2
   dim(Sigma) <- c(d,d,N)
 
-  if (any(x >= 1) || any(x <= 0)) {
+  if (any(x > 1) || any(x < 0)) {
     stop("x's outside valid range")
   }
 
@@ -102,7 +102,10 @@ dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE) {
     ## if all the same matrix, use single copula implementation
     if (N == 1) {
       dim(Sigma) <- c(d,d)
-      out <- c(dGcop(qnorm(x), Sigma, logd = TRUE))
+      qx <- qnorm(x)
+      qx[qx > 1e100] <- 1e100
+      qx[qx < -1e100] <- -1e100
+      out <- c(dGcop(qx, Sigma, logd = TRUE))
       if (log) return(out)
       else return(exp(out))
     }
@@ -112,7 +115,10 @@ dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE) {
       else if (N < n) warning("Recycling used")
     }
     # Sigma <- unlist(apply(Sigma, 3, list), recursive = FALSE)
-    out <- c(dGcop_sig(qnorm(x), Sigma, logd=TRUE))
+    qx <- qnorm(x)
+    qx[qx > 1e100] <- 1e100
+    qx[qx < -1e100] <- -1e100
+    out <- c(dGcop_sig(qx, Sigma, logd=TRUE))
     # out <- out - rowSums(dnorm(qnorm(x), log=TRUE))
 
     if (log) return(c(out))

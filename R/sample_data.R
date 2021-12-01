@@ -10,6 +10,7 @@
 ##' @param family families for Z,X,Y and copula
 ##' @param link list of link functions
 ##' @param dat data frame of covariates
+##' @param method only \code{"rejection"} is valid
 ##' @param control options for the algorithm
 ##' @param seed random seed used for replication
 ##'
@@ -48,7 +49,7 @@
 ##'
 ##' Link functions for the Gaussian, t and Gamma distributions can be the
 ##' identity, inverse or log functions.  Gaussian and t-distributions default to
-##' the identity, ad Gamma to the log link.  For the Bernoulli the logit and
+##' the identity, and Gamma to the log link.  For the Bernoulli the logit and
 ##' probit links are available.
 ##'
 ##' Control parameters are \code{oversamp} (default value 10),
@@ -57,6 +58,8 @@
 ##' is recalled.
 ## (if weights empirically appear not to have an upper bound, this warns if set
 ## to 1 (the default) and stops if set to 2), ...
+##' Control parameters also include \code{cop}, which gives a keyword for the
+##' copula that defaults to \code{"cop"}.
 ##'
 ##' @examples
 ##' pars <- list(z=list(beta=0, phi=1),
@@ -65,15 +68,17 @@
 ##'              cop=list(beta=1))
 ##' causalSamp(100, pars = pars)
 ##'
+## @importFrom frugalSim sim_chain
+##'
 ##' @return A data frame containing the simulated data.
 ##'
 ##' @export
 causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x), list( ~ 1)),
-                        pars, family, link=NULL, dat=NULL,
+                        pars, family, link=NULL, dat=NULL, method="rejection",
                         control=list(), seed) {
 
   # get control parameters or use defaults
-  con = list(oversamp = 10, max_oversamp=1000, max_wt = 1, warn = 1)
+  con = list(oversamp = 10, max_oversamp=1000, max_wt = 1, warn = 1, cop="cop")
   matches = match(names(control), names(con))
   con[matches] = control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ",
@@ -87,6 +92,8 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
     con$max_oversamp <- ceiling(con$max_oversamp)
     message("max_oversamp not an integer, rounding up")
   }
+  ## get keyword for copula formula
+  kwd <- con$cop
 
   ## check we have four groups of formulas
   if (length(formulas) != 4) stop("formulas must have length 4")
@@ -105,13 +112,18 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
     ## assume everything is Gaussian
     family = lapply(lengths(formulas), rep.int, x=1)
   }
-
-  ## set seed to 'seed'
-  if (missing(seed)) {
-    seed <- round(1e9*runif(1))
+  else if (is.list(family) || length(family == 4)) {
+    if (!all(lengths(family[1:3]), lengths(formulas[1:3]))) stop("mismatch in family and formulae specifications")
   }
-  # else .Random.seed <- seed
-  set.seed(seed)
+  else stop("family should be a list, or vector of length 4")
+
+  ## check that supplied parameters are sufficient
+  nms <- lapply(pars, names)
+  bpres <- sapply(nms, function(x) "beta" %in% x)
+  if (!all(bpres)) {
+    plur <- sum(!bpres) > 1
+    stop(paste(ifelse(plur, "Variables", "Variable"), paste(names(pars)[!bpres], collapse=", "), ifelse(plur, "lack", "lacks"), "a beta parameter vector"))
+  }
 
   if (all(unlist(family) == 0)) {
     message("Perhaps better to simulate this using the MLLPs package")
@@ -128,6 +140,7 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   famX <- family[[2]]
   famY <- family[[3]]
   famCop <- family[[4]]
+  ## add in check that phi parameters are present!
 
   ## check variable names
   LHS_Z <- lhs(formulas[[1]])
@@ -142,6 +155,53 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
 
   ## set up link functions
   link <- linkSetUp(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
+  d <- length(vars)
+
+  # if (method == "particle") {
+  #   forms <- tidy_formulas(unlist(formulas), kwd)
+  #   form_all <- merge_formulas(forms)
+  #   msks <- masks(forms, family=family, wh=form_all$wh)
+  #
+  #   theta <- pars2mask(pars, msks)
+  #
+  #   ## construct suitable log-likelihood function
+  #   llhd <- function(x) {
+  #     if (!is.matrix(x)) x <- matrix(x, nrow=1)
+  #     colnames(x) <- vars2
+  #     mm <- model.matrix.default(form_all$formula, data=as.data.frame(x))
+  #     ll(x, mm, beta=theta$beta, phi=theta$phi,
+  #        inCop = match(c(LHS_Z,LHS_Y), vars2), fam_cop = last(family),
+  #        family = unlist(family)[seq_along(vars)])
+  #   }
+  #
+  #   vars2 <- vars
+  #
+  #   dat <- as.data.frame(matrix(NA, n, d))
+  #   names(dat) <- vars2
+  #
+  #   ## get parameters for particle simulator
+  #   d <- sum(lengths(family[1:3]))
+  #   dc <- d - sum(family[[1]] == 0 | family[[1]] == 5)
+  #   n_state <- rep(2, d-dc)
+  #   prob <- rep(list(c(0.5,0.5)), d-dc)
+  #   attrib <- list(dc=dc, n_state=n_state, prob=prob)
+  #
+  #   for (i in seq_len(n)) {
+  #     dat[i,] <- sim_chain(n=n, d=d, ltd=llhd, ns=1, sd1=2, attrib,
+  #                          sim="importance", control=list(B=10))$x
+  #     rje::printPercentage(i,n)
+  #   }
+  #
+  #   return(dat)
+  # }
+
+
+  ## set seed to 'seed'
+  if (missing(seed)) {
+    seed <- round(1e9*runif(1))
+  }
+  # else .Random.seed <- seed
+  set.seed(seed)
 
   # ## get names for three main variables
   # nmZ <- LHS[1]

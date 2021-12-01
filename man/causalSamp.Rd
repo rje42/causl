@@ -11,6 +11,7 @@ causalSamp(
   family,
   link = NULL,
   dat = NULL,
+  method = "rejection",
   control = list(),
   seed
 )
@@ -27,6 +28,8 @@ causalSamp(
 \item{link}{list of link functions}
 
 \item{dat}{data frame of covariates}
+
+\item{method}{only \code{"rejection"} is valid}
 
 \item{control}{options for the algorithm}
 
@@ -75,13 +78,15 @@ from (otherwise this defaults to 0.5).
 
 Link functions for the Gaussian, t and Gamma distributions can be the
 identity, inverse or log functions.  Gaussian and t-distributions default to
-the identity, ad Gamma to the log link.  For the Bernoulli the logit and
+the identity, and Gamma to the log link.  For the Bernoulli the logit and
 probit links are available.
 
 Control parameters are \code{oversamp} (default value 10),
 \code{max_oversamp} (default value 1000), \code{warn} (which currently does
 nothing), \code{max_wt} which is set to 1, and increases each time the function
 is recalled.
+Control parameters also include \code{cop}, which gives a keyword for the
+copula that defaults to \code{"cop"}.
 }
 \examples{
 pars <- list(z=list(beta=0, phi=1),
@@ -89,5 +94,6 @@ pars <- list(z=list(beta=0, phi=1),
              y=list(beta=c(0,0.5), phi=0.5),
              cop=list(beta=1))
 causalSamp(100, pars = pars)
+
 
 }

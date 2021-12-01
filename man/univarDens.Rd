@@ -4,16 +4,18 @@
 \alias{univarDens}
 \title{Get univariate densities and uniform order statistics}
 \usage{
-univarDens(x, mu, phi, df, family = 1)
+univarDens(x, eta, phi, df, family = 1, link)
 }
 \arguments{
 \item{x}{vector of observations}
 
-\item{mu, phi}{mean and dispersion parameters}
+\item{eta, phi}{linear component and dispersion parameters}
 
 \item{df}{degrees of freedom (only for t-distribution)}
 
 \item{family}{numeric indicator of family}
+
+\item{link}{link function}
 }
 \value{
 A list with entries being the numeric vectors \code{u} (the

@@ -45,37 +45,23 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   con[matches[!is.na(matches)]] = control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ", paste(names(control[is.na(matches)]), sep = ", "))
 
+  ## ensure copula keyword is not a variable name
   kwd <- con$cop
   if (kwd %in% names(dat)) stop(paste("Must not have a variable named '", kwd, "'", sep=""))
   newton <- con$newton
   con <- con[-c(1,2)]
 
+  ## may need to fix this to allow more flexibility in copula
   d <- length(formulas) - 1
   if (length(family) != length(formulas)) {
     stop("Should be a family variable for each formula")
   }
 
-  forms <- formulas
-  nf <- length(forms)
+  ## tidy up the formulae
+  forms <- tidy_formulas(formulas, kwd=kwd)
   fam_cop <- last(family)
 
-  ## make sure all the univariate formulae have left-hand sides
-  if (any(lengths(forms) < 3)) {
-    wh <- which(lengths(forms) < 3)
-    if (last(wh) == length(forms)) wh2 <- wh[-length(wh)]
-    else wh2 <- wh
-    for (i in seq_along(wh2)) {
-      tmp_form <- formula(paste("V", i, " ~ .", sep=""))
-      forms[[wh[i]]] <- update.formula(forms[[wh[i]]], tmp_form)
-    }
-  }
-  if (last(wh) == nf) {
-    tmp_form <- formula(paste(kwd, "~ ."))
-    forms[[nf]] <- update.formula(forms[[nf]], tmp_form)
-  }
-  else if (lhs(last(forms)) != kwd) stop("Error: keyword does not match left-hand side of copula formula")
-
-  LHS <- lhs(forms[-nf])
+  LHS <- lhs(forms[-length(forms)])
   full_form <- merge_formulas(forms)
   wh <- full_form$wh
   mm <- model.matrix(full_form$formula, data=dat)
@@ -122,7 +108,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
 #   mms <- c(mms, list(trunc=trunc))
 
   beta_start2 <- initializeParams2(dat, formulas=forms, family=family, #init=init,
-                                 LHS=LHS, wh=wh)
+                                 full_form=full_form, kwd=kwd)
   theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
   # beta_start <- initializeParams(dat, formulas=forms, family=family, #init=init,
   #                                 LHS=LHS, wh=max(unlist(wh)))
@@ -249,7 +235,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   else out$sandwich <- out$sandwich_se <- NULL
 
   ## record values
-  out <- ests_ses(out, beta_start2, lhs(formulas))
+  out <- ests_ses(out, beta_start2, full_form, kwd=kwd)
 
   # ## record parameter values
   # beta_out <- ses <- beta_start2$beta_m
@@ -289,7 +275,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   # if (!is.null(out$se)) out$se <- relist(out$se, out$pars)
 
   out$mm = mm
-  out$formulas = forms
+  out$formulas = full_form
   class(out) = "cop_fit"
 
   out
@@ -302,22 +288,24 @@ print.cop_fit <- function(x, sandwich = TRUE, digits=3, ...) {
   # d = length(x$pars)
   # nv <- c(1,v,choose(v+1,2))
 
-  sandwich = sandwich && !is.null(x$sandwich_se)
+  formulas <- x$formulas$old_forms
+  formulas <- lapply(formulas, function(x) {attributes(x) <- NULL; x})
+  sandwich <- sandwich && !is.null(x$sandwich_se)
 
   cat("log-likelihood: ", x$ll, "\n")
 
   # nform <- length(x$forms)
 
   ## print parameters for univariate regressions
-  for (i in seq_along(x$formulas[-1])) {
-    print(x$formulas[[i]])
+  for (i in seq_along(formulas[-1])) {
+    print(formulas[[i]])
 
     if (sandwich) {
       tab = cbind(par=x$pars[[i]]$beta, se=x$pars[[i]]$beta_se, sandwich=x$pars[[i]]$beta_sandwich)
       colnames(tab) = c("est.", "s.e.", "sandwich") #names(x$pars[[i]]$beta)
     }
     else {
-      tab = cbind(par=x$pars[[i]]$pars[[i]]$beta, se=x$se[[i]]$pars[[i]]$beta)
+      tab = cbind(par=x$pars[[i]]$beta, se=x$pars[[i]]$beta_se)
       colnames(tab) = c("est.", "s.e.")
     }
 
@@ -332,7 +320,38 @@ print.cop_fit <- function(x, sandwich = TRUE, digits=3, ...) {
   ## print parameters for copula
   if (!is.null(x$pars$cop)) {
     cat("copula parameters:\n")
-    print(x$formulas[[length(x$formulas)]])
+    print(formulas[[length(formulas)]])
+
+    if (nrow(x$pars[[i+1]]$beta) == 1 || ncol(x$pars[[i+1]]$beta) == 1) {
+      if (sandwich) {
+        tab = cbind(est=c(x$pars[[i+1]]$beta), se=c(x$pars[[i+1]]$beta_se), sandwich=c(x$pars[[i+1]]$beta_sandwich))
+        if (ncol(x$pars[[i+1]]$beta) == 1) {
+          rownames(tab) <- rownames(x$pars[[i+1]]$beta)
+        }
+        else rownames(tab) <- colnames(x$pars[[i+1]]$beta)
+        colnames(tab) <- c("est.", "s.e.", "sandwich")
+      }
+      else {
+        tab = cbind(est=c(x$pars[[i+1]]$beta), se=c(x$pars[[i+1]]$beta_se))
+        rownames(tab) <- colnames(x$pars[[i+1]]$beta)
+        colnames(tab) <- c("est.", "s.e.")
+      }
+      print(tab, digits=digits)
+    }
+    else {
+      for (j in seq_len(ncol(x$pars[[i+1]]$beta))) {
+        if (sandwich) {
+          tab = cbind(par=x$pars[[i+1]]$beta[,j], se=x$pars[[i+1]]$beta_se[,j], sandwich=x$pars[[i+1]]$beta_sandwich[,j])
+          colnames(tab) = c("est.", "s.e.", "sandwich") #names(x$pars[[i]]$beta)
+        }
+        else {
+          tab = cbind(par=x$pars[[i+1]]$beta[,j], se=x$pars[[i+1]]$beta_se[,j])
+          colnames(tab) = c("est.", "s.e.")
+        }
+        cat(paste0(colnames(x$pars[[i+1]]$beta)[j],":\n"))
+        print(tab, digits=digits)
+      }
+    }
   }
   # for (i in seq_len(ncol(x$pars$cop))) {
   #   cat(colnames(x$pars$cop)[i], ":\n", sep="")

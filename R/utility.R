@@ -58,15 +58,22 @@ merge_formulas <- function (formulas) {
   wh <- vector(mode="list", length=length(formulas))
   if (!any(is.na(LHSs))) names(wh) <- LHSs
 
+  reforms <- formulas
+
   ## now get columns relevant for each formula
   for (i in seq_along(formulas)) {
     wh[[i]] <- match(elems_lst[[i]], elems) + 1
     if (intcpt[i] == 1) wh[[i]] <- c(1, wh[[i]])
+
+    ## reorder original formulae to have same order as merged one
+    reforms[[i]] <- formula(paste0(LHSs[i], " ~ ", ifelse(intcpt[i]==1, "", "0 + "),
+                                   ifelse(intcpt[i]==1 && length(wh[[i]])==1, "1", ""),
+                                   paste(elems[sort.int(wh[[i]])-1], collapse=" + ")))
   }
   if (length(elems) == 0) elems = "1"
 
   full_form <- formula(paste("~", paste(unlist(elems), collapse=" + ")))
-  list(formula=full_form, wh=wh)
+  list(formula=full_form, wh=wh, reforms=reforms, old_forms=term)
 }
 
 
