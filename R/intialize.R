@@ -62,7 +62,8 @@ initializeParams <- function(dat, formulas, family, init, LHS, wh) {
 }
 
 ## NEEDS TO ACCOUNT FOR LINK FUNCTIONS
-initializeParams2 <- function(dat, formulas, family=rep(1,nv), init, full_form, kwd) {
+initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
+                              full_form, kwd, ipw) {
 
   # d <- ncol(dat)
   # fam_y <- family[1]
@@ -98,6 +99,17 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), init, full_form, 
 
   ## intialize parameters for each variable
   for (i in seq_along(phi)) {
+    beta_m[wh[[i]],i] <- 1
+
+    if (init && !missing(ipw)) {
+      fam <- switch(family[i], "1"=gaussian, "2"=gaussian, "3"=Gamma,
+                    stop("family should be Gaussian, t or Gamma"))
+      mod_fit <- glm(formula[[i]], data=dat, family=fam(link=link[i]), wt=ipw)
+      beta[wh[[i]],i] <- mod_fit$coef
+      if (family[i] < 5) phi[i] <- summary(mod_fit)$dispersion
+      next
+    }
+
     if (family[i] <= 2) {
       beta[1,i] <- mean(dat[[LHS[i]]])
       phi[i] <- var(dat[[LHS[i]]])
@@ -109,8 +121,6 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), init, full_form, 
       phi_m[i] <- 1
     }
     else phi[i] <- NA
-
-    beta_m[wh[[i]],i] <- 1
   }
 
   ## initialize copula parameters

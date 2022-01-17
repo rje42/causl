@@ -37,7 +37,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
                       control=list()) {
 
   # get control parameters for optim or use defaults
-  con <- list(newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
+  con <- list(method = "BFGS", newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
               abstol = -Inf, reltol = sqrt(.Machine$double.eps), alpha = 1, beta = 0.5,
               gamma = 2, REPORT = 10, warn.1d.NelderMead = TRUE, type = 1,
               lmm = 5, factr = 1e+07, pgtol = 0, tmax = 10)
@@ -49,7 +49,8 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   kwd <- con$cop
   if (kwd %in% names(dat)) stop(paste("Must not have a variable named '", kwd, "'", sep=""))
   newton <- con$newton
-  con <- con[-c(1,2)]
+  method <- con$method
+  con <- con[-c(1,2,3)]
 
   ## may need to fix this to allow more flexibility in copula
   d <- length(formulas) - 1
@@ -129,7 +130,21 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
 #  do.call(ll, c(list(beta=beta_start), other_args))
 
   # out <- do.call(optim, c(list(fn=ll, par=beta_start), other_args, list(control=con)))
-  out <- do.call(optim, c(list(fn=nll2, par=theta_st), other_args2, list(control=con)))
+  maxit <- con$maxit
+  conv <- FALSE
+  out2 <- list(par = theta_st)
+  while (!conv) {
+    con$maxit <- 5e3
+    out <- do.call(optim, c(list(fn=nll2, par=out2$par), other_args2, list(method="Nelder-Mead", control=con)))
+    con$maxit <- max(maxit - 5e3, 1e3)
+    out2 <- tryCatch(do.call(optim, c(list(fn=nll2, par=out$par), other_args2, list(method="BFGS", control=con))),
+                    warning=function(e) NA, error=function(e) NA)
+    if (!isTRUE(is.na(out2))) {
+      out <- out2
+      conv  <- TRUE
+    }
+    else out2 <- list(par = out$par)
+  }
   curr_val = out$value
   if (out$convergence != 0) {
     cat("Error in convergence of optim\n")
@@ -170,10 +185,14 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
       gr = do.call(grad, c(list(nll2, x = out$par), other_args2))
       it = it + 1
     }
+    if (con$trace > 0) {
+      cat(" - done\n")
+    }
   }
 
   ## if sandwich == TRUE then compute sandwich standard errors
   if (sandwich) {
+    if (con$trace > 0) cat("Computing gradients for sandwich estimates...")
     other_args2a <- other_args2
     gr2 <- matrix(0, nrow=length(gr), ncol=length(gr))
 
@@ -185,6 +204,8 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
       tmp <- do.call(grad, c(list(nll2, x=out$par), other_args2a))
       gr2 <- gr2 + outer(tmp, tmp)
     }
+
+    if (con$trace > 0) cat("done\n")
   }
 
   # ## construct output
@@ -230,7 +251,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
     else {
       out$sandwich <- out$sandwich_se <- NULL
     }
-
+    if (con$trace > 0) cat("done\n")
   }
   else out$sandwich <- out$sandwich_se <- NULL
 

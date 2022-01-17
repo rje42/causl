@@ -217,6 +217,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
     link <- sapply(fams, function(x) linksList[[x]][1])
   }
 
+  if (any(phi < 0)) return(-Inf)
+
   nv <- length(phi)
   nc <- ncol(dat)
   if (length(family) != nc) stop(paste0("family should have length ", nc))
