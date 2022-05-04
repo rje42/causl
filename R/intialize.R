@@ -63,7 +63,7 @@ initializeParams <- function(dat, formulas, family, init, LHS, wh) {
 
 ## NEEDS TO ACCOUNT FOR LINK FUNCTIONS
 initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
-                              full_form, kwd, ipw) {
+                              full_form, kwd) {
 
   # d <- ncol(dat)
   # fam_y <- family[1]
@@ -97,16 +97,26 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
 
   # LHSs <- lhs(formulas)
 
+  # if (init) {
+  #   wts <- ipw_weights(dat, formulas[-length(formulas)])
+  # }
+  # else wts <- rep(1,nrow(dat))
+  # dat <- cbind(dat, wts=wts)
+
   ## intialize parameters for each variable
   for (i in seq_along(phi)) {
     beta_m[wh[[i]],i] <- 1
 
-    if (init && !missing(ipw)) {
+    if (init) {
       fam <- switch(family[i], "1"=gaussian, "2"=gaussian, "3"=Gamma,
                     stop("family should be Gaussian, t or Gamma"))
-      mod_fit <- glm(formula[[i]], data=dat, family=fam(link=link[i]), wt=ipw)
-      beta[wh[[i]],i] <- mod_fit$coef
-      if (family[i] < 5) phi[i] <- summary(mod_fit)$dispersion
+      # mod_fit <- survey::svyglm(formula=formulas[[i]], family=do.call(fam, list(link=link[[i]])), design=survey::svydesign(~1, data=dat,weights=ipw))
+      mod_fit <- glm(formula=formulas[[i]], data=dat, family=do.call(fam, list(link=link[[i]])))
+      beta[wh[[i]],i] <- c(mod_fit$coef[1], mod_fit$coef[-1]/2)
+      if (family[i] < 5) {
+        phi[i] <- summary(mod_fit)$dispersion
+        phi_m[i] <- 1
+      }
       next
     }
 
@@ -132,14 +142,14 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
   return(list(beta=beta, phi=phi, beta_m=beta_m, phi_m=phi_m))
 }
 
-masks <- function(formulas, family=rep(1,nc), wh, LHS) {
+masks <- function(formulas, family=rep(1,nc+1), wh, LHS) {
 
   if (is.list(family)) family <- unlist(family[1:3])
   formulas <- unlist(formulas)
-  nc <- length(formulas)
+  nc <- length(formulas)-1
 
-  beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nc)
-  phi_m <- numeric(length(family))
+  beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nc+choose(nc,2))
+  phi_m <- numeric(nc)
 
   # LHSs <- lhs(formulas)
 
@@ -153,8 +163,8 @@ masks <- function(formulas, family=rep(1,nc), wh, LHS) {
   }
 
   ## initialize copula parameters
-  cp <- length(phi_m) + 1
-  beta_m[wh[[cp]], cp] <- 1
+  cp <- length(phi_m)
+  beta_m[wh[[cp]], cp+seq_len(choose(cp,2))] <- 1
 
   return(list(beta_m=beta_m, phi_m=phi_m))
 }
@@ -254,4 +264,33 @@ theta <- function (pars, formulas, full_form, kwd="cop") {
   theta <- c(beta[beta_m > 0], phi[phi_m > 0])
 
   return(theta)
+}
+
+ipw_weights <- function(dat, formulas, min_wt=0.1) {
+
+  if (min_wt >= 1) stop("Minimum weight must be less than 1")
+
+  ## get variables to inverse weight by
+  covs <- lapply(formulas, rhs_vars)
+  all_covs <- unique.default(unlist(covs))
+  LHS <- lhs(formulas)
+  out <- rep(1,nrow(dat))
+
+  for (i in seq_along(all_covs)) {
+    # now, for each variable that appears, reweight by its dependence on
+    # variables whose regression it is _not_ in
+    wh <- sapply(covs, function (x) all_covs[i] %in% x)
+    if (all(wh)) next
+
+    form <- as.formula(paste0(all_covs[i], " ~ ", paste(LHS[!wh], collapse=" + ")))
+    mod <- lm(form, data=dat)
+    wt <- dnorm(dat[[all_covs[i]]], cbind(1, as.matrix(dat[LHS[!wh]])) %*% mod$coefficients, sd=sd(mod$residuals))
+    out <- out*wt
+  }
+
+  ## now normalize weights and enforce the minimum value
+  out <- out/max(out)
+  out[out < min_wt] <- min_wt
+
+  out
 }

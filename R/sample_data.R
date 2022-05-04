@@ -11,7 +11,7 @@
 ##' @param link list of link functions
 ##' @param dat data frame of covariates
 ##' @param method only \code{"rejection"} is valid
-##' @param control options for the algorithm
+##' @param control list of options for the algorithm
 ##' @param seed random seed used for replication
 ##'
 ##' @details Samples from a given causal model using rejection sampling (or,
@@ -112,9 +112,10 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
     ## assume everything is Gaussian
     family = lapply(lengths(formulas), rep.int, x=1)
   }
-  else if (is.list(family) || length(family == 4)) {
+  else if (is.list(family)) {
     if (!all(lengths(family[1:3]), lengths(formulas[1:3]))) stop("mismatch in family and formulae specifications")
   }
+  else if (length(family) == 4) family <- as.list(family)
   else stop("family should be a list, or vector of length 4")
 
   ## check that supplied parameters are sufficient
@@ -140,7 +141,6 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   famX <- family[[2]]
   famY <- family[[3]]
   famCop <- family[[4]]
-  ## add in check that phi parameters are present!
 
   ## check variable names
   LHS_Z <- lhs(formulas[[1]])
@@ -152,6 +152,17 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
     vars <- c(names(dat), vars)
   }
   if (anyDuplicated(na.omit(vars))) stop("duplicated variable names")
+
+  ## check that variables in families 1,2,3 have a dispersion parameter
+  for (i in seq_along(famZ))
+    if (famZ[i] <= 3 && is.null(pars[[LHS_Z[i]]]$phi))
+      stop(paste(LHS_Z[i], "needs a phi parameter"))
+  for (i in seq_along(famX))
+    if (famX[i] <= 3 && is.null(pars[[LHS_X[i]]]$phi))
+      stop(paste(LHS_X[i], "needs a phi parameter"))
+  for (i in seq_along(famY))
+    if (famY[i] <= 3 && is.null(pars[[LHS_Y[i]]]$phi))
+      stop(paste(LHS_Y[i], "needs a phi parameter"))
 
   ## set up link functions
   link <- linkSetUp(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
@@ -230,7 +241,7 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   for (i in seq_len(dX)) {
     ## get parameters for X
     if (famX[i] == 0 || famX[i] == 5) {
-      if (!is.null(pars[[LHS_X[i]]]$p)) theta <- pars[[LHS_X[i]]]$p
+      if (!is.null(pars[[LHS_X[i]]][["p"]])) theta <- pars[[LHS_X[i]]]$p
       else theta <- 0.5
       famX[i] <- 5
     }

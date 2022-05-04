@@ -4,7 +4,7 @@
 \alias{sim_X}
 \title{Simulate initial X values}
 \usage{
-sim_X(n, fam_x, theta)
+sim_X(n, fam_x, theta, offset)
 }
 \arguments{
 \item{n}{number of observations}
@@ -12,6 +12,8 @@ sim_X(n, fam_x, theta)
 \item{fam_x}{number for distribution family}
 
 \item{theta}{parameters for model}
+
+\item{offset}{optional mean correction}
 }
 \value{
 A list with two entries: \code{x} a vector of the simulated
@@ -25,9 +27,12 @@ Simulate initial X values
 Returns a list that includes a data frame containing a column
 \code{x}, as well as the density that was used to generate it.  Possible
 families are Gaussian (=1), t (=2), Exponential (=3), beta (=4)
-Bernoulli/categorical (=5).
+Bernoulli/categorical (=5) and log-normal (=6).
 
 For the exponential distribution, \code{theta} is the mean.
 Beta can take one or two parameters, and if there is only
 one it is just repeated.
+
+The \code{offset} parameter alters the median for the normal and t-distributions,
+or the median of the logarithm in the case of a log-normal.
 }

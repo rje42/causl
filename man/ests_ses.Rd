@@ -11,7 +11,9 @@ ests_ses(fit, beta, merged_formula, kwd)
 
 \item{beta}{output of \code{initializeParams2}}
 
-\item{formulas}{list of formulae used in function call}
+\item{merged_formula}{formula with all variables on RHS}
+
+\item{kwd}{keyword for copula variable}
 }
 \description{
 Extract parameter estimates and standard errors

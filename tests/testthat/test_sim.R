@@ -39,7 +39,7 @@ test_that("simulation works 2", {
 })
 
 ## check that binomial works OK
-fam <- c(0,1,1,1)
+fam <- c(5,1,1,1)
 forms <- list(z ~ 1, x ~ z, y ~ x, ~ 1)
 pars <- list(z = list(beta=0),
              x = list(beta=c(0,0.5), phi=1),

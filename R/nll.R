@@ -313,8 +313,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 ##'
 ##' @param fit output of \code{optim}
 ##' @param beta output of \code{initializeParams2}
-##' @param formulas list of formulae used in function call
-##'
+##' @param merged_formula formula with all variables on RHS
+##' @param kwd keyword for copula variable
 ##'
 ests_ses <- function(fit, beta, merged_formula, kwd) {
 

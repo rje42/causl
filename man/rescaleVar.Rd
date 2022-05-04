@@ -15,7 +15,7 @@ rescaleVar(U, X, pars, family = 1, link)
 
 \item{family}{family of distributions to use}
 
-\item{link}{link function (not currently used)}
+\item{link}{link function}
 }
 \value{
 vector of rescaled variables

@@ -31,7 +31,7 @@ causalSamp(
 
 \item{method}{only \code{"rejection"} is valid}
 
-\item{control}{options for the algorithm}
+\item{control}{list of options for the algorithm}
 
 \item{seed}{random seed used for replication}
 }

@@ -5,10 +5,11 @@
 ##' finally for the copula
 ##' @param family families for the Y and Z distributions, and the copula. Should
 ##' be the same length as \code{formulas}
+##' @param link link functions for each variable
 ##' @param par2 additional parameters if required
 ##' @param sandwich logical: should sandwich standard errors be returned?
 ##' @param useC logical: should C++ routines be used?
-##' @param init should linear models be used to initialize starting point?
+## @param init should linear models be used to initialize starting point?
 ##' @param control list of parameters to be passed to \code{optim}
 ##'
 ##' @details \code{forms} is list of three or more formulae giving
@@ -32,9 +33,8 @@
 ##'
 ##' @export
 fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
-                      family=rep(1,length(formulas)), par2,
-                      sandwich=TRUE, useC=TRUE, init=FALSE,
-                      control=list()) {
+                      family=rep(1,length(formulas)), link, par2,
+                      sandwich=TRUE, useC=TRUE, control=list()) {
 
   # get control parameters for optim or use defaults
   con <- list(method = "BFGS", newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
@@ -61,6 +61,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## tidy up the formulae
   forms <- tidy_formulas(formulas, kwd=kwd)
   fam_cop <- last(family)
+  link <- linkSetUp(link, family = family[-last(family)])
 
   LHS <- lhs(forms[-length(forms)])
   full_form <- merge_formulas(forms)
@@ -108,7 +109,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
 #   }
 #   mms <- c(mms, list(trunc=trunc))
 
-  beta_start2 <- initializeParams2(dat, formulas=forms, family=family, #init=init,
+  beta_start2 <- initializeParams2(dat, formulas=forms, family=family, link=link,
                                  full_form=full_form, kwd=kwd)
   theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
   # beta_start <- initializeParams(dat, formulas=forms, family=family, #init=init,
@@ -134,9 +135,9 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   conv <- FALSE
   out2 <- list(par = theta_st)
   while (!conv) {
-    con$maxit <- 5e3
+    con$maxit <- min(maxit, 5e3)
     out <- do.call(optim, c(list(fn=nll2, par=out2$par), other_args2, list(method="Nelder-Mead", control=con)))
-    con$maxit <- max(maxit - 5e3, 1e3)
+    con$maxit <- min(max(maxit - 5e3, 1e3), maxit)
     out2 <- tryCatch(do.call(optim, c(list(fn=nll2, par=out$par), other_args2, list(method="BFGS", control=con))),
                     warning=function(e) NA, error=function(e) NA)
     if (!isTRUE(is.na(out2))) {

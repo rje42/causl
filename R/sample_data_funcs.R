@@ -3,34 +3,40 @@
 ##' @param n number of observations
 ##' @param fam_x number for distribution family
 ##' @param theta parameters for model
+##' @param offset optional mean correction
 ##'
 ##' @details Returns a list that includes a data frame containing a column
 ##' \code{x}, as well as the density that was used to generate it.  Possible
 ##' families are Gaussian (=1), t (=2), Exponential (=3), beta (=4)
-##' Bernoulli/categorical (=5).
+##' Bernoulli/categorical (=5) and log-normal (=6).
 ##'
 ##' For the exponential distribution, \code{theta} is the mean.
 ##' Beta can take one or two parameters, and if there is only
 ##' one it is just repeated.
+##'
+##' The \code{offset} parameter alters the median for the normal and t-distributions,
+##' or the median of the logarithm in the case of a log-normal.
 ##'
 ##' @return A list with two entries: \code{x} a vector of the simulated
 ##' values, and \code{qden}, which contains a function that evaluates to the
 ##' density of the distribution used to generate those values.
 ##'
 ##' @export
-sim_X <- function(n, fam_x, theta) {
+sim_X <- function(n, fam_x, theta, offset) {
+
+  if (missing(offset)) offset <- 0
 
   if (fam_x == 1) {
-    X <- rnorm(n, sd=sqrt(theta))
-    qden <- function(x) dnorm(x, sd=sqrt(theta))
+    X <- rnorm(n, mean=offset, sd=sqrt(theta))
+    qden <- function(x) dnorm(x, mean=offset, sd=sqrt(theta))
   }
   else if (fam_x == 6) {
-    X <- exp(rnorm(n, sd=sqrt(theta)))
-    qden <- function(x) dnorm(log(x), sd=sqrt(theta))/x
+    X <- exp(rnorm(n, mean=offset, sd=sqrt(theta)))
+    qden <- function(x) dnorm(log(x), mean=offset, sd=sqrt(theta))/x
   }
   else if (fam_x == 2) {
-    X <- theta[1]*rt(n, df=theta[2])
-    qden <- function(x) dt(x/theta[1], df=theta[2])/theta[1]
+    X <- theta[1]*(rt(n, df=theta[2]) + offset)
+    qden <- function(x) dt((x-offset)/theta[1], df=theta[2])/theta[1]
   }
   else if (fam_x == 3) {
     X <- rgamma(n, shape=1, rate=1/theta)
@@ -63,7 +69,7 @@ sim_X <- function(n, fam_x, theta) {
 ##' @param X model matrix of covariates
 ##' @param pars list of parameters (see details)
 ##' @param family family of distributions to use
-##' @param link link function (not currently used)
+##' @param link link function
 ##'
 ##' @details \code{family} can be 1, 2, 3, 4 or 5 for Gaussian, t-distributed,
 ##' Gamma distributed, beta distributed or discrete respectively.

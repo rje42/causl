@@ -5,7 +5,7 @@
 \alias{dtCop}
 \title{Density of a Gaussian or t-Copula}
 \usage{
-dGaussCop(x, Sigma, log = FALSE, useC = TRUE)
+dGaussCop(x, Sigma, log = FALSE, useC = TRUE, N)
 
 dtCop(x, Sigma, df, log = FALSE, useC = TRUE)
 }
@@ -17,6 +17,8 @@ dtCop(x, Sigma, df, log = FALSE, useC = TRUE)
 \item{log}{logical: return log=density?}
 
 \item{useC}{logical: use the C routine?}
+
+\item{N}{optional integer for number of covariance matrices}
 
 \item{df}{degrees of freedom}
 }

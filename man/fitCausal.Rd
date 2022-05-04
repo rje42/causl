@@ -8,10 +8,10 @@ fitCausal(
   dat,
   formulas = list(y ~ x, z ~ 1, ~x),
   family = rep(1, length(formulas)),
+  link,
   par2,
   sandwich = TRUE,
   useC = TRUE,
-  init = FALSE,
   control = list()
 )
 }
@@ -24,13 +24,13 @@ finally for the copula}
 \item{family}{families for the Y and Z distributions, and the copula. Should
 be the same length as \code{formulas}}
 
+\item{link}{link functions for each variable}
+
 \item{par2}{additional parameters if required}
 
 \item{sandwich}{logical: should sandwich standard errors be returned?}
 
 \item{useC}{logical: should C++ routines be used?}
-
-\item{init}{should linear models be used to initialize starting point?}
 
 \item{control}{list of parameters to be passed to \code{optim}}
 }

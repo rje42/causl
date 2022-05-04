@@ -75,16 +75,17 @@ rfgmCopula <- function(n, d=2, alpha)
 ##' @param Sigma collection of matrices
 ##' @param log logical: return log=density?
 ##' @param useC logical: use the C routine?
+##' @param N optional integer for number of covariance matrices
 ##'
 ##' @details Computes the density for data from a
 ##' Gaussian or t-copula.  Currently \code{useC} only
 ##' works for \code{dGaussCop}.
 ##'
 ##' @export
-dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE) {
+dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE, N) {
   d <- ncol(x)
   n <- nrow(x)
-  N <- length(Sigma)/d^2
+  if (missing(N)) N <- length(Sigma)/d^2
   dim(Sigma) <- c(d,d,N)
 
   if (any(x > 1) || any(x < 0)) {
