@@ -1,3 +1,38 @@
+gen_X_values <- function (n, famX, pars, LHS_X, dX) {
+  ## list for densities used to simulate X's
+  qden <- vector(mode="list", length=dX)
+  out <- data.frame(matrix(0, ncol=dX, nrow=n))
+  names(out) <- LHS_X
+
+  for (i in seq_len(dX)) {
+    ## get parameters for X
+    if (famX[i] == 0 || famX[i] == 5) {
+      if (!is.null(pars[[LHS_X[i]]][["p"]])) theta <- pars[[LHS_X[i]]]$p
+      else theta <- 0.5
+      famX[i] <- 5
+    }
+    else if (famX[i] == 1 || famX[i] == 2) {
+      theta <- 2*pars[[LHS_X[i]]]$phi
+    }
+    else if (famX[i] == 6) {
+      theta <- 1.5*pars[[LHS_X[i]]]$phi
+    }
+    else if (famX[i] == 3) {
+      theta <- 2*pars[[LHS_X[i]]]$phi
+    }
+    else if (famX[i] == 4) {
+      theta = c(1,1)
+    }
+
+    ## obtain data for X's
+    tmp <- sim_X(n, fam_x = famX[i], theta=theta)
+    out[LHS_X[[i]]] <- tmp$x
+    qden[[i]] <- tmp$qden
+  }
+
+  return(list(datX = out, qden = qden))
+}
+
 ##' Simulate initial X values
 ##'
 ##' @param n number of observations
@@ -82,6 +117,7 @@ sim_X <- function(n, fam_x, theta, offset) {
 ##'
 ##' @return vector of rescaled variables
 ##'
+##' @export
 rescaleVar <- function(U, X, pars, family=1, link) {
 
   ## get linear component
@@ -274,6 +310,7 @@ sim_CopVal <- function(dat, family, par, par2, model_matrix) {
 ##'
 ##' @return a numeric vector of weights
 ##'
+##' @export
 rejectionWeights <- function (dat, mms,# formula,
                            family, pars, qden, link) {
 
@@ -298,7 +335,8 @@ rejectionWeights <- function (dat, mms,# formula,
       else if (link[i] == "inverse") mu <- 1/eta[[i]]
       else stop("not a valid link function for Gaussian distribution")
 
-      wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi))/qden[[i]](dat[,i])
+      if (is.numeric(qden[[i]])) wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi))/qden[[i]]
+      else wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi))/qden[[i]](dat[,i])
     }
     else if (family[i] == 2) {
       if (link[i] == "identity") mu <- eta[[i]]
@@ -306,7 +344,8 @@ rejectionWeights <- function (dat, mms,# formula,
       else if (link[i] == "inverse") mu <- 1/eta[[i]]
       else stop("not a valid link function for t-distribution")
 
-      wts <- wts*dt((dat[,i] - mu)/sqrt(phi), df=pars[[i]]$par2)/(sqrt(phi)*qden[[i]](dat[,i]))
+      if (is.numeric(qden[[i]])) wts <- wts*dt((dat[,i] - mu)/sqrt(phi), df=pars[[i]]$par2)/(sqrt(phi)*qden[[i]])
+      else wts <- wts*dt((dat[,i] - mu)/sqrt(phi), df=pars[[i]]$par2)/(sqrt(phi)*qden[[i]](dat[,i]))
     }
     else if (family[i] == 3) {
       if (link[i] == "identity") mu <- eta[[i]]
@@ -314,22 +353,26 @@ rejectionWeights <- function (dat, mms,# formula,
       else if (link[i] == "inverse") mu <- 1/eta[[i]]
       else stop("not a valid link function for t-distribution")
 
-      wts <- wts*dgamma(dat[,i], rate=1/(mu*phi), shape=1/phi)/qden[[i]](dat[,i])
+      if (is.numeric(qden[[i]])) wts <- wts*dgamma(dat[,i], rate=1/(mu*phi), shape=1/phi)/qden[[i]]
+      else wts <- wts*dgamma(dat[,i], rate=1/(mu*phi), shape=1/phi)/qden[[i]](dat[,i])
     }
     else if (family[i] == 4) {
       mu <- expit(eta[[i]])
-      wts <- wts*dbeta(dat[,i], shape1=1+phi*mu, shape2=1+phi*(1-mu))/qden[[i]](dat[,i])
+      if (is.numeric(qden[[i]])) wts <- wts*dbeta(dat[,i], shape1=1+phi*mu, shape2=1+phi*(1-mu))/qden[[i]]
+      else wts <- wts*dbeta(dat[,i], shape1=1+phi*mu, shape2=1+phi*(1-mu))/qden[[i]](dat[,i])
     }
     else if (family[i] == 5) {
       if (link[i] == "probit") mu <- qnorm(eta[[i]])
       else if (link[i] == "logit") mu <- expit(eta[[i]])
       else stop("invalid link function for binomial distribution")
 
-      wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]](dat[,i])
+      if (is.numeric(qden[[i]])) wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]]
+      else wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]](dat[,i])
     }
     else if (family[i] == 6) {
       mu <- eta[[i]]
-      wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi))/(dat[,i]*qden[[i]](dat[,i]))
+      if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi))/(dat[,i]*qden[[i]])
+      else wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi))/(dat[,i]*qden[[i]](dat[,i]))
     }
     else stop("family[2] must be in the range 1 to 6")
   }
@@ -344,6 +387,7 @@ rejectionWeights <- function (dat, mms,# formula,
 ## @param link the input given to causalSamp()
 ## @param family the list of families for Z,X and Y variables
 ## @param vars a list of vectors of variable names with the same structure as \code{family}
+##' @export
 linkSetUp <- function(link, family, vars) {
 
   if (!missing(vars) && !all(lengths(vars) == lengths(family))) stop("length of variable names vector does not match number of families provided")

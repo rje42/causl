@@ -63,7 +63,7 @@ initializeParams <- function(dat, formulas, family, init, LHS, wh) {
 
 ## NEEDS TO ACCOUNT FOR LINK FUNCTIONS
 initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
-                              full_form, kwd) {
+                              full_form, kwd, notInCop) {
 
   # d <- ncol(dat)
   # fam_y <- family[1]
@@ -87,13 +87,17 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
   LHS <- LHS[-match(kwd, LHS)]
   if (length(LHS) != nv) stop("Formula for copula causing problems!")
 
-  c2 <- combn(length(LHS), 2)
-  colnms <- c(LHS, mapply(function(x,y) paste0(kwd,"_",LHS[x],"_",LHS[y]), c2[1,],c2[2,]))
+  if (missing(notInCop)) LHSc <- LHS
+  else LHSc <- setdiff(LHS, notInCop)
+  nc <- length(LHSc)
+  c2 <- combn(nc, 2)
+  colnms <- c(LHS, mapply(function(x,y) paste0(kwd,"_",LHSc[x],"_",LHSc[y]), c2[1,], c2[2,]))
 
-  beta <- beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nv+choose(nv,2), dimnames = list(labs,colnms))
-  phi <- phi_m <- numeric(length(LHS))
+  beta <- beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nv+choose(nc,2),
+                           dimnames = list(labs,colnms))
+  phi <- phi_m <- numeric(nv)
 
-# FIGURE OUT HOW TO MAKE THIS WORK WITH NOT EVERYTHING IN THE COPULA
+  # FIGURE OUT HOW TO MAKE THIS WORK WITH NOT EVERYTHING IN THE COPULA
 
   # LHSs <- lhs(formulas)
 
@@ -134,22 +138,22 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
   }
 
   ## initialize copula parameters
-  cp <- length(phi)
-  beta_m[wh[[cp+1]], cp+seq_len(choose(nv,2))] <- 1
+  beta_m[wh[[nv+1]], nv+seq_len(choose(nc,2))] <- 1
   # beta[-wh[[i]],i] <- 0
 
 
   return(list(beta=beta, phi=phi, beta_m=beta_m, phi_m=phi_m))
 }
 
-masks <- function(formulas, family=rep(1,nc+1), wh, LHS) {
+masks <- function(formulas, family=rep(1,nc+1), wh, LHS, cp) {
 
   if (is.list(family)) family <- unlist(family[1:3])
   formulas <- unlist(formulas)
   nc <- length(formulas)-1
 
-  beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nc+choose(nc,2))
   phi_m <- numeric(nc)
+  if (missing(cp)) cp <- length(phi_m)
+  beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nc+choose(cp,2))
 
   # LHSs <- lhs(formulas)
 
@@ -163,8 +167,7 @@ masks <- function(formulas, family=rep(1,nc+1), wh, LHS) {
   }
 
   ## initialize copula parameters
-  cp <- length(phi_m)
-  beta_m[wh[[cp]], cp+seq_len(choose(cp,2))] <- 1
+  beta_m[wh[[nc+1]], nc+seq_len(choose(cp,2))] <- 1
 
   return(list(beta_m=beta_m, phi_m=phi_m))
 }

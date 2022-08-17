@@ -1,3 +1,11 @@
+##' Get LHSs of list of formulae
+##'
+##' @param formulas list of formulae
+##'
+##' @details Returns character vector containing left-hand sides of a list of
+##' formulae.
+##'
+##' @export
 lhs <- function (formulas) {
   if (!is.list(formulas)) formulas <- list(formulas)
   term <- lapply(formulas, terms)
@@ -34,6 +42,12 @@ rhs_vars <- function (formulas) {
   vars
 }
 
+##' Combine multiple formulas
+##'
+##' Take collection of formulae and create one formula with all variables on the
+##' right-hand side of any of the originals.
+##'
+##' @export
 merge_formulas <- function (formulas) {
   if (!is.list(formulas)) formulas <- list(formulas)
   formulas <- unlist(formulas)

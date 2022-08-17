@@ -50,7 +50,8 @@ univarDens <- function (x, eta, phi, df, family=1, link) {
     else if (link=="probit") mu <- pnorm(eta)
     else stop("Not a valid link function for Bernoulli distribution")
 
-    lp <- log(mu[x+1])
+    lp <- x*log(mu) + (1-x)*log(1-mu)
+    lp[is.nan(lp)] <- 0
     u <- x
   }
   else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
@@ -196,7 +197,7 @@ nll <- function(beta, dat, mms, fam_cop=1, fam=rep(1,nc), par2=NULL, useC=TRUE) 
 ## @importFrom Matrix Matrix
 ##'
 nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
-                 family=rep(1,nc), link, par2=NULL, useC=TRUE) {
+                 family, link, par2=NULL, useC=TRUE) {
   np <- sum(beta > 0)
 
   beta[beta > 0] <- theta[seq_len(np)]
@@ -233,18 +234,20 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   log_den <- dat_u <- matrix(NA, nrow(dat), nc)
   # if (length(family) < nc) family <- rep_len(family, nc)
 
+  ## get univariate densities
   for (i in which(family != 5)) {
     tmp <- univarDens(dat[,i], eta[,i], phi=phi[i], family=family[i])
     log_den[,i] <- tmp$ld
     dat_u[,i] <- tmp$u
   }
-  wh_trunc = 0
-  # for (i in which(family == 5)) {
-  #   wh_trunc <- wh_trunc + 1
-  #   tmp <- univarDens(dat[[i]], mms$trunc[[wh_trunc]], family=family[i])
-  #   log_den[,i] <- tmp$ld
-  #   dat_u[,i] <- tmp$u
-  # }
+  # wh_trunc = 0
+  ## deal with discrete variables separately
+  for (i in which(family == 5)) {
+    # wh_trunc <- wh_trunc + 1
+    tmp <- univarDens(dat[,i], eta[,i], family=family[i])
+    log_den[,i] <- tmp$ld
+    dat_u[,i] <- tmp$u
+  }
 
   ## now set up copula parameters
   ncv <- length(inCop)

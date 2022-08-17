@@ -12,7 +12,7 @@ nll2(
   phi,
   inCop,
   fam_cop = 1,
-  family = rep(1, nc),
+  family,
   link,
   par2 = NULL,
   useC = TRUE

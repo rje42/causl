@@ -52,6 +52,8 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   method <- con$method
   con <- con[-c(1,2,3)]
 
+  # nll1 <- nll3(dat, formulas=formulas, family=family, link=link, par2=par2, kwd=kwd)
+
   ## may need to fix this to allow more flexibility in copula
   d <- length(formulas) - 1
   if (length(family) != length(formulas)) {
@@ -61,7 +63,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## tidy up the formulae
   forms <- tidy_formulas(formulas, kwd=kwd)
   fam_cop <- last(family)
-  link <- linkSetUp(link, family = family[-last(family)])
+  link <- linkSetUp(link, family = family[-length(family)])
 
   LHS <- lhs(forms[-length(forms)])
   full_form <- merge_formulas(forms)
@@ -78,59 +80,19 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
     else par2 = 0
   }
 
-  ## parameters, in order:
-  ## regression for Y, standard deviation for Y,
-  ## regression 1, st dev 1,
-  ## regression 2, st dev 2,
-  ## ...
-  ## regression d, st dev d
-  ## correlation.
-  # wh = list()
-  # wh[[1]] = seq_len(ncol(mms[[1]]))
-  # wh[[2]] = last(wh[[1]])+1
-  #
-  # for (i in seq_len(d-1)) {
-  #   wh[[2*i+1]] = seq_len(ncol(mms[[i+1]]))+wh[[2*i]]
-  #   wh[[2*i+2]] = last(wh[[2*i+1]])+1
-  # }
-  # for (i in seq_len(choose(d,2))) {
-  #   wh[[2*d+i]] = seq_len(ncol(mms[[length(mms)]]))+last(wh[[2*d+i-1]])
-  # }
-  # mms = c(mms, list(wh=wh))
-#
-#   ## for discrete variables, plug in empirical probabilities
-#   trunc <- list()
-#   wh_disc <- which(family[-length(family)] == 5)
-#
-#   for (i in seq_along(wh_disc)) {
-#     trunc[[i]] <- tabulate(dat[[LHS[wh_disc[i]+1]]] + 1)
-#     if (sum(trunc[[i]]) == 0) stop("tabulation of values failed")
-#     trunc[[i]] <- trunc[[i]]/sum(trunc[[i]])
-#   }
-#   mms <- c(mms, list(trunc=trunc))
 
   beta_start2 <- initializeParams2(dat, formulas=forms, family=family, link=link,
-                                 full_form=full_form, kwd=kwd)
+                                   full_form=full_form, kwd=kwd)
   theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
-  # beta_start <- initializeParams(dat, formulas=forms, family=family, #init=init,
-  #                                 LHS=LHS, wh=max(unlist(wh)))
 
-
-  # other_args2 <- list(dat=dat[, LHS, drop=FALSE], mms=mms,
-  #                    fam_cop=fam_cop, fam=family[-length(family)], par2=par2,
-  #                    useC=useC)
-
+  ## other arguments to nll2()
   other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
                       inCop = seq_along(LHS),
                       fam_cop=fam_cop, fam=family[-length(family)], par2=par2,
                       useC=useC)
-  do.call(nll2, c(list(theta=theta_st),other_args2))
 
-#  ll(beta_start, y=dat$y, z=dat[,grep("z", names(dat))], mms=mms, fam=fam_cop, fam_y=fam_y, fam_z=fam_z, par2=par2)
-#  do.call(ll, c(list(beta=beta_start), other_args))
-
-  # out <- do.call(optim, c(list(fn=ll, par=beta_start), other_args, list(control=con)))
+  ## parameters to
   maxit <- con$maxit
   conv <- FALSE
   out2 <- list(par = theta_st)
