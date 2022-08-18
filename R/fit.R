@@ -45,6 +45,9 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   con[matches[!is.na(matches)]] = control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ", paste(names(control[is.na(matches)]), sep = ", "))
 
+  ## deal with tibbles etc...
+  dat <- as.data.frame(dat)
+
   ## ensure copula keyword is not a variable name
   kwd <- con$cop
   if (kwd %in% names(dat)) stop(paste("Must not have a variable named '", kwd, "'", sep=""))
@@ -68,8 +71,28 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   LHS <- lhs(forms[-length(forms)])
   full_form <- merge_formulas(forms)
   wh <- full_form$wh
+  # dat[full_form$formula]
+
   mm <- model.matrix(full_form$formula, data=dat)
+  ## handle missingness cleanly
+  if (nrow(mm) < nrow(dat)) {
+    nlost <- nrow(dat) - nrow(mm)
+    message(paste0(nlost, " rows deleted due to missing covariates"))
+    mm_vars <- attr(terms(full_form$formula), "variables")
+    dat <- dat[complete.cases(with(dat, eval(mm_vars))),]
+  }
   # mms = lapply(forms, model.matrix, data=dat)
+
+  ## for discrete variables, plug in empirical probabilities
+  trunc <- list()
+  wh_disc <- which(family == 5)
+
+  for (i in seq_along(wh_disc)) {
+    trunc[[i]] <- tabulate(dat[[LHS[wh_disc[i]]]] + 1)
+    if (sum(trunc[[i]]) == 0) stop("tabulation of values failed")
+    trunc[[i]] <- trunc[[i]]/sum(trunc[[i]])
+  }
+  attr(mm, "trunc") <- trunc
 
   ## set secondary parameter to 4 if in a t-Copula model
   if (missing(par2)) {

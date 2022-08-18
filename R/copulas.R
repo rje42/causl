@@ -280,7 +280,7 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
     ## if all the same matrix, use single copula implementation
     if (N == 1) {
       dim(Sigma) <- c(d,d)
-      out <- c(dGDcop(x, Sigma, trunc=trunc, logd = TRUE))
+      out <- c(dGDcop2(x, Sigma, trunc=trunc, logd = TRUE))
       if (log) return(out)
       else return(exp(out))
     }

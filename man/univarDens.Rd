@@ -9,7 +9,7 @@ univarDens(x, eta, phi, df, family = 1, link)
 \arguments{
 \item{x}{vector of observations}
 
-\item{eta, phi}{linear component and dispersion parameters}
+\item{eta, phi}{linear component and dispersion parameter}
 
 \item{df}{degrees of freedom (only for t-distribution)}
 

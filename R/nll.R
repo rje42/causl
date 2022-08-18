@@ -1,7 +1,7 @@
 ##' Get univariate densities and uniform order statistics
 ##'
 ##' @param x vector of observations
-##' @param eta,phi linear component and dispersion parameters
+##' @param eta,phi linear component and dispersion parameter
 ##' @param df degrees of freedom (only for t-distribution)
 ##' @param family numeric indicator of family
 ##' @param link link function
@@ -14,6 +14,8 @@
 ##' observation).
 ##'
 univarDens <- function (x, eta, phi, df, family=1, link) {
+
+  if (!missing(phi) && phi <= 1e-8) phi <- 1e-8
 
   if (missing(link)) link <- linksList[[familyVals[familyVals$val==family,"family"]]][1]
 
@@ -203,6 +205,8 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
   beta[beta > 0] <- theta[seq_len(np)]
   phi[phi > 0] <- theta[-seq_len(np)]
 
+  dat <- as.data.frame(dat)
+
   -sum(ll(dat, mm=mm, beta=beta, phi=phi, inCop=inCop, fam_cop=fam_cop,
       family=family, link=link, par2=par2, useC=useC))
 }
@@ -210,6 +214,8 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
 
 ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
                  family=rep(1,nc), link, par2=NULL, useC=TRUE) {
+
+  dat <- as.data.frame(dat)
 
   if (missing(inCop)) inCop <- seq_along(dat)
 
@@ -281,15 +287,15 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
       ## deal with Gaussian and t-copulas
       if (fam_cop == 1) {
-        # if (any(family == 5)) {
-        #   new_ord <- order(family[inCop])
-        #   dat_u2 <- dat_u[,inCop,drop=FALSE][,new_ord,drop=FALSE]
-        #   Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
-        #   cop <- dGaussDiscCop(dat_u2, Sigma=Sigma, trunc=mms$trunc, log=TRUE, useC=useC)
-        # }
-        # else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
+        if (any(family == 5)) {
+          new_ord <- order(family[inCop])
+          dat_u2 <- dat_u[,inCop,drop=FALSE][,new_ord,drop=FALSE]
+          Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
+          cop <- dGaussDiscCop(dat_u2, Sigma=Sigma, trunc=attr(mm, "trunc"), log=TRUE, useC=useC)
+        }
+        else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
 
-        cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
+        # cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
       }
       else if (fam_cop == 2) {
         #q_dat <- qt(as.matrix(dat_u), df=par2)
