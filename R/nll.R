@@ -332,7 +332,7 @@ ests_ses <- function(fit, beta, merged_formula, kwd) {
     return(fit)
   }
 
-  ## get number of parameters and varible
+  ## get number of parameters and variable
   np <- sum(beta$beta_m > 0)
   nv <- sum(regexpr(kwd, colnames(beta$beta_m)) != 1L)
   if (sum(regexpr(kwd, colnames(beta$beta_m)[seq_len(nv)]) != 1L) != nv) stop("beta_m poorly formatted")
@@ -349,7 +349,9 @@ ests_ses <- function(fit, beta, merged_formula, kwd) {
     pars[[i]]$beta <- beta_out[beta$beta_m[,i] > 0, i]
     if (i <= nphi && beta$phi_m[i] > 0) pars[[i]]$phi <- fit$par[np+i]
   }
-  pars[[nv+1]]$beta <- beta_out[beta$beta_m[,nv+1] > 0, nv+seq_len(ncol(beta$beta_m)-nv), drop=FALSE]
+  pars[[nv+1]]$beta <- beta_out[apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 1, any),
+                                seq_len(ncol(beta_out)) > nv & apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 2, any),
+                                drop=FALSE]
 
   ## now deal with standard errors
   if (!is.null(fit$se)) {
@@ -360,7 +362,9 @@ ests_ses <- function(fit, beta, merged_formula, kwd) {
       pars[[i]]$beta_se <- beta_out[beta$beta_m[,i] > 0, i]
       if (beta$phi_m[i] > 0) pars[[i]]$phi_se <- fit$se[np+i]
     }
-    pars[[nv+1]]$beta_se <- beta_out[beta$beta_m[,nv+1] > 0, nv+seq_len(ncol(beta$beta_m)-nv), drop=FALSE]
+    pars[[nv+1]]$beta_se <- beta_out[apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 1, any),
+                                     seq_len(ncol(beta_out)) > nv & apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 2, any),
+                                     drop=FALSE]
     # if (ncol(pars[[nv+1]]$beta_se) == 1) pars[[nv+1]]$beta_se <- c(pars[[nv+1]]$beta_se)
   }
 
@@ -373,7 +377,9 @@ ests_ses <- function(fit, beta, merged_formula, kwd) {
       pars[[i]]$beta_sandwich <- beta_out[beta$beta_m[,i] > 0, i]
       if (beta$phi_m[i] > 0) pars[[i]]$phi_sandwich <- fit$sandwich_se[np+i]
     }
-    pars[[nv+1]]$beta_sandwich <- beta_out[beta$beta_m[,nv+1] > 0, nv+seq_len(ncol(beta$beta_m)-nv), drop=FALSE]
+    pars[[nv+1]]$beta_sandwich <- beta_out[apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 1, any),
+                                           seq_len(ncol(beta_out)) > nv & apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 2, any),
+                                           drop=FALSE]
   }
 
   for (i in seq_len(nv)) {

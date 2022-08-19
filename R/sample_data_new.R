@@ -97,7 +97,8 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
   }
 
   ## process the four main arguments
-  tmp <- process_inputs(formulas=formulas, pars=pars, family=family, link=link)
+  tmp <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
+                        kwd=kwd)
   formulas <- tmp$formulas
   pars <- tmp$pars
   family <- tmp$family

@@ -93,6 +93,21 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
   c2 <- combn(nc, 2)
   colnms <- c(LHS, mapply(function(x,y) paste0(kwd,"_",LHSc[x],"_",LHSc[y]), c2[1,], c2[2,]))
 
+  ## check which variables are already in the formula for another, and set
+  ## corresponding copula correlation to zero
+  wh_in_cop <- match(LHSc, LHS)
+  idx <- lapply(full_form$old_forms[wh_in_cop],
+                function(x) match(intersect(LHSc, attr(x, "term.labels")[attr(x, "order") == 1]), LHSc))
+  ignr <- do.call(cbind, mapply(function(x,y) if (length(x) > 0) rbind(x,y) else matrix(NA, 2, 0), idx, seq_along(LHSc)))
+  if (length(ignr) > 0) {
+    wh_swt <- ignr[1,] > ignr[2,]
+    ignr[,wh_swt] <- ignr[2:1, wh_swt]
+    in_form <- setmatch(apply(ignr, 2, c, simplify = FALSE),
+                        apply(c2, 2, c, simplify = FALSE))
+  }
+  else in_form <- numeric(0)
+
+  ## now set up blank masks
   beta <- beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nv+choose(nc,2),
                            dimnames = list(labs,colnms))
   phi <- phi_m <- numeric(nv)
@@ -139,6 +154,7 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
 
   ## initialize copula parameters
   beta_m[wh[[nv+1]], nv+seq_len(choose(nc,2))] <- 1
+  beta_m[wh[[nv+1]], nv+in_form] <- 0
   # beta[-wh[[i]],i] <- 0
 
 
