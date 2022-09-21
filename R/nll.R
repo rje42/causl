@@ -238,7 +238,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   for (i in which(family != 5)) {
     tmp <- univarDens(dat[,i], eta[,i], phi=phi[i], family=family[i])
     log_den[,i] <- tmp$ld
-    dat_u[,i] <- tmp$u
+    dat_u[,i] <- pmin(tmp$u,1-1e-10)
   }
   # wh_trunc = 0
   ## deal with discrete variables separately
