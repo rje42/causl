@@ -94,7 +94,7 @@ process_inputs <- function (formulas, pars, family, link, kwd) {
 
   ## check if covariates predict each other
   if (length(formulas[[1]]) > 1) {
-    idx <- lapply(rhs_vars(formulas[[1]]), function(x) match(x,LHS_Z))
+    idx <- lapply(rhs_vars(formulas[[1]]), function(x) na.omit(match(x,LHS_Z)))
     # idx <- lapply(formsZ,
     #               function(x) match(intersect(LHS_Z, attr(x, "term.labels")[attr(x, "order") == 1]), LHS_Z))
     ignr <- do.call(cbind, mapply(function(x,y) {
