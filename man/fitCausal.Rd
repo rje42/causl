@@ -11,6 +11,7 @@ fitCausal(
   link,
   par2,
   sandwich = TRUE,
+  start = NULL,
   useC = TRUE,
   control = list()
 )

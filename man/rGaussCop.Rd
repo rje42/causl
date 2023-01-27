@@ -36,8 +36,8 @@ Note that \code{rfgmCopula} only works for \eqn{d = 2}.
 }
 \section{Functions}{
 \itemize{
-\item \code{rtCop}: t-copula
+\item \code{rtCop()}: t-copula
 
-\item \code{rfgmCopula}: FGM-copula
+\item \code{rfgmCopula()}: FGM-copula
+
 }}
-

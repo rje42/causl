@@ -1,4 +1,4 @@
-gen_X_values <- function (n, famX, pars, LHS_X, dX) {
+gen_X_values <- function (n, famX, pars, LHS_X, dX, sim=TRUE) {
   ## list for densities used to simulate X's
   qden <- vector(mode="list", length=dX)
   out <- data.frame(matrix(0, ncol=dX, nrow=n))
@@ -25,7 +25,7 @@ gen_X_values <- function (n, famX, pars, LHS_X, dX) {
     }
 
     ## obtain data for X's
-    tmp <- sim_X(n, fam_x = famX[i], theta=theta)
+    tmp <- sim_X(n, fam_x = famX[i], theta=theta, sim=TRUE)
     out[LHS_X[[i]]] <- tmp$x
     qden[[i]] <- tmp$qden
   }
@@ -57,29 +57,29 @@ gen_X_values <- function (n, famX, pars, LHS_X, dX) {
 ##' density of the distribution used to generate those values.
 ##'
 ##' @export
-sim_X <- function(n, fam_x, theta, offset) {
+sim_X <- function(n, fam_x, theta, offset, sim=TRUE) {
 
   if (missing(offset)) offset <- 0
 
   if (fam_x == 1) {
-    X <- rnorm(n, mean=offset, sd=sqrt(theta))
+    if (sim) X <- rnorm(n, mean=offset, sd=sqrt(theta))
     qden <- function(x) dnorm(x, mean=offset, sd=sqrt(theta))
   }
   else if (fam_x == 6) {
-    X <- exp(rnorm(n, mean=offset, sd=sqrt(theta)))
+    if (sim) X <- exp(rnorm(n, mean=offset, sd=sqrt(theta)))
     qden <- function(x) dnorm(log(x), mean=offset, sd=sqrt(theta))/x
   }
   else if (fam_x == 2) {
-    X <- theta[1]*(rt(n, df=theta[2]) + offset)
+    if (sim) X <- theta[1]*(rt(n, df=theta[2]) + offset)
     qden <- function(x) dt((x-offset)/theta[1], df=theta[2])/theta[1]
   }
   else if (fam_x == 3) {
-    X <- rgamma(n, shape=1, rate=1/theta)
+    if (sim) X <- rgamma(n, shape=1, rate=1/theta)
     qden <- function(x) dgamma(x, shape=1, rate=1/theta)
   }
   else if (fam_x == 4) {
     if (length(theta) == 1) theta <- c(theta, theta)
-    X <- rbeta(n, theta[1], theta[2])
+    if (sim) X <- rbeta(n, theta[1], theta[2])
     qden <- function(x) dbeta(x, theta[1], theta[2])
   }
   else if (fam_x == 5) {
@@ -90,12 +90,15 @@ sim_X <- function(n, fam_x, theta, offset) {
       warning("Parameters do not sum to 1, rescaling")
       theta <- theta/sum(theta)
     }
-    X <- sample(length(theta), size=n, replace=TRUE, prob=theta)-1
+    if (sim) X <- sample(length(theta), size=n, replace=TRUE, prob=theta)-1
     qden <- function(x) theta[x+1]
   }
   else stop("X distribution must be normal (1), t (2), Gamma (3), Beta (4) or categorical (5)")
 
-  return(list(x=X, qden=qden))
+  if (sim) out <- list(x=X, qden=qden)
+  else out <- list(qden)
+
+  return(out)
 }
 
 ##' Rescale quantiles to arbitrary random variable.
@@ -324,10 +327,38 @@ rejectionWeights <- function (dat, mms,# formula,
   betas <- lapply(pars, function(x) x$beta)
   eta <- mapply(function(X,y) X %*% y, mms, betas, SIMPLIFY = FALSE)
 
+  nms <- names(dat)
+
+  ## collect phi and par2 parameters
+  phi <- par2 <- numeric(d)
+  for (i in which(family %in% c(1:3,6))) {
+    phi[i] <- pars[[nms[i]]]$phi
+    if (family[i] == 2) par2[i] <- pars[[nms[i]]]$par2
+  }
+
+  wts <- get_X_density(dat, eta=eta, phi=phi, qden=qden, family=family,
+                       link=link, par2=par2)
+
+  if (any(is.na(wts))) stop("Problem with weights")
+
+  wts
+}
+
+##' Get density of treatments
+##'
+##' @inherit rejectionWeights
+##' @param eta list (or matrix) of linear forms
+##' @param phi vector of dispersion coefficients
+##' @param par2 vector of degrees of freedom
+##' @param log logical: should log-density be returned?
+##'
+get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
+
   wts <- rep(1, nrow(dat))
 
-  for (i in seq_len(d)) {
-    phi <- pars[[i]]$phi
+  if (is.matrix(eta)) eta <- apply(eta, 2, function(x) x, simplify = FALSE)
+
+  for (i in seq_len(ncol(dat))) {
 
     if (family[i] == 1) {
       if (link[i] == "identity") mu <- eta[[i]]
@@ -335,8 +366,8 @@ rejectionWeights <- function (dat, mms,# formula,
       else if (link[i] == "inverse") mu <- 1/eta[[i]]
       else stop("not a valid link function for Gaussian distribution")
 
-      if (is.numeric(qden[[i]])) wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi))/qden[[i]]
-      else wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi))/qden[[i]](dat[,i])
+      if (is.numeric(qden[[i]])) wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi[i]))/qden[[i]]
+      else wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi[i]))/qden[[i]](dat[,i])
     }
     else if (family[i] == 2) {
       if (link[i] == "identity") mu <- eta[[i]]
@@ -344,8 +375,8 @@ rejectionWeights <- function (dat, mms,# formula,
       else if (link[i] == "inverse") mu <- 1/eta[[i]]
       else stop("not a valid link function for t-distribution")
 
-      if (is.numeric(qden[[i]])) wts <- wts*dt((dat[,i] - mu)/sqrt(phi), df=pars[[i]]$par2)/(sqrt(phi)*qden[[i]])
-      else wts <- wts*dt((dat[,i] - mu)/sqrt(phi), df=pars[[i]]$par2)/(sqrt(phi)*qden[[i]](dat[,i]))
+      if (is.numeric(qden[[i]])) wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]])
+      else wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]](dat[,i]))
     }
     else if (family[i] == 3) {
       if (link[i] == "identity") mu <- eta[[i]]
@@ -353,13 +384,13 @@ rejectionWeights <- function (dat, mms,# formula,
       else if (link[i] == "inverse") mu <- 1/eta[[i]]
       else stop("not a valid link function for t-distribution")
 
-      if (is.numeric(qden[[i]])) wts <- wts*dgamma(dat[,i], rate=1/(mu*phi), shape=1/phi)/qden[[i]]
-      else wts <- wts*dgamma(dat[,i], rate=1/(mu*phi), shape=1/phi)/qden[[i]](dat[,i])
+      if (is.numeric(qden[[i]])) wts <- wts*dgamma(dat[,i], rate=1/(mu*phi[i]), shape=1/phi[i])/qden[[i]]
+      else wts <- wts*dgamma(dat[,i], rate=1/(mu*phi[i]), shape=1/phi[i])/qden[[i]](dat[,i])
     }
     else if (family[i] == 4) {
       mu <- expit(eta[[i]])
-      if (is.numeric(qden[[i]])) wts <- wts*dbeta(dat[,i], shape1=1+phi*mu, shape2=1+phi*(1-mu))/qden[[i]]
-      else wts <- wts*dbeta(dat[,i], shape1=1+phi*mu, shape2=1+phi*(1-mu))/qden[[i]](dat[,i])
+      if (is.numeric(qden[[i]])) wts <- wts*dbeta(dat[,i], shape1=1+phi[i]*mu, shape2=1+phi[i]*(1-mu))/qden[[i]]
+      else wts <- wts*dbeta(dat[,i], shape1=1+phi[i]*mu, shape2=1+phi[i]*(1-mu))/qden[[i]](dat[,i])
     }
     else if (family[i] == 5) {
       if (link[i] == "probit") mu <- qnorm(eta[[i]])
@@ -370,14 +401,16 @@ rejectionWeights <- function (dat, mms,# formula,
       else wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]](dat[,i])
     }
     else if (family[i] == 6) {
-      mu <- eta[[i]]
-      if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi))/(dat[,i]*qden[[i]])
-      else wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi))/(dat[,i]*qden[[i]](dat[,i]))
+      if (link[i] == "identity") mu <- eta[[i]]
+      else if (link[i] == "exp") mu <- log(eta[[i]])
+      else stop("invalid link function for log-normal distribution")
+      if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]])
+      else wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]](dat[,i]))
     }
-    else stop("family[2] must be in the range 1 to 6")
+    else stop("family[[2]] must be in the range 1 to 6")
   }
 
-  if (any(is.na(wts))) stop("Problem with weights")
+  if (log) wts <- log(wts)
 
   wts
 }
@@ -473,9 +506,10 @@ linksList <- list(
   t = c("identity", "inverse", "log"),
   Gamma = c("log", "inverse", "identity"),
   beta = c("logit", "probit"),
-  binomial = c("logit", "probit"),
+  binomial = c("logit", "probit", "log"),
   lognormal = c("exp", "identity")
 )
+
 
 familyVals <- data.frame(val=0:6,
                          family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"))

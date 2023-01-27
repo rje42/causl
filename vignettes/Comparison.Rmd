@@ -47,7 +47,7 @@ Evans and Didelez (2021).
 ```{r params}
 pars <- list(A0 = list(beta = 0),
              L = list(beta = c(0.3,-0.2), phi=1),
-             A1 = list(beta = c(-0.3,0.4,0.3,0)), 
+             A1 = list(beta = c(-0.3,0.4,0.3,0)),
              Y = list(beta = c(-0.5,0.2,0.3,0), phi=1),
              cop = list(beta = c(1,0.5)))
 ```
@@ -56,9 +56,10 @@ Now we sample $5,000$ observations from the model (you might like to edit this
 to increase the sample size to $10^6$, replicating the analysis in Evans and 
 Didelez, 2021):
 ```{r simulate}
-set.seed(124)
+set.seed(123)
 n <- 5e3
 dat_max <- causalSamp(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
+# dat_max <- rfrugalParam2(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
 ```
 Then we can check that the distribution actually has the correct form for the
 first three variables ($A_0, L, A_1$):
@@ -71,8 +72,8 @@ summary(glmA1)$coef
 ```
 Indeed, all the parameters are close to their correct values.
 
-We can also use inverse probability weighting to check the causal relationship 
-for $Y$.
+We can also use inverse probability weighting to check the causal 
+relationship for $Y$.
 ```{r chk}
 ps <- fitted(glmA1)
 wt <- dat_max$A1/ps + (1-dat_max$A1)/(1-ps)
@@ -96,7 +97,7 @@ dat <- dat_max[seq_len(1e3), ]
 
 ### Outcome Regression
 
-We start with a na\"{i}ve outcome regression approach, where we fit a linear 
+We start with a naïve outcome regression approach, where we fit a linear 
 model for $Y$ regressed on various combinations of $A_0,A_1$ and $L$.  As we can
 see, none yield the parameters that interest us.
 
@@ -199,7 +200,7 @@ dat0$A1 <- 0
 dat1$A1 <- 1
 
 ## get outcome models
-glmY <- lm(Y ~ A1*I(log(L)), data=dat)
+glmY <- lm(Y ~ A0+A1+I(log(L)), data=dat)
 q <- predict(glmY, dat)
 q0 <- predict(glmY, dat0)
 q1 <- predict(glmY, dat1)
@@ -235,15 +236,12 @@ se <- c(se00,
         sqrt(se10^2 - 2*cse00_01 + se00^2), 
         sqrt(se01^2 + se00^2),
         sqrt(se10^2 - 2*cse00_01 + se00^2) + sqrt(se10^2 - 2*cse10_11 + se11^2))
-tab_dr <- cbind(est, se)
-rownames(tab_dr) <- rownames(tab_ipw)
-tab_dr
-```
 
-```{r tab_dr}
 bias <- est - pars$Y$beta
 tab_dr <- cbind(est, se, bias)
+rownames(tab_dr) <- rownames(tab_ipw)
 colnames(tab_dr) <- c("Est.", "SE", "Bias")
+tab_dr
 ```
 
 ### Maximum Likelihood
@@ -260,7 +258,7 @@ modY
 ```
 
 ```{r tab_mle, echo=FALSE, cache=TRUE}
-tab_mle <- cbind(modY$pars$Y$beta[1:4], modY$pars$Y$beta_se[1:4], 
+tab_mle <- cbind(modY$pars$Y$beta[1:4], modY$pars$Y$beta_sandwich[1:4], 
                  modY$pars$Y$beta[1:4]-pars$Y$beta)
 colnames(tab_mle) <- c("Est.", "SE", "Bias")
 ```
@@ -278,15 +276,15 @@ results[,1+rep(0:3, each=1)*3] <- round(results[,1+rep(0:3, each=1)*3], 2)
 results[,2+rep(0:3, each=1)*3] <- round(results[,2+rep(0:3, each=1)*3], 3)
 results[,3+(0:3)*3] <- round(results[,3+(0:3)*3], 3)
 results[,ncol(results)] <- round(results[,ncol(results)], 3)
-kableExtra::kbl(results, booktabs=TRUE) %>%
+kableExtra::kbl(results, booktabs=TRUE, format="html") %>%  ## change to format="latex" for paper
   kableExtra::add_header_above(c(" ","Outcome Regression"=3,"IP Weighting"=3,"Double Robust"=3,"MLE"=3))
 # xtable::xtable(results, digits=c(0,rep(c(2,3,3),4)), align="|r|rrr|rrr|rrr|")
 ```
 
 
 The code below (which we do not run because it takes over a minute) will allow 
-you to compare $N=10^3$ results via a naïve regression and inverse probability
-weighting.
+you to compare $N=10^3$ results each with sample size $n=10^3$ via a naïve 
+regression and inverse probability weighting.
 
 ```{r params2, echo=FALSE}
 pars <- list(A0 = list(beta = 0),
@@ -295,7 +293,11 @@ pars <- list(A0 = list(beta = 0),
              Y = list(beta = c(-1,0.5,0.5,0), phi=1),
              cop = list(beta = c(1,0.5)))
 ```
-```{r formulas, echo=FALSE}
+```{r formulas2, echo=FALSE}
+forms <- list(L ~ A0,
+                 list(A0 ~ 1, A1 ~ A0*L),
+                 Y ~ A0*A1,
+                  ~ A0)
 ```
 
 ```{r mult_sims, eval=FALSE}
@@ -336,13 +338,40 @@ for (i in seq_len(N)) {
 }
 ```
 
-```{r mult_sims2, eval=FALSE}
-set.seed(234)
-n <- 1e3
-causalSamp(n, formulas = list(Z ~ 1, X ~ Z, Y ~ X, ~ 1), family = c(4,))
-out_ipw <- matrix(NA, N, 4)
-colnames(out_ipw) <- c("int", "A0", "A1", "A0_A1")
+```{r one_big_sim, eval=FALSE, echo=FALSE}
+set.seed(123)
+n <- 1e4
+dat <- causalSamp(n, formulas = forms, pars = pars, family = list(3,c(5,5),1,1))
+
+## get weights for IPW
+glmA1 <- glm(A1 ~ A0*L, family=binomial, data=dat)
+tmp <- fitted(glmA1)
+wts <- dat$A1/tmp + (1-dat$A1)/(1-tmp)
+
+## get IPW estimates
+lm_ipw <- summary(svyglm(Y ~ A0*A1, design=svydesign(~1, weights=wts, data=dat)))
+lm_or <- summary(svyglm(Y ~ A0*A1, design=svydesign(~1, weights=~1, data=dat)))
+
+res <- tibble(truth=c(-1,0.5,0.5,0), estimate=lm_ipw$coefficients[,1], se=lm_ipw$coefficients[,2])
+res <- res %>% mutate(bias=estimate-truth, .after=2) %>%
+  mutate(z=bias/se, pval=2*pnorm(abs(bias/se), lower.tail = FALSE))
+res
+res_w <- tibble(truth=c(-1,0.5,0.5,0), estimate=lm_or$coefficients[,1], se=lm_or$coefficients[,2])
+res_w <- res_w %>% mutate(bias=estimate-truth, .after=2) %>%
+  mutate(z=bias/se, pval=2*pnorm(abs(bias/se), lower.tail = FALSE))
+res_w
+
+
+library(kableExtra)
+kableExtra::kbl(res, "latex", booktabs = TRUE, digits = c(1,3,3,3,2,2), 
+                col.names = c("truth", "estimate", "bias", "s.e.", "z-value", "p-value")) %>%
+  column_spec(3, background="red!30", bold=TRUE)
+kableExtra::kbl(res_w, "latex", booktabs = TRUE, digits = c(1,3,3,3,2,2), 
+                col.names = c("truth", "estimate", "bias", "s.e.", "z-value", "p-value")) %>%
+  column_spec(3, background="red!30")
+
 ```
+
 The code below plots the empirical biases as boxplots.
 ```{r boxplot, eval=FALSE}
 library(dplyr)
@@ -373,7 +402,7 @@ ggplot(bias_ipw, aes(x=coef, y=bias, fill=coef)) +
   theme(legend.position = "none",
         axis.text = element_text(size=12), 
         axis.title = element_text(size=12)) + 
-  xlab("coefficient") + 
+  xlab("coefficient") + ylim(c(-0.45,0.45)) + 
   scale_x_discrete(labels=c("intercept","A","B","A*B"))
 
 ggplot(bias_or, aes(x=coef, y=bias, fill=coef)) +
@@ -381,7 +410,7 @@ ggplot(bias_or, aes(x=coef, y=bias, fill=coef)) +
   theme(legend.position = "none",
         axis.text = element_text(size=12), 
         axis.title = element_text(size=12)) + 
-  xlab("coefficient") + 
+  xlab("coefficient") + ylim(c(-0.45,0.45)) + 
   scale_x_discrete(labels=c("intercept","A","B","A*B"))
 
 ggplot(bias_mle, aes(x=coef, y=bias, fill=coef)) +
@@ -389,7 +418,7 @@ ggplot(bias_mle, aes(x=coef, y=bias, fill=coef)) +
   theme(legend.position = "none",
         axis.text = element_text(size=12), 
         axis.title = element_text(size=12)) + 
-  xlab("coefficient") + 
+  xlab("coefficient") + ylim(c(-0.45,0.45)) + 
   scale_x_discrete(labels=c("intercept","A","B","A*B"))
 
 ```

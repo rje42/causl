@@ -32,6 +32,6 @@ works for \code{dGaussCop}.
 }
 \section{Functions}{
 \itemize{
-\item \code{dtCop}: t-Copula Density
-}}
+\item \code{dtCop()}: t-Copula Density
 
+}}

@@ -29,14 +29,15 @@ pars <- list(A0 = list(beta = 0),
              L = list(beta = c(0.3,-0.2), phi=1),
              A1 = list(beta = c(-0.3,0.4,0.3,0)),
              Y = list(beta = c(-0.5,0.2,0.3,0), phi=1),
-             cop = list(beta = matrix(c(1,0,0,0,
-                                 1,0,0,0,
-                                 0.5,0,0,0), nrow=4)))
+             cop = list(beta = matrix(c(logit((1+0.4)/2),0,0,0,
+                                 logit((1+0.5)/2),0,0,0,
+                                 logit((1+0.3)/2),0,0,0), nrow=4)))
 ```
 
 ```{r simulate}
 set.seed(125)
 n <- 1e4
+fam2 <- fam; fam2[[4]] <- 1
 dat <- causalSamp(n, formulas, family=fam, pars=pars)
 ```
 We can then check that the parameter values match their intended values:
@@ -48,8 +49,27 @@ summary(glmA1)$coef
 w <- predict(glmA1, type="response")
 dat$wt <- dat$A1/w + (1-dat$A1)/(1-w)
 
-summary(svyglm(Y ~ A0*A1, family=Gamma(link="log"), 
-               design=svydesign(id=~1, weights=~wt, data=dat)))$coef
+## wrong model
+mod_w <- svyglm(Y ~ A0*A1, family=Gamma(link="log"), 
+                design=svydesign(id=~1, weights=rep(1,nrow(dat)), data=dat))
+mod_w2 <- glm(Y ~ A0*A1, family=Gamma(link="log"), 
+                data=dat)
+summary(mod_w)$coef
+## correct model
+mod_c <- svyglm(Y ~ A0*A1, family=Gamma(link="log"), 
+                design=svydesign(id=~1, weights=~wt, data=dat))
+summary(mod_c)$coef
+```
+```{r, echo=FALSE, eval=TRUE}
+tab_w <- cbind(c(-0.5,0.2,0.3,0), summary(mod_w)$coef[,-3])
+tab_w[,4] <- pt(abs((tab_w[,2]-tab_w[,1])/tab_w[,3]), df=n-4, lower.tail = FALSE)
+tab_c <- cbind(c(-0.5,0.2,0.3,0), summary(mod_c)$coef[,-3])
+tab_c[,4] <- pt(abs((tab_c[,2]-tab_c[,1])/tab_c[,3]), df=n-4, lower.tail = FALSE)
+library(kableExtra)
+kableExtra::kbl(tab_w, digits = c(1,3,3,2), booktabs=TRUE, format="latex")  %>%  
+  kableExtra::add_header_above(c("Coef","Truth","Est.", "Std. Err.", "p-value"))
+kableExtra::kbl(tab_c, digits = c(1,3,3,2), booktabs=TRUE, format="latex")  %>%  
+  kableExtra::add_header_above(c("Coef","Truth","Est.", "Std. Err.", "p-value"))
 ```
 Indeed, they are all within two standard errors of their nominal values.
 ```{r, echo=FALSE, eval=FALSE}
@@ -63,3 +83,56 @@ out
 ```
 Again, all estimates are within two standard errors of the true values.
 
+## Repeated Experiments
+
+The code below repeats the experiment above 1,000 times with a sample size of 
+1,000 for each dataset, to illustrate the average bias of the naive analysis.
+
+```{r simulateN, eval=FALSE}
+library(tidyverse)
+set.seed(126)
+n <- 1e3
+N <- 1e3
+out_c <- out_w <- tibble::tibble("intercept"=numeric(N), "A0"=numeric(N), 
+                                 "A1"=numeric(N), "A0_A1"=numeric(N)) 
+
+for (i in seq_len(N)) {
+  dat <- causalSamp(n, formulas, family=fam, pars=pars)
+  summary(svyglm(L ~ A0, family=Gamma(link="log"), 
+                 design=svydesign(id=~1, weights=~1, data=dat)))$coef
+  glmA1 <- glm(A1 ~ A0*L, family=binomial, data=dat)
+  summary(glmA1)$coef
+  w <- predict(glmA1, type="response")
+  dat$wt <- dat$A1/w + (1-dat$A1)/(1-w)
+  
+  out_w[i,] <- as.list(svyglm(Y ~ A0*A1, family=Gamma(link="log"), 
+                              design=svydesign(id=~1, weights=rep(1, nrow(dat)), data=dat))$coef)
+  out_c[i,] <- as.list(svyglm(Y ~ A0*A1, family=Gamma(link="log"), 
+                              design=svydesign(id=~1, weights=~wt, data=dat))$coef)
+  rje::printCount(i, last=N)
+}
+```
+```{r boxplots, eval=FALSE}
+out_cb <- out_c %>% mutate(intercept=intercept+0.5, A0=A0-0.2, A1=A1-0.3) %>% 
+  pivot_longer(cols=1:4, names_to = "coefficient", values_to = "bias") %>%
+  mutate(coefficient=factor(coefficient, levels=c("intercept","A0","A1","A0_A1"),
+                            labels=c("intercept","A","B","AB")))
+out_wb <- out_w %>% mutate(intercept=intercept+0.5, A0=A0-0.2, A1=A1-0.3) %>% 
+  pivot_longer(cols=1:4, names_to = "coefficient", values_to = "bias") %>%
+  mutate(coefficient=factor(coefficient, levels=c("intercept","A0","A1","A0_A1"),
+                            labels=c("intercept","A","B","AB")))
+ggplot(out_cb, aes(coefficient, bias, fill=coefficient)) + geom_boxplot()
+ggplot(out_wb, aes(coefficient, bias, fill=coefficient)) + geom_boxplot()
+```
+```{r mle, eval=FALSE}
+mle_out <- fitCausal(dat, formulas = list(Y ~ A0*A1, L ~ A0, ~ 1), family=c(3,3,1), control=list(trace=1))
+mle_out
+tab_mle <- cbind(c(-0.5,0.2,0.3,0),mle_out$par[1:4],mle_out$sandwich_se[1:4])
+tab_mle <- cbind(tab_mle, (tab_mle[,2]-tab_mle[,1])/tab_mle[,3])
+tab_mle[,4] <- 2*pnorm(abs(tab_mle[,4]),lower.tail = FALSE)
+dput(tab_mle, "rpres.out")
+library(kableExtra)
+kableExtra::kbl(tab_mle, digits = c(1,3,3,2), booktabs=TRUE, format="latex")  %>%  
+  kableExtra::add_header_above(c("Coef","Truth","Est.", "Std. Err.", "p-value"))
+
+```

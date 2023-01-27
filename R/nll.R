@@ -61,6 +61,35 @@ univarDens <- function (x, eta, phi, df, family=1, link) {
   return(list(u=u, ld=lp))
 }
 
+univarDens2 <- function (x, mu, phi, df, family=1, link) {
+
+  if (!missing(phi) && phi <= 1e-8) phi <- 1e-8
+
+  if (missing(link)) link <- linksList[[familyVals[familyVals$val==family,"family"]]][1]
+
+  ## get the densities for x
+  if (family == 1) {
+    lp <- dnorm(x, mu, sd=sqrt(phi), log=TRUE)
+    u <- pnorm(x, mu, sd=sqrt(phi))
+  }
+  else if (family == 2) {
+    lp <- dt((x - mu)/sqrt(phi), df=df, log=TRUE) - log(sqrt(phi))
+    u <- pt((x - mu)/sqrt(phi), df=df)
+  }
+  else if (family == 3) {
+    lp <- dgamma(x, shape=1/phi, scale=phi*mu, log=TRUE)
+    u <- pgamma(x, shape=1/phi, scale=phi*mu)
+  }
+  else if (family == 5) {
+    lp <- x*log(mu) + (1-x)*log(1-mu)
+    lp[is.nan(lp)] <- 0
+    u <- x
+  }
+  else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
+
+  return(list(u=u, ld=lp))
+}
+
 
 
 ##' Negative log-likelihood of multivariate conditional copula
@@ -235,6 +264,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
   ## compute etas for each variable
   eta <- mm %*% beta
+  mu <- eta2mu(eta[,seq_len(nc),drop=FALSE], link=link)
 
   ## get the densities for each observation
   log_den <- dat_u <- matrix(NA, nrow(dat), nc)
@@ -242,7 +272,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
   ## get univariate densities
   for (i in which(family != 5)) {
-    tmp <- univarDens(dat[,i], eta[,i], phi=phi[i], family=family[i])
+    tmp <- univarDens2(dat[,i], mu[,i], phi=phi[i], family=family[i])
     log_den[,i] <- tmp$ld
     dat_u[,i] <- pmin(tmp$u,1-1e-10)
   }
@@ -250,7 +280,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   ## deal with discrete variables separately
   for (i in which(family == 5)) {
     # wh_trunc <- wh_trunc + 1
-    tmp <- univarDens(dat[,i], eta[,i], family=family[i])
+    tmp <- univarDens2(dat[,i], mu[,i], family=family[i])
     log_den[,i] <- tmp$ld
     dat_u[,i] <- tmp$u
   }

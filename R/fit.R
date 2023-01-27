@@ -70,7 +70,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
 
   LHS <- lhs(forms[-length(forms)])
   full_form <- merge_formulas(forms)
-  wh <- full_form$wh
+  # wh <- full_form$wh
   # dat[full_form$formula]
 
   mm <- model.matrix(full_form$formula, data=dat)
