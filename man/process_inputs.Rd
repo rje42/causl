@@ -4,7 +4,7 @@
 \alias{process_inputs}
 \title{Process formulas, families and parameters}
 \usage{
-process_inputs(formulas, pars, family, link)
+process_inputs(formulas, pars, family, link, kwd)
 }
 \arguments{
 \item{formulas}{list of lists of formulas}
@@ -14,6 +14,8 @@ process_inputs(formulas, pars, family, link)
 \item{family}{families for Z,X,Y and copula}
 
 \item{link}{list of link functions}
+
+\item{kwd}{keyword for copula}
 }
 \description{
 Process formulas, families and parameters

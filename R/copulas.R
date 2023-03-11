@@ -84,6 +84,10 @@ rfgmCopula <- function(n, d=2, alpha)
 ##' @export
 dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE, N) {
   d <- ncol(x)
+  if (d <= 1) {
+    if (!log) return(1)
+    else return(0)
+  }
   n <- nrow(x)
   if (missing(N)) N <- length(Sigma)/d^2
   dim(Sigma) <- c(d,d,N)
@@ -136,7 +140,7 @@ dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE, N) {
   dim(U) <- dim(Sigma)
 
   if (N < n) {
-    U <- U[,,rep_len(seq_len(N), n)]
+    U <- U[,,rep_len(seq_len(N), n),drop=FALSE]
   }
   U <- unlist(apply(U, 3, list), recursive=FALSE)
   x2 <- unlist(apply(qnorm(as.matrix(x)), 1, list), recursive = FALSE)
@@ -258,11 +262,18 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
 
   d <- ncol(x)
   m <- length(trunc)
+  if (any(sapply(trunc, is.matrix))) {
+    useC2 <- FALSE
+    mv_trunc <- TRUE
+  }
+  else useC2 <- useC
   n <- nrow(x)
   N <- length(Sigma)/d^2
   dim(Sigma) <- c(d,d,N)
 
-  if (any(x[,seq_len(d-m)] >= 1) || any(x < 0)) {
+  if (any(x[,seq_len(d-m)] <= 0) ||
+      any(x[,seq_len(d-m)] >= 1) ||
+      any(x[,d-m+seq_len(m)] < 0)) {
     stop("x's outside valid range")
   }
 
@@ -272,15 +283,17 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
     else return(0)
   }
 
+
+
   ## use the C++ implementation
-  if (useC) {
+  if (useC2) {
     ## transform to standard normal, but ensure that discrete variables are not transformed
     x[,dim(Sigma)[2]-length(trunc)] <- qnorm(x[,dim(Sigma)[2]-length(trunc)])
 
     ## if all the same matrix, use single copula implementation
     if (N == 1) {
       dim(Sigma) <- c(d,d)
-      out <- c(dGDcop(x, Sigma, trunc=trunc, logd = TRUE))
+      out <- c(dGDcop2(x, Sigma, trunc=trunc, logd = TRUE))
       if (log) return(out)
       else return(exp(out))
     }
@@ -302,31 +315,49 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
     # if (log) return(c(out))
     # else return(c(exp(out)))
   }
-  else {
-    stop("Not implemented in R")
+  # else {
+  #   stop("Not implemented in R")
+  # }
+
+  SigmaC <- apply(Sigma, 3, schur, seq_len(m)+d-m, seq_len(m)+d-m, seq_len(d-m))
+  dim(SigmaC) <- c(m,m,N)
+
+  xd <- x[,d-m+seq_len(m),drop=FALSE]
+
+  ## if different truncation values for each variable, then deal with this
+  if (mv_trunc) {
+    truncM <- abind::abind(trunc, along=3)
+    cumPM <- apply(truncM, c(1,3), function(x) c(0,cumsum(x))) # cumulative probabilities
+    upper <- lower <- xd
+    idx <- cbind(c(xd+1), seq_len(n), rep(seq_len(m), each=n))
+    lower[] <- cumPM[idx]
+    idx[,1] <- idx[,1] + 1
+    upper[] <- cumPM[idx]
+    lower <- qnorm(pmax(0,lower))  ## put on normal scale
+    upper <- qnorm(pmin(1,upper))
+    dim(lower) <- dim(upper) <- c(n,m)
+    lower <- lapply(asplit(lower, 1), c)
+    upper <- lapply(asplit(upper, 1), c)
+
+    if (N == n) {
+      ## ALLOW THIS TO DEAL WITH A DISCRETE OUTCOME AS WELL
+      SigmaC <- asplit(SigmaC, 3)
+      SigmaM <- asplit(Sigma[d-m+seq_len(m),d-m+seq_len(m),,drop=FALSE], 3)
+      out <- mapply(function(x,y,z) log(pmvnorm(x,y,sigma=z)), lower, upper, SigmaC) +
+        - mapply(function(x,y,z) log(pmvnorm(x,y,sigma=z)), lower, upper, SigmaM)
+    }
+    else if (N == 1) {
+      SigmaM <- Sigma[d-m+seq_len(m),d-m+seq_len(m),1]
+      dim(SigmaC) <- dim(SigmaM) <- c(m,m)
+      out <- mapply(function(x,y) log(pmvnorm(x,y,sigma=SigmaC)), lower, upper) +
+        - mapply(function(x,y) log(pmvnorm(x,y,sigma=SigmaM)), lower, upper)
+    }
   }
 
-  U <- tryCatch(apply(Sigma, 3, chol.default), error= function(e) e)
-  if (inherits(U, "error")) {
-    if (log) return(-Inf)
-    else return(0)
+  if (d > m) {
+    rest <- dGaussCop(x=x[,seq_len(d-m),drop=FALSE], Sigma[seq_len(d-m),seq_len(d-m),,drop=FALSE], log = TRUE, useC=useC)
+    out <- out + rest
   }
-  dim(U) <- dim(Sigma)
-
-  if (N < n) {
-    U <- U[,,rep_len(seq_len(N), n)]
-  }
-  U <- unlist(apply(U, 3, list), recursive=FALSE)
-  x2 <- unlist(apply(qnorm(as.matrix(x)), 1, list), recursive = FALSE)
-  rss <- colSums(mapply(backsolve, U, x2, transpose=TRUE)^2)
-  dets <- sapply(U, function(v) sum(log(diag(v))))
-  if (any(is.na(dets))) {
-    if (log) return(-Inf)
-    else return(0)
-  }
-
-  out <- - rss / 2 - dets - d*log(2*pi)/2
-  out <- out - rowSums(dnorm(qnorm(x), log=TRUE))
 
   if (!log) out <- exp(out)
 

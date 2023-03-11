@@ -63,7 +63,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## tidy up the formulae
   forms <- tidy_formulas(formulas, kwd=kwd)
   fam_cop <- last(family)
-  link <- linkSetUp(link, family = family[-length(family)])
+  link <- link_setup(link, family = family[-length(family)])
 
   LHS <- lhs(forms[-length(forms)])
   full_form <- merge_formulas(forms)

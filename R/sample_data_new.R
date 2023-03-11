@@ -6,16 +6,22 @@
 ##' @param n number of samples required
 ##' @param formulas list of lists of formulas
 ##' @param pars list of lists of parameters
-##' @param data optional data frame of covariates
 ##' @param family families for Z,X,Y and copula
 ##' @param link list of link functions
-##' @param dat data frame of covariates
+##' @param dat optional data frame of covariates
+##' @param careful logical: should full rejection sampling method be used with
+##' correctly computed weight?
 ##' @param method only \code{"rejection"} is valid
 ##' @param control list of options for the algorithm
 ##' @param seed random seed used for replication
 ##'
 ##' @details Samples from a given causal model using rejection sampling (or,
 ##' if everything is discrete, direct sampling).
+##'
+##' The logical \code{careful} enables one to implement the full rejection
+##' sampling method, which means we do get exact samples.  However, this method
+##' may be slow, and in particular if we have an outlying value it may run very
+##' slowly indeed.
 ##'
 ##' The entries for  \code{formula} and \code{family} should each be a
 ##' list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and
@@ -74,7 +80,7 @@
 ##'
 ##' @export
 rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x), list( ~ 1)),
-                       pars, family, link=NULL, dat=NULL, method="rejection",
+                       pars, family, link=NULL, dat=NULL, careful=FALSE, method="rejection",
                        control=list(), seed) {
 
   # get control parameters or use defaults
@@ -97,7 +103,8 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
   }
 
   ## process the four main arguments
-  tmp <- process_inputs(formulas=formulas, pars=pars, family=family, link=link)
+  tmp <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
+                        kwd=kwd)
   formulas <- tmp$formulas
   pars <- tmp$pars
   family <- tmp$family
@@ -115,43 +122,43 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
   d <- length(vars)
 
 
-  if (method == "particle") {
-    forms <- tidy_formulas(unlist(formulas), kwd)
-    form_all <- merge_formulas(forms)
-    msks <- masks(forms, family=family, wh=form_all$wh, cp=length(output))
-
-    theta <- pars2mask(pars, msks)
-
-    ## construct suitable log-likelihood function
-    llhd <- function(x) {
-      if (!is.matrix(x)) x <- matrix(x, nrow=1)
-      colnames(x) <- vars2
-      mm <- model.matrix.default(form_all$formula, data=as.data.frame(x))
-      ll(x, mm, beta=theta$beta, phi=theta$phi,
-         inCop = match(c(LHS_Z,LHS_Y), vars2), fam_cop = unlist(last(family)),
-         family = unlist(family)[seq_along(vars)])
-    }
-
-    vars2 <- vars
-
-    dat <- as.data.frame(matrix(NA, n, d))
-    names(dat) <- vars2
-
-    ## get parameters for particle simulator
-    d <- sum(lengths(family[1:3]))
-    dc <- d - sum(family[[1]] == 0 | family[[1]] == 5)
-    n_state <- rep(2, d-dc)
-    prob <- rep(list(c(0.5,0.5)), d-dc)
-    attrib <- list(dc=dc, n_state=n_state, prob=prob)
-
-    for (i in seq_len(n)) {
-      dat[i,] <- sim_chain(n=n, d=d, ltd=llhd, ns=1, sd1=2, attrib,
-                           sim="importance", control=list(B=10))$x
-      if (con$trace > 0) rje::printPercentage(i,n)
-    }
-
-    return(dat)
-  }
+  # if (method == "particle") {
+  #   forms <- tidy_formulas(unlist(formulas), kwd)
+  #   form_all <- merge_formulas(forms)
+  #   msks <- masks(forms, family=family, wh=form_all$wh, cp=length(output))
+  #
+  #   theta <- pars2mask(pars, msks)
+  #
+  #   ## construct suitable log-likelihood function
+  #   llhd <- function(x) {
+  #     if (!is.matrix(x)) x <- matrix(x, nrow=1)
+  #     colnames(x) <- vars2
+  #     mm <- model.matrix.default(form_all$formula, data=as.data.frame(x))
+  #     ll(x, mm, beta=theta$beta, phi=theta$phi,
+  #        inCop = match(c(LHS_Z,LHS_Y), vars2), fam_cop = unlist(last(family)),
+  #        family = unlist(family)[seq_along(vars)])
+  #   }
+  #
+  #   vars2 <- vars
+  #
+  #   dat <- as.data.frame(matrix(NA, n, d))
+  #   names(dat) <- vars2
+  #
+  #   ## get parameters for particle simulator
+  #   d <- sum(lengths(family[1:3]))
+  #   dc <- d - sum(family[[1]] == 0 | family[[1]] == 5)
+  #   n_state <- rep(2, d-dc)
+  #   prob <- rep(list(c(0.5,0.5)), d-dc)
+  #   attrib <- list(dc=dc, n_state=n_state, prob=prob)
+  #
+  #   for (i in seq_len(n)) {
+  #     dat[i,] <- sim_chain(n=n, d=d, ltd=llhd, ns=1, sd1=2, attrib,
+  #                          sim="importance", control=list(B=10))$x
+  #     if (con$trace > 0) rje::printPercentage(i,n)
+  #   }
+  #
+  #   return(dat)
+  # }
 
   ## set up output
   out <- data.frame(matrix(0, ncol=dZ+dX+dY, nrow=n))
@@ -161,6 +168,35 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
     out <- cbind(dat, out)
   }
 
+  if (careful) {
+    ## get sample Z values
+    Z0s <- gen_X_values(n, famX=famZ, pars=pars, LHS_X=LHS_Z, dX=dZ)$datX
+    unb2_cts <- famZ %in% c(1,2)
+    unb_cts <- famZ %in% c(3,6)
+    b01 <- famZ == 4
+    rg <- list()
+
+    ## get range of bins for unbounded continuous variables
+    for (i in which(unb2_cts)) {
+      rg[[i]] <- range(Z0s[,i])
+      rg[[i]][1] <- floor(rg[[i]][1])
+      rg[[i]][2] <- ceiling(rg[[i]][2])
+    }
+    for (i in which(unb_cts)) {
+      rg[[i]] <- c(0, ceiling(max(Z0s[,i])))
+    }
+    for (i in which(b01)) {
+      rg[[i]] <- c(0,1)
+    }
+
+    ## then find constant needed over this space
+    tmp <- gen_X_values(n, famX=famX, pars=pars, LHS_X=LHS_X, dX=dX, sim=FALSE)
+    M <- get_max_weights(pars=pars, forms_X=formulas[[2]], fam_X = famX,
+                         qden = tmp$qden, fam_Z=famZ, LHS_Z=LHS_Z, ranges=rg,
+                         link=link[[2]])
+  }
+
+  ## ready for loop
   OK <- rep(FALSE, n)
   nr <- n
 
@@ -208,9 +244,18 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
     ## get copula data and then modify distributions of Y and Z
     out[!OK,output] <- sim_CopVal(out[!OK,output,drop=FALSE], family=famCop,
                                   par = pars$cop, par2=pars$cop$par2, model_matrix=copMM)
-    for (i in seq_along(LHS_Z)) out[[LHS_Z[i]]][!OK] <- rescaleVar(out[[LHS_Z[i]]][!OK], X=mms[[1]][[i]],
-                                                                   family=famZ[i], pars=pars[[LHS_Z[i]]],
-                                                                   link=link[[1]][i])
+    if (careful) OB <- rep(FALSE, nr)
+
+    for (i in seq_along(LHS_Z)) {
+      out[[LHS_Z[i]]][!OK] <- rescaleVar(out[[LHS_Z[i]]][!OK], X=mms[[1]][[i]],
+                                         family=famZ[i], pars=pars[[LHS_Z[i]]],
+                                         link=link[[1]][i])
+      if (careful) {
+        tmpZ <- out[[LHS_Z[i]]][!OK]
+        if (famZ[i] <= 2 || famZ[i] == 4) OB <- OB | (tmpZ < rg[[i]][1]) | (tmpZ > rg[[i]][2])
+        else if (famZ[i] %in% c(3,6)) OB <- OB | (tmpZ > rg[[i]][2])
+      }
+    }
     for (i in seq_along(LHS_Y)) out[[LHS_Y[i]]][!OK] <- rescaleVar(out[[LHS_Y[i]]][!OK], X=mms[[3]][[i]],
                                                                    family=famY[i], pars=pars[[LHS_Y[i]]],
                                                                    link=link[[3]][i])
@@ -222,8 +267,15 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
 
     ## perform rejection sampling
     wts <- rejectionWeights(out[LHS_X][!OK,,drop=FALSE], mms[[2]], family=famX, pars=pars[LHS_X], qden = qden, link=link[[2]])
-    con$max_wt <- max(max(wts), con$max_wt)
-    wts <- wts/con$max_wt
+    if (careful) {
+      wts[OB] <- 0  # for out of bounds values of Z
+      wts <- wts/M
+      if (any(wts > 1)) stop(paste("Weights ", paste(which(wts > 1), collapse=", "), " are > 1", sep=""))
+    }
+    else {
+      con$max_wt <- max(max(wts), con$max_wt)
+      wts <- wts/con$max_wt
+    }
 
     OK[!OK] <- runif(nr) < wts
     nr <- sum(!OK)

@@ -47,6 +47,8 @@ rhs_vars <- function (formulas) {
 ##' Take collection of formulae and create one formula with all variables on the
 ##' right-hand side of any of the originals.
 ##'
+##' @param formulas list of formulas to merge
+##'
 ##' @export
 merge_formulas <- function (formulas) {
   if (!is.list(formulas)) formulas <- list(formulas)

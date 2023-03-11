@@ -4,8 +4,9 @@
 ##' @param pars list of lists of parameters
 ##' @param family families for Z,X,Y and copula
 ##' @param link list of link functions
+##' @param kwd keyword for copula
 ##'
-process_inputs <- function (formulas, pars, family, link) {
+process_inputs <- function (formulas, pars, family, link, kwd) {
 
   ## check we have four groups of formulas
   if (length(formulas) != 4) stop("formulas must have length 4")
@@ -37,11 +38,8 @@ process_inputs <- function (formulas, pars, family, link) {
     stop(paste(ifelse(plur, "Variables", "Variable"), paste(names(pars)[!bpres], collapse=", "), ifelse(plur, "lack", "lacks"), "a beta parameter vector"))
   }
 
-  if (all(unlist(family) == 0)) {
-    message("Perhaps better to simulate this using the MLLPs package")
-  }
-  # else if (family[1] == 0 && family[3] == 0 && family[4] != 0) {
-  #   warning("discrete data does not work well with continuous copulas")
+  # if (all(unlist(family) == 0)) {
+  #   message("Perhaps better to simulate this using the MLLPs package")
   # }
 
   dZ <- dim[1]
@@ -58,6 +56,60 @@ process_inputs <- function (formulas, pars, family, link) {
   LHS_X <- lhs(formulas[[2]])
   LHS_Y <- lhs(formulas[[3]])
 
+  formsZ <- lapply(formulas[[1]], terms)
+  formsX <- lapply(formulas[[2]], terms)
+  formsY <- lapply(formulas[[3]], terms)
+
+  for (i in seq_along(formulas[[1]])) {
+    npar <- length(attr(formsZ[[i]], "term.labels")) + attr(formsZ[[i]], "intercept")
+    if (length(pars[[LHS_Z[i]]]$beta) != npar) stop(paste0("dimension of model matrix for ", LHS_Z[i], " does not match number of coefficients provided"))
+  }
+  for (i in seq_along(formulas[[2]])) {
+    npar <- length(attr(formsX[[i]], "term.labels")) + attr(formsX[[i]], "intercept")
+    if (length(pars[[LHS_X[i]]]$beta) != npar) stop(paste0("dimension of model matrix for ", LHS_X[i], " does not match number of coefficients provided"))
+  }
+  for (i in seq_along(formulas[[3]])) {
+    npar <- length(attr(formsY[[i]], "term.labels")) + attr(formsY[[i]], "intercept")
+    if (length(pars[[LHS_Y[i]]]$beta) != npar) stop(paste0("dimension of model matrix for ", LHS_Y[i], " does not match number of coefficients provided"))
+  }
+
+  ## check which variables are already in the formula for another, and set
+  ## corresponding copula correlation to zero
+  # formsZ <- merge_formulas(formulas[[1]])$old_forms
+  # setmatch(LHS_Z, rhs_vars(formsZ))
+  # formsY <- merge_formulas(formulas[[3]])$old_forms
+  if (any(unlist(lapply(rhs_vars(formulas[[3]]),
+                        function(x) any(x %in% LHS_Z))))) stop("Covariates cannot be direct predictors for outcomes")
+  if (any(unlist(lapply(rhs_vars(formulas[[1]]),
+                        function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot be direct predictors for covariates")
+  if (any(unlist(lapply(rhs_vars(formulas[[3]]),  # could relax this
+                        function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot directly predict one another")
+  #
+  # if (any(sapply(formsZ,
+  #        function(x) any(attr(x, "term.labels")[attr(x, "order") == 1] %in% LHS_Y)))) stop("Outcomes cannot be direct predictors for covariates")
+  # if (any(sapply(formsY,
+  #                function(x) any(attr(x, "term.labels")[attr(x, "order") == 1] %in% LHS_Z)))) stop("Covariates cannot be direct predictors for outcomes")
+  # if (any(sapply(formsY,  # could weaken this?
+  #                function(x) any(attr(x, "term.labels")[attr(x, "order") == 1] %in% LHS_Y)))) stop("Outcomes cannot directly predict one another")
+
+  ## check if covariates predict each other
+  if (length(formulas[[1]]) > 1) {
+    idx <- lapply(rhs_vars(formulas[[1]]), function(x) na.omit(match(x,LHS_Z)))
+    # idx <- lapply(formsZ,
+    #               function(x) match(intersect(LHS_Z, attr(x, "term.labels")[attr(x, "order") == 1]), LHS_Z))
+    ignr <- do.call(cbind, mapply(function(x,y) {
+      if (length(x) > 0) rbind(x,y)
+      else matrix(NA, 2, 0)
+    }, idx, seq_along(LHS_Z)))
+    if (length(ignr) > 0) {
+      wh_swt <- ignr[1,] > ignr[2,]
+      ignr[,wh_swt] <- ignr[2:1, wh_swt]
+      in_form <- setmatch(apply(ignr, 2, c, simplify = FALSE),
+                          combn(length(LHS_Z), 2, simplify = FALSE))
+    }
+    else in_form <- numeric(0)
+  }
+  else in_form <- numeric(0)
 
   ## check that variables in families 1,2,3 have a dispersion parameter
   for (i in seq_along(famZ))
@@ -70,15 +122,28 @@ process_inputs <- function (formulas, pars, family, link) {
     if (famY[i] <= 3 && is.null(pars[[LHS_Y[i]]]$phi))
       stop(paste(LHS_Y[i], "needs a phi parameter"))
 
+  ## ensure that copula parameters are in correct matrix format
+  if (!is.matrix(pars[[kwd]]$beta)) {
+    pars[[kwd]]$beta <- matrix(pars[[kwd]]$beta, ncol=choose(dZ+dY,2))
+    form_cop <- terms(formulas[[4]][[1]])
+    if (nrow(pars[[kwd]]$beta) != length(attr(form_cop, "term.labels"))+attr(form_cop, "intercept")) stop("Wrong number of regression parameters for copula")
+  }
+  if (length(in_form) > 0) {
+    if (any(pars[[kwd]]$beta[,in_form] != 0)) {
+      warning("Parameters in copula for objects already related by regression; setting copula parameters to zero")
+      pars[[kwd]]$beta[,in_form] <- 0
+    }
+  }
+
   ## code to check if Y or Z is included in copula formula
   if (any(c(LHS_Z,LHS_Y) %in% rhs_vars(formulas[[4]])[[1]])) stop("copula cannot depend upon Z or Y variables")
 
   ## set up link functions
-  link <- linkSetUp(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
+  link <- link_setup(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
 
   return(list(formulas=formulas, pars=pars, family=family, link=link,
               LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y),
-              dim=dim))
+              dim=dim, in_form=in_form))
 }
 
 
@@ -181,7 +246,8 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   kwd <- con$cop
 
   ## process the four main arguments
-  tmp <- process_inputs(formulas=formulas, pars=pars, family=family, link=link)
+  tmp <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
+                        kwd=kwd)
   formulas <- tmp$formulas
   pars <- tmp$pars
   family <- tmp$family
@@ -200,44 +266,44 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   if (anyDuplicated(na.omit(vars))) stop("duplicated variable names")
   d <- length(vars)
 
-
-  if (method == "particle") {
-    forms <- tidy_formulas(unlist(formulas), kwd)
-    form_all <- merge_formulas(forms)
-    msks <- masks(forms, family=family, wh=form_all$wh, cp=length(output))
-
-    theta <- pars2mask(pars, msks)
-
-    ## construct suitable log-likelihood function
-    llhd <- function(x) {
-      if (!is.matrix(x)) x <- matrix(x, nrow=1)
-      colnames(x) <- vars2
-      mm <- model.matrix.default(form_all$formula, data=as.data.frame(x))
-      ll(x, mm, beta=theta$beta, phi=theta$phi,
-         inCop = match(c(LHS_Z,LHS_Y), vars2), fam_cop = unlist(last(family)),
-         family = unlist(family)[seq_along(vars)])
-    }
-
-    vars2 <- vars
-
-    dat <- as.data.frame(matrix(NA, n, d))
-    names(dat) <- vars2
-
-    ## get parameters for particle simulator
-    d <- sum(lengths(family[1:3]))
-    dc <- d - sum(family[[1]] == 0 | family[[1]] == 5)
-    n_state <- rep(2, d-dc)
-    prob <- rep(list(c(0.5,0.5)), d-dc)
-    attrib <- list(dc=dc, n_state=n_state, prob=prob)
-
-    for (i in seq_len(n)) {
-      dat[i,] <- sim_chain(n=n, d=d, ltd=llhd, ns=1, sd1=2, attrib,
-                           sim="importance", control=list(B=10))$x
-      if (con$trace > 0) rje::printPercentage(i,n)
-    }
-
-    return(dat)
-  }
+  # ## start to simulate
+  # if (method == "particle") {
+  #   forms <- tidy_formulas(unlist(formulas), kwd)
+  #   form_all <- merge_formulas(forms)
+  #   msks <- masks(forms, family=family, wh=form_all$wh, cp=length(output))
+  #
+  #   theta <- pars2mask(pars, msks)
+  #
+  #   ## construct suitable log-likelihood function
+  #   llhd <- function(x) {
+  #     if (!is.matrix(x)) x <- matrix(x, nrow=1)
+  #     colnames(x) <- vars2
+  #     mm <- model.matrix.default(form_all$formula, data=as.data.frame(x))
+  #     ll(x, mm, beta=theta$beta, phi=theta$phi,
+  #        inCop = match(c(LHS_Z,LHS_Y), vars2), fam_cop = unlist(last(family)),
+  #        family = unlist(family)[seq_along(vars)])
+  #   }
+  #
+  #   vars2 <- vars
+  #
+  #   dat <- as.data.frame(matrix(NA, n, d))
+  #   names(dat) <- vars2
+  #
+  #   ## get parameters for particle simulator
+  #   d <- sum(lengths(family[1:3]))
+  #   dc <- d - sum(family[[1]] == 0 | family[[1]] == 5)
+  #   n_state <- rep(2, d-dc)
+  #   prob <- rep(list(c(0.5,0.5)), d-dc)
+  #   attrib <- list(dc=dc, n_state=n_state, prob=prob)
+  #
+  #   for (i in seq_len(n)) {
+  #     dat[i,] <- sim_chain(n=n, d=d, ltd=llhd, ns=1, sd1=2, attrib,
+  #                          sim="importance", control=list(B=10))$x
+  #     if (con$trace > 0) rje::printPercentage(i,n)
+  #   }
+  #
+  #   return(dat)
+  # }
 
 
   ## set seed to 'seed'
@@ -270,12 +336,9 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   # if (is.null(pars2$z$beta)) pars2$z$beta = 0
   # if (is.null(pars2$z$phi)) pars2$z$phi = 1
 
-  ## get linear predictors
+  ## get linear predictors for outcomes
   mms <- vector(mode = "list", length=3)
-  mms[c(1,3)] = rapply(formulas[c(1,3)], model.matrix, data=out, how = "list")
-  for (i in seq_along(mms[[1]])) {
-    if (ncol(mms[[1]][[i]]) != length(pars[[LHS_Z[i]]]$beta)) stop(paste0("dimension of model matrix for ", LHS_Z[i], " does not match number of coefficients provided"))
-  }
+  mms[[3]] = lapply(formulas[[3]], model.matrix, data=out)
   for (i in seq_along(mms[[3]])) {
     if (ncol(mms[[3]][[i]]) != length(pars[[LHS_Y[i]]]$beta)) stop(paste0("dimension of model matrix for ", LHS_Y[i], " does not match number of coefficients provided"))
   }
@@ -304,9 +367,12 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   ## get copula data and then modify distributions of Y and Z
   out[,output] <- sim_CopVal(out[,output], family=famCop,
                              par = pars$cop, par2=pars$cop$par2, model_matrix=copMM)
-  for (i in seq_along(LHS_Z)) out[[LHS_Z[i]]] <- rescaleVar(out[[LHS_Z[i]]], X=mms[[1]][[i]],
+  for (i in seq_along(LHS_Z)) {
+    mms[[1]][[i]] <- model.matrix(formulas[[1]][[i]], data=out)
+    out[[LHS_Z[i]]] <- rescaleVar(out[[LHS_Z[i]]], X=mms[[1]][[i]],
                                                             family=famZ[i], pars=pars[[LHS_Z[i]]],
                                                             link=link[[1]][i])
+  }
   for (i in seq_along(LHS_Y)) out[[LHS_Y[i]]] <- rescaleVar(out[[LHS_Y[i]]], X=mms[[3]][[i]],
                                                             family=famY[i], pars=pars[[LHS_Y[i]]],
                                                             link=link[[3]][i])

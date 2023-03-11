@@ -63,16 +63,20 @@ initializeParams <- function(dat, formulas, family, init, LHS, wh) {
 
 ## NEEDS TO ACCOUNT FOR LINK FUNCTIONS
 initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
-                              full_form, kwd, notInCop) {
+                              full_form, kwd, notInCop, inc_cop=TRUE, nc, only_masks=FALSE) {
 
   # d <- ncol(dat)
   # fam_y <- family[1]
   # fam_z <- family[1+seq_len(d)]
   # fam_cop <- last(family)
-  nc <- ncol(dat)
-  nv <- length(formulas) - 1
+  if (missing(dat)) {
+    if (!only_masks) stop("Need data frame to initialize parameters")
+    else if (missing(nc)) stop("Need data frame to initialize parameters")
+  }
+  else nc <- ncol(dat)
+  nv <- length(formulas) - (inc_cop)
 
-  if (length(family) != nv+1) stop("Must have family parameter for every variable and copula")
+  if (length(family) != nv+(inc_cop)) stop("Must have family parameter for every variable (and copula if included)")
 
   ## get terms labels
   trms <- terms(full_form$formula)
@@ -84,14 +88,34 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
 
   ## define output matrix/vector for beta,phi
   LHS <- lhs(formulas)
-  LHS <- LHS[-match(kwd, LHS)]
-  if (length(LHS) != nv) stop("Formula for copula causing problems!")
+  if (inc_cop) LHS <- LHS[-match(kwd, LHS)]
 
-  if (missing(notInCop)) LHSc <- LHS
-  else LHSc <- setdiff(LHS, notInCop)
-  nc <- length(LHSc)
-  c2 <- combn(nc, 2)
-  colnms <- c(LHS, mapply(function(x,y) paste0(kwd,"_",LHSc[x],"_",LHSc[y]), c2[1,], c2[2,]))
+  if (inc_cop) {
+    ## get column names for beta/beta_m
+    if (missing(notInCop)) LHSc <- LHS
+    else LHSc <- setdiff(LHS, notInCop)
+    nc <- length(LHSc)
+    c2 <- combn(nc, 2)
+    colnms <- c(LHS, mapply(function(x,y) paste0(kwd,"_",LHSc[x],"_",LHSc[y]), c2[1,], c2[2,]))
+
+    ## check which variables are already in the formula for another, and set
+    ## corresponding copula correlation to zero
+    wh_in_cop <- match(LHSc, LHS)
+    idx <- lapply(full_form$old_forms[wh_in_cop],
+                  function(x) match(intersect(LHSc, attr(x, "term.labels")[attr(x, "order") == 1]), LHSc))
+    ignr <- do.call(cbind, mapply(function(x,y) if (length(x) > 0) rbind(x,y) else matrix(NA, 2, 0), idx, seq_along(LHSc)))
+    if (length(ignr) > 0) {
+      wh_swt <- ignr[1,] > ignr[2,]
+      ignr[,wh_swt] <- ignr[2:1, wh_swt]
+      in_form <- setmatch(apply(ignr, 2, c, simplify = FALSE),
+                          apply(c2, 2, c, simplify = FALSE))
+    }
+    else in_form <- numeric(0)
+  }
+  else colnms <- LHS
+
+  ## now set up blank masks
+  # get_masks(formula, nv, nc)
 
   beta <- beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nv+choose(nc,2),
                            dimnames = list(labs,colnms))
@@ -111,7 +135,7 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
   for (i in seq_along(phi)) {
     beta_m[wh[[i]],i] <- 1
 
-    if (init) {
+    if (!only_masks && init) {
       fam <- switch(family[i], "1"=gaussian, "2"=gaussian, "3"=Gamma,
                     stop("family should be Gaussian, t or Gamma"))
       # mod_fit <- survey::svyglm(formula=formulas[[i]], family=do.call(fam, list(link=link[[i]])), design=survey::svydesign(~1, data=dat,weights=ipw))
@@ -124,25 +148,36 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
       next
     }
 
-    if (family[i] <= 2) {
-      beta[1,i] <- mean(dat[[LHS[i]]])
-      phi[i] <- var(dat[[LHS[i]]])
-      phi_m[i] <- 1
+    if (only_masks) {
+      phi_m[family %in% 1:3] <- 1
     }
-    else if (family[i] == 3) {
-      beta[1,i] <- exp(mean(dat[[LHS[i]]]))
-      phi[i] <- var(dat[[LHS[i]]])
-      phi_m[i] <- 1
+    else {
+      ## pick mean and sd...
+      if (family[i] <= 2) {
+        beta[1,i] <- mean(dat[[LHS[i]]])
+        phi[i] <- var(dat[[LHS[i]]])
+        phi_m[i] <- 1
+      }
+      else if (family[i] == 3) {
+        beta[1,i] <- exp(mean(dat[[LHS[i]]]))
+        phi[i] <- var(dat[[LHS[i]]])
+        phi_m[i] <- 1
+      }
+      else phi[i] <- NA
     }
-    else phi[i] <- NA
   }
 
-  ## initialize copula parameters
-  beta_m[wh[[nv+1]], nv+seq_len(choose(nc,2))] <- 1
-  # beta[-wh[[i]],i] <- 0
+  if (inc_cop) {
+    ## initialize copula parameters
+    beta_m[wh[[nv+1]], nv+seq_len(choose(nc,2))] <- 1
+    beta_m[wh[[nv+1]], nv+in_form] <- 0
+    # beta[-wh[[i]],i] <- 0
+  }
 
+  if (only_masks) out <- list(beta_m=beta_m, phi_m=phi_m)
+  else out <- list(beta=beta, phi=phi, beta_m=beta_m, phi_m=phi_m)
 
-  return(list(beta=beta, phi=phi, beta_m=beta_m, phi_m=phi_m))
+  return(out)
 }
 
 masks <- function(formulas, family=rep(1,nc+1), wh, LHS, cp) {
@@ -221,7 +256,7 @@ tidy_formulas <- function(formulas, kwd) {
 }
 
 ## Get theta vector from pars
-theta <- function (pars, formulas, full_form, kwd="cop") {
+get_theta <- function (pars, formulas, full_form, kwd="cop") {
 
   ## get terms labels
   # trms <- terms(full_form$formula)
