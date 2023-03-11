@@ -33,6 +33,9 @@ rfrugalParam(
 \item{careful}{logical: should full rejection sampling method be used with
 correctly computed weight?}
 
+\item{careful}{logical: should full rejection sampling method be used with
+correctly computed weight?}
+
 \item{method}{only \code{"rejection"} is valid}
 
 \item{control}{list of options for the algorithm}
