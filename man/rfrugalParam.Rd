@@ -11,6 +11,7 @@ rfrugalParam(
   family,
   link = NULL,
   dat = NULL,
+  careful = FALSE,
   method = "rejection",
   control = list(),
   seed
@@ -28,6 +29,9 @@ rfrugalParam(
 \item{link}{list of link functions}
 
 \item{dat}{data frame of covariates}
+
+\item{careful}{logical: should full rejection sampling method be used with
+correctly computed weight?}
 
 \item{method}{only \code{"rejection"} is valid}
 
@@ -47,6 +51,11 @@ Evans and Didelez (2021).
 \details{
 Samples from a given causal model using rejection sampling (or,
 if everything is discrete, direct sampling).
+
+The logical \code{careful} enables one to implement the full rejection
+sampling method, which means we do get exact samples.  However, this method
+may be slow, and in particular if we have an outlying value it may run very
+slowly indeed.
 
 The entries for  \code{formula} and \code{family} should each be a
 list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and

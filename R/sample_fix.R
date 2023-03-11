@@ -7,7 +7,7 @@
 ##' @param ranges range of segments
 ##' @param link link functions for treatments
 ##'
-get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, ranges, link, ...) {
+get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, link, ...) {
   # if (!missing(link)) warning("Link argument is ignored")
 
   ## get unique list of segments
@@ -26,6 +26,7 @@ get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, ranges, link, ..
 
   ## build dummy data frame
   Zvars <- setdiff(unique(unlist(rhs_vars(forms_X))), LHS_X)
+  fam_Z <- fam_Z[match(LHS_Z, Zvars, nomatch = 0L)]  # get only relevant Z variables
   nms <- c(LHS_X, Zvars)
   args <- rep(list(NA), length(nms))
   names(args) <- nms
@@ -235,6 +236,7 @@ rfrugalParam2 <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ 
   Z0s <- gen_X_values(n, famX=famZ, pars=pars, LHS_X=LHS_Z, dX=dZ)$datX
   unb2_cts <- famZ %in% c(1,2)
   unb_cts <- famZ %in% c(3,6)
+  b01 <- famZ == 4
   rg <- list()
 
   ## get range of bins for unbounded continuous variables
@@ -244,13 +246,17 @@ rfrugalParam2 <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ 
     rg[[i]][2] <- ceiling(rg[[i]][2])
   }
   for (i in which(unb_cts)) {
-      rg[[i]] <- c(0, ceiling(max(Z0s[,i])))
+    rg[[i]] <- c(0, ceiling(max(Z0s[,i])))
+  }
+  for (i in which(b01)) {
+    rg[[i]] <- c(0,1)
   }
 
   ## then find constant needed over this space
   tmp <- gen_X_values(n, famX=famX, pars=pars, LHS_X=LHS_X, dX=dX, sim=FALSE)
   M <- get_max_weights(pars=pars, forms_X=formulas[[2]], fam_X = famX,
-                       qden = tmp$qden, fam_Z=famZ, ranges=rg, link=link[[2]])
+                       qden = tmp$qden, fam_Z=famZ, LHS_Z=LHS_Z, ranges=rg,
+                       link=link[[2]])
 
   ## ready for loop
   OK <- rep(FALSE, n)

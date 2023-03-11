@@ -60,7 +60,8 @@ set.seed(123)
 # n <- 1e4
 n <- 1e6
 # dat_max <- causalSamp(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
-dat_max <- rfrugalParam2(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
+dat_max <- rfrugalParam(n, formulas = forms, pars=pars, 
+                        family = list(3,c(5,5),1,1), careful=TRUE)
 ```
 
 ```{r echo=FALSE, eval=FALSE}
@@ -110,8 +111,8 @@ For the remainder of this vignette, we will only use the first 1,000 entries
 of this dataset (change this to the commented out line to replicate results 
 from our paper).  
 ```{r dat, echo=TRUE}
-dat <- dat_max[seq_len(1e3), ]
-#  dat <- dat_max
+dat <- dat_max[seq_len(2e3), ]
+# dat <- dat_max[seq_len(1e4), ]
 ```
 
 ### Outcome Regression
@@ -149,7 +150,7 @@ wt <- dat$A1/ps + (1-dat$A1)/(1-ps)
 lmY_A0A1_w <- svyglm(Y ~ A0*A1, design = svydesign(id=~1, data=dat, weights = ~wt))
 summary(lmY_A0A1_w)$coef
 ```
-Notice that the coefficients are now correct.
+Notice that the coefficients are now within their standard errors.
 ```{r tab_ipw, echo=FALSE}
 tab_ipw <- summary(lmY_A0A1_w)$coef[,1:2]
 tab_ipw <- cbind(tab_ipw, tab_ipw[,1] - pars$Y$beta)
@@ -160,58 +161,6 @@ colnames(tab_ipw) <- c("Est.", "SE", "Bias")
 
 We can also use an approach based on doubly-robust estimating equations.
 
-```{r, echo=FALSE, eval=FALSE}
-glmY <- lm(Y ~ A0*A1*I(log(L)), data=dat)
-glmA0 <- glm(A0 ~ 1, data=dat, family=binomial)
-dat0 <- dat1 <- dat00 <- dat10 <- dat01 <- dat11 <- dat
-dat0$A1 = 0
-dat1$A1 = 1
-dat00[,c("A0", "A1")] = 0
-dat10[,c("A0", "A1")] = rep(c(1,0), each=nrow(dat))
-dat01[,c("A0", "A1")] = rep(c(0,1), each=nrow(dat))
-dat11[,c("A0", "A1")] = 1
-
-## weights
-w1 <- fitted(glmA1)
-w1[dat$A1==0] <- 1 - w1[dat$A1==0]
-w0 <- rep(1, nrow(dat))
-# w0 <- predict(glmA0, dat, "response")
-# w0[dat$A0==0] <- 1 - w0[dat$A0==0]
-w <- w0 * w1
-
-q <- predict(glmY, dat)
-q0 <- predict(glmY, dat0)
-q1 <- predict(glmY, dat1)
-q00 <- predict(glmY, dat00)
-q01 <- predict(glmY, dat01)
-q10 <- predict(glmY, dat10)
-q11 <- predict(glmY, dat11)
-
-## predict outcomes
-wts1 <- (dat$Y - q)*dat$A1/w + q1
-# mean(wts1)
-# sd(wts1)/sqrt(nrow(dat))
-
-wts0 <- (dat$Y - q)*(1-dat$A1)/w + q0
-# mean(wts0)
-# sd(wts0)/sqrt(nrow(dat))
-
-# mean(wts1 - wts0)
-# sd(wts1 - wts0)/sqrt(nrow(dat))
-
-# wts11 <- (dat$Y - q)*dat$A1*dat$A0/w + q11
-# wts10 <- (dat$Y - q)*(1-dat$A1)*dat$A0/w + q10
-# wts01 <- (dat$Y - q)*dat$A1*(1-dat$A0)/w + q01
-# wts00 <- (dat$Y - q)*(1-dat$A1)*(1-dat$A0)/w + q00
-# 
-# tab_dr <- cbind(c(mean(wts00), mean(wts10 - wts00), mean(wts01 - wts00), mean(wts11 - wts01 - wts10 + wts00)), 
-#                 c(sd(wts00),
-#                   sd(wts10 - wts00), 
-#                   sd(wts01 - wts00), 
-#                   sd(wts11 - wts01 - wts10 + wts00))/sqrt(nrow(dat)))
-# tab_dr <- cbind(tab_dr, tab_dr[,1] - pars$Y$beta)
-# colnames(tab_dr) <- c("Est.", "SE", "Bias")
-```
 ```{r dr, eval=TRUE}
 ## get datasets with different values of A1
 dat0 <- dat1 <- dat
@@ -250,7 +199,8 @@ cse00_01 <- mean((wts00 - mean(wts00))*(wts01 - mean(wts01)))/n0
 cse10_11 <- mean((wts10 - mean(wts10))*(wts11 - mean(wts11)))/n1
 
 ## use these to obtain estimates, standard errors and bias
-est <- c(mean(wts00), mean(wts10) - mean(wts00), mean(wts01 - wts00), mean(wts11 - wts10) - mean(wts01 - wts00))
+est <- c(mean(wts00), mean(wts10) - mean(wts00), 
+         mean(wts01 - wts00), mean(wts11 - wts10) - mean(wts01 - wts00))
 se <- c(se00, 
         sqrt(se10^2 - 2*cse00_01 + se00^2), 
         sqrt(se01^2 + se00^2),
@@ -269,11 +219,11 @@ Finally, we can fit using our own code with the black-box
 optimizer, and since we are fitting the correct model it is
 guaranteed to be consistent and asymptotically efficient.
 
-```{r}
+```{r, echo=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  eval = FALSE,
-  echo = FALSE,
+  # eval = FALSE,
+  # echo = FALSE,
   comment = "#>",
   cache = FALSE,
   fig.width=7, 
@@ -281,17 +231,17 @@ knitr::opts_chunk$set(
 )
 ```
 
-<!-- ```{r mle, cache=FALSE} -->
-<!-- modY <- fitCausal(dat, formulas = list(Y ~ A0*A1, L ~ A0, ~ A0*A1), -->
-<!--                   family = c(1,3,1), control=list(maxit=2e4, newton=TRUE)) -->
-<!-- modY -->
-<!-- ``` -->
+```{r mle, cache=TRUE}
+modY <- fitCausal(dat, formulas = list(Y ~ A0*A1, L ~ A0, ~ A0*A1),
+                  family = c(1,3,1), control=list(maxit=2e4, newton=TRUE))
+modY
+```
 
-<!-- ```{r tab_mle, echo=FALSE, cache=TRUE} -->
-<!-- tab_mle <- cbind(modY$pars$Y$beta[1:4], modY$pars$Y$beta_sandwich[1:4],  -->
-<!--                  modY$pars$Y$beta[1:4]-pars$Y$beta) -->
-<!-- colnames(tab_mle) <- c("Est.", "SE", "Bias") -->
-<!-- ``` -->
+```{r tab_mle, echo=FALSE, cache=TRUE}
+tab_mle <- cbind(modY$pars$Y$beta[1:4], modY$pars$Y$beta_sandwich[1:4],
+                 modY$pars$Y$beta[1:4]-pars$Y$beta)
+colnames(tab_mle) <- c("Est.", "SE", "Bias")
+```
 
 
 ### Comparison of Results
@@ -306,39 +256,23 @@ results[,1+rep(0:3, each=1)*3] <- round(results[,1+rep(0:3, each=1)*3], 2)
 results[,2+rep(0:3, each=1)*3] <- round(results[,2+rep(0:3, each=1)*3], 3)
 results[,3+(0:3)*3] <- round(results[,3+(0:3)*3], 3)
 results[,ncol(results)] <- round(results[,ncol(results)], 3)
-kableExtra::kbl(results, booktabs=TRUE, format="latex") %>%  ## change to format="latex" for paper
+kableExtra::kbl(results, booktabs=TRUE, format="html") %>%  ## change to format="latex" for paper
   kableExtra::add_header_above(c(" ","Outcome Regression"=3,"IP Weighting"=3,"Double Robust"=3,"MLE"=3))
-kableExtra::kbl(results, booktabs=TRUE, format="latex") %>%  ## change to format="latex" for paper
-  kableExtra::add_header_above(c(" ","Outcome Regression"=3,"IP Weighting"=3,"MLE"=3))
-# xtable::xtable(results, digits=c(0,rep(c(2,3,3),4)), align="|r|rrr|rrr|rrr|")
-mle_results[,-(1:9)]
-
-tab <- tab_ipw[,c(1,3,2)]
-
-tab <- cbind(c(-0.5,0.2,0.3,0), tab, tab[,2]/tab[,3])
-tab <- cbind(tab, 2*pnorm(-abs(tab[,5])))
-colnames(tab) <- c("truth","estimate","bias","s.e.","z-value","p-value")
-rownames(tab) <- c("intercept", "A","B","A cdot B")
-kableExtra::kbl(tab, booktabs=TRUE, format="latex", digits=c(1,3,3,3,2,2))
-
-# %>%  ## change to format="latex" for paper
-#   kableExtra::add_header_above(c(" ","MLE"=3))
-
 ```
 
 
 The code below (which we do not run because it takes over a minute) will allow 
-you to compare $N=10^3$ results each with sample size $n=10^3$ via a naïve 
+you to compare $N=10^3$ results each with sample size $n=250$ via a naïve 
 regression and inverse probability weighting.
 
-```{r params2, echo=FALSE}
+```{r params2, echo=FALSE, eval=FALSE}
 pars <- list(A0 = list(beta = 0),
              L = list(beta = c(0,-1), phi=1),
              A1 = list(beta = c(0,0.5,0.5,0)), 
              Y = list(beta = c(-1,0.5,0.5,0), phi=1),
              cop = list(beta = c(1,0.5)))
 ```
-```{r formulas2, echo=FALSE}
+```{r formulas2, echo=FALSE, eval=FALSE}
 forms <- list(L ~ A0,
                  list(A0 ~ 1, A1 ~ A0*L),
                  Y ~ A0*A1,
@@ -347,7 +281,7 @@ forms <- list(L ~ A0,
 
 ```{r mult_sims, eval=FALSE}
 set.seed(234)
-n <- 1e3
+n <- 250
 N <- 1e3
 out_ipw <- matrix(NA, N, 4)
 colnames(out_ipw) <- c("int", "A0", "A1", "A0_A1")
@@ -383,39 +317,6 @@ for (i in seq_len(N)) {
 }
 ```
 
-```{r one_big_sim, eval=FALSE, echo=FALSE}
-set.seed(123)
-n <- 1e4
-dat <- causalSamp(n, formulas = forms, pars = pars, family = list(3,c(5,5),1,1))
-
-## get weights for IPW
-glmA1 <- glm(A1 ~ A0*L, family=binomial, data=dat)
-tmp <- fitted(glmA1)
-wts <- dat$A1/tmp + (1-dat$A1)/(1-tmp)
-
-## get IPW estimates
-lm_ipw <- summary(svyglm(Y ~ A0*A1, design=svydesign(~1, weights=wts, data=dat)))
-lm_or <- summary(svyglm(Y ~ A0*A1, design=svydesign(~1, weights=~1, data=dat)))
-
-res <- tibble(truth=c(-1,0.5,0.5,0), estimate=lm_ipw$coefficients[,1], se=lm_ipw$coefficients[,2])
-res <- res %>% mutate(bias=estimate-truth, .after=2) %>%
-  mutate(z=bias/se, pval=2*pnorm(abs(bias/se), lower.tail = FALSE))
-res
-res_w <- tibble(truth=c(-1,0.5,0.5,0), estimate=lm_or$coefficients[,1], se=lm_or$coefficients[,2])
-res_w <- res_w %>% mutate(bias=estimate-truth, .after=2) %>%
-  mutate(z=bias/se, pval=2*pnorm(abs(bias/se), lower.tail = FALSE))
-res_w
-
-
-library(kableExtra)
-kableExtra::kbl(res, "latex", booktabs = TRUE, digits = c(1,3,3,3,2,2), 
-                col.names = c("truth", "estimate", "bias", "s.e.", "z-value", "p-value")) %>%
-  column_spec(3, background="red!30", bold=TRUE)
-kableExtra::kbl(res_w, "latex", booktabs = TRUE, digits = c(1,3,3,3,2,2), 
-                col.names = c("truth", "estimate", "bias", "s.e.", "z-value", "p-value")) %>%
-  column_spec(3, background="red!30")
-
-```
 
 The code below plots the empirical biases as boxplots.
 ```{r boxplot, eval=FALSE, echo=FALSE}

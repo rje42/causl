@@ -4,7 +4,7 @@
 \alias{get_max_weights}
 \title{Get maximum weight for each segment of a distribution}
 \usage{
-get_max_weights(pars, forms_X, fam_X, qden, fam_Z, ranges, link, ...)
+get_max_weights(pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, link, ...)
 }
 \arguments{
 \item{pars}{list with all regression parameters}
