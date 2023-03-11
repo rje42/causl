@@ -12,7 +12,7 @@ nll3 <- function(dat, formulas=list(y~x, z~1, ~x),
   forms <- tidy_formulas(formulas, kwd=kwd)
   fam_cop <- last(family)
   family <- family[-length(family)]
-  link <- linkSetUp(link, family = family)
+  link <- link_setup(link, family = family)
 
   LHS <- lhs(forms[-length(forms)])
   if (missing(inCop)) inCop <- match(LHS, names(dat))

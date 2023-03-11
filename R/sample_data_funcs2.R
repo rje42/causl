@@ -10,7 +10,7 @@
 ##'
 ##' @export
 get_X_dens <- function (n, fam, eta, link, pars, LHS, sim=TRUE) {
-  d <- length(fam)
+  # d <- length(fam)
   if (missing(eta)) eta <- matrix(1, n, d)
   else if (ncol(eta) != d) stop("Mismatch in number of variables between 'fam' and 'eta'")
   if (length(LHS) != d) stop("'LHS' must contain name for each variable to be simulated")
@@ -58,6 +58,7 @@ get_X_dens <- function (n, fam, eta, link, pars, LHS, sim=TRUE) {
 ##' @param fam number for distribution family
 ##' @param theta parameters for model
 ##' @param offset optional mean correction
+##' @param sim logical: should values be simulated?
 ##'
 ##' @details Returns a list that includes a data frame containing a column
 ##' \code{x}, as well as the density that was used to generate it.  Possible

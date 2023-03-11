@@ -18,6 +18,8 @@ get_max_weights3(pars, forms_X, fam_X, qden, fam_Z, quantiles, link, ...)
 \item{quantiles}{data.frame of integers indicating quantile of observation}
 
 \item{link}{link functions for treatments}
+
+\item{...}{additional arguments}
 }
 \description{
 Get maximum weight for each segment of a distribution
@@ -27,6 +29,6 @@ Get maximum weight for each segment of a distribution
 as its names, and they should be in the same order as \code{fam_Z}.  Similarly,
 \code{forms_X} and \code{fam_X} should correspond.
 
-\bf{Warning:} this function currently assumes that variables in \code{Z} are
+\section{Warning} this function currently assumes that variables in \code{Z} are
 in a dependence related order.
 }

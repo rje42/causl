@@ -34,8 +34,6 @@ rfrugalParam3(
 \item{control}{list of options for the algorithm}
 
 \item{seed}{random seed used for replication}
-
-\item{data}{optional data frame of covariates}
 }
 \value{
 A data frame containing the simulated data.

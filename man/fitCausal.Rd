@@ -31,6 +31,8 @@ be the same length as \code{formulas}}
 
 \item{sandwich}{logical: should sandwich standard errors be returned?}
 
+\item{start}{vector of parameters to start optimization from}
+
 \item{useC}{logical: should C++ routines be used?}
 
 \item{control}{list of parameters to be passed to \code{optim}}

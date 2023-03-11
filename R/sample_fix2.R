@@ -6,12 +6,13 @@
 ##' @param qden density of proposals
 ##' @param quantiles data.frame of integers indicating quantile of observation
 ##' @param link link functions for treatments
+##' @param ... additional arguments
 ##'
 ##' @details \code{quantiles} should have the names of the \code{Z} variables
 ##' as its names, and they should be in the same order as \code{fam_Z}.  Similarly,
 ##' \code{forms_X} and \code{fam_X} should correspond.
 ##'
-##' \bf{Warning:} this function currently assumes that variables in \code{Z} are
+##' \section{Warning} this function currently assumes that variables in \code{Z} are
 ##' in a dependence related order.
 ##'
 ## @importFrom tidyr crossing
@@ -173,7 +174,6 @@ match_rows <- function (x, y, nomatch=NA_integer_) {
 ##' @param n number of samples required
 ##' @param formulas list of lists of formulas
 ##' @param pars list of lists of parameters
-##' @param data optional data frame of covariates
 ##' @param family families for Z,X,Y and copula
 ##' @param link list of link functions
 ##' @param dat data frame of covariates

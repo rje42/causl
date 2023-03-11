@@ -3,9 +3,11 @@
 ##' @param pars list with all regression parameters
 ##' @param forms_X formulae for treatments
 ##' @param fam_X,fam_Z vector of families for treatments and covariates
+##' @param LHS_Z variables in covariates
 ##' @param qden density of proposals
 ##' @param ranges range of segments
 ##' @param link link functions for treatments
+##' @param ... additional arguments
 ##'
 get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, link, ...) {
   # if (!missing(link)) warning("Link argument is ignored")
@@ -113,7 +115,6 @@ get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, l
 ##' @param n number of samples required
 ##' @param formulas list of lists of formulas
 ##' @param pars list of lists of parameters
-##' @param data optional data frame of covariates
 ##' @param family families for Z,X,Y and copula
 ##' @param link list of link functions
 ##' @param dat data frame of covariates

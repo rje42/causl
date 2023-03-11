@@ -8,6 +8,7 @@
 ##' @param link link functions for each variable
 ##' @param par2 additional parameters if required
 ##' @param sandwich logical: should sandwich standard errors be returned?
+##' @param start vector of parameters to start optimization from
 ##' @param useC logical: should C++ routines be used?
 ## @param init should linear models be used to initialize starting point?
 ##' @param control list of parameters to be passed to \code{optim}
@@ -66,7 +67,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## tidy up the formulae
   forms <- tidy_formulas(formulas, kwd=kwd)
   fam_cop <- last(family)
-  link <- linkSetUp(link, family = family[-length(family)])
+  link <- link_setup(link, family = family[-length(family)])
 
   LHS <- lhs(forms[-length(forms)])
   full_form <- merge_formulas(forms)

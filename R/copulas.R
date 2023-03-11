@@ -247,6 +247,7 @@ dfgmCopula <- function(u1, u2, alpha) {
 ##' @param useC logical: use the C routine?
 ##'
 ##' @return numeric vector of densities
+##' @importFrom mvtnorm pmvnorm
 ##'
 ##' @export
 dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {

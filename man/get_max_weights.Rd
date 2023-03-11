@@ -15,9 +15,13 @@ get_max_weights(pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, link, ...)
 
 \item{qden}{density of proposals}
 
+\item{LHS_Z}{variables in covariates}
+
 \item{ranges}{range of segments}
 
 \item{link}{link functions for treatments}
+
+\item{...}{additional arguments}
 }
 \description{
 Get maximum weight for each segment of a distribution

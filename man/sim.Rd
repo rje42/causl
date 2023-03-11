@@ -14,6 +14,8 @@ sim(n, fam, theta, offset, sim = TRUE)
 \item{theta}{parameters for model}
 
 \item{offset}{optional mean correction}
+
+\item{sim}{logical: should values be simulated?}
 }
 \value{
 A list with two entries: \code{x} a vector of the simulated

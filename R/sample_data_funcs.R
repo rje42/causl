@@ -39,6 +39,7 @@ gen_X_values <- function (n, famX, pars, LHS_X, dX, sim=TRUE) {
 ##' @param fam_x number for distribution family
 ##' @param theta parameters for model
 ##' @param offset optional mean correction
+##' @param sim should variables be simulated?
 ##'
 ##' @details Returns a list that includes a data frame containing a column
 ##' \code{x}, as well as the density that was used to generate it.  Possible
@@ -415,13 +416,14 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
   wts
 }
 
-## Set up link functions
-##
-## @param link the input given to causalSamp()
-## @param family the list of families for Z,X and Y variables
-## @param vars a list of vectors of variable names with the same structure as \code{family}
+##' Set up link functions
+##'
+##' @param link the input given to causalSamp()
+##' @param family the list of families for Z,X and Y variables
+##' @param vars a list of vectors of variable names with the same structure as \code{family}
+##'
 ##' @export
-linkSetUp <- function(link, family, vars) {
+link_setup <- function(link, family, vars) {
 
   if (!missing(vars) && !all(lengths(vars) == lengths(family))) stop("length of variable names vector does not match number of families provided")
 

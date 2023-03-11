@@ -139,7 +139,7 @@ process_inputs <- function (formulas, pars, family, link, kwd) {
   if (any(c(LHS_Z,LHS_Y) %in% rhs_vars(formulas[[4]])[[1]])) stop("copula cannot depend upon Z or Y variables")
 
   ## set up link functions
-  link <- linkSetUp(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
+  link <- link_setup(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
 
   return(list(formulas=formulas, pars=pars, family=family, link=link,
               LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y),

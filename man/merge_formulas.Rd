@@ -6,6 +6,9 @@
 \usage{
 merge_formulas(formulas)
 }
+\arguments{
+\item{formulas}{list of formulas to merge}
+}
 \description{
 Take collection of formulae and create one formula with all variables on the
 right-hand side of any of the originals.

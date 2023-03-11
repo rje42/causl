@@ -28,7 +28,7 @@ rfrugalParam(
 
 \item{link}{list of link functions}
 
-\item{dat}{data frame of covariates}
+\item{dat}{optional data frame of covariates}
 
 \item{careful}{logical: should full rejection sampling method be used with
 correctly computed weight?}
@@ -38,8 +38,6 @@ correctly computed weight?}
 \item{control}{list of options for the algorithm}
 
 \item{seed}{random seed used for replication}
-
-\item{data}{optional data frame of covariates}
 }
 \value{
 A data frame containing the simulated data.
