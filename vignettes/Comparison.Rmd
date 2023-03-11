@@ -57,11 +57,30 @@ to increase the sample size to $10^6$, replicating the analysis in Evans and
 Didelez, 2021):
 ```{r simulate}
 set.seed(123)
-n <- 5e3
-dat_max <- causalSamp(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
-# dat_max <- rfrugalParam2(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
+# n <- 1e4
+n <- 1e6
+# dat_max <- causalSamp(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
+dat_max <- rfrugalParam2(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
 ```
-Then we can check that the distribution actually has the correct form for the
+
+```{r echo=FALSE, eval=FALSE}
+library(tidyverse)
+dat_max <- dat_max %>% tibble %>% 
+  mutate(`(A,B)`=factor(A0+2*A1))
+levels(dat_max$`(A,B)`) <- c("(0,0)", "(1,0)", "(0,1)", "(1,1)")
+ggplot(dat_max[1:1e3,], aes(x=log(L),y=Y, color=`(A,B)`)) + 
+  geom_point() + 
+  guides(fill=guide_legend(title="(A,B)")) + 
+  xlab("log(Z)")
+```
+
+<!-- To get the dataset of size $10^4$ used in Appendix D, run the following code. -->
+<!-- ```{r simulate, eval=FALSE} -->
+<!-- set.seed(123) -->
+<!-- n <- 1e4 -->
+<!-- dat_max <- rfrugalParam2(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1)) -->
+<!-- ``` -->
+Now we can check that the distribution actually has the correct form for the
 first three variables ($A_0, L, A_1$):
 ```{r glms1, echo=-1}
 options(digits=3)
@@ -92,7 +111,7 @@ of this dataset (change this to the commented out line to replicate results
 from our paper).  
 ```{r dat, echo=TRUE}
 dat <- dat_max[seq_len(1e3), ]
-# dat <- dat_max
+#  dat <- dat_max
 ```
 
 ### Outcome Regression
@@ -250,18 +269,29 @@ Finally, we can fit using our own code with the black-box
 optimizer, and since we are fitting the correct model it is
 guaranteed to be consistent and asymptotically efficient.
 
-
-```{r mle, cache=FALSE}
-modY <- fitCausal(dat, formulas = list(Y ~ A0*A1, L ~ A0, ~ A0*A1),
-                  family = c(1,3,1), control=list(maxit=2e4, newton=TRUE))
-modY
+```{r}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  eval = FALSE,
+  echo = FALSE,
+  comment = "#>",
+  cache = FALSE,
+  fig.width=7, 
+  fig.height=7
+)
 ```
 
-```{r tab_mle, echo=FALSE, cache=TRUE}
-tab_mle <- cbind(modY$pars$Y$beta[1:4], modY$pars$Y$beta_sandwich[1:4], 
-                 modY$pars$Y$beta[1:4]-pars$Y$beta)
-colnames(tab_mle) <- c("Est.", "SE", "Bias")
-```
+<!-- ```{r mle, cache=FALSE} -->
+<!-- modY <- fitCausal(dat, formulas = list(Y ~ A0*A1, L ~ A0, ~ A0*A1), -->
+<!--                   family = c(1,3,1), control=list(maxit=2e4, newton=TRUE)) -->
+<!-- modY -->
+<!-- ``` -->
+
+<!-- ```{r tab_mle, echo=FALSE, cache=TRUE} -->
+<!-- tab_mle <- cbind(modY$pars$Y$beta[1:4], modY$pars$Y$beta_sandwich[1:4],  -->
+<!--                  modY$pars$Y$beta[1:4]-pars$Y$beta) -->
+<!-- colnames(tab_mle) <- c("Est.", "SE", "Bias") -->
+<!-- ``` -->
 
 
 ### Comparison of Results
@@ -276,9 +306,24 @@ results[,1+rep(0:3, each=1)*3] <- round(results[,1+rep(0:3, each=1)*3], 2)
 results[,2+rep(0:3, each=1)*3] <- round(results[,2+rep(0:3, each=1)*3], 3)
 results[,3+(0:3)*3] <- round(results[,3+(0:3)*3], 3)
 results[,ncol(results)] <- round(results[,ncol(results)], 3)
-kableExtra::kbl(results, booktabs=TRUE, format="html") %>%  ## change to format="latex" for paper
+kableExtra::kbl(results, booktabs=TRUE, format="latex") %>%  ## change to format="latex" for paper
   kableExtra::add_header_above(c(" ","Outcome Regression"=3,"IP Weighting"=3,"Double Robust"=3,"MLE"=3))
+kableExtra::kbl(results, booktabs=TRUE, format="latex") %>%  ## change to format="latex" for paper
+  kableExtra::add_header_above(c(" ","Outcome Regression"=3,"IP Weighting"=3,"MLE"=3))
 # xtable::xtable(results, digits=c(0,rep(c(2,3,3),4)), align="|r|rrr|rrr|rrr|")
+mle_results[,-(1:9)]
+
+tab <- tab_ipw[,c(1,3,2)]
+
+tab <- cbind(c(-0.5,0.2,0.3,0), tab, tab[,2]/tab[,3])
+tab <- cbind(tab, 2*pnorm(-abs(tab[,5])))
+colnames(tab) <- c("truth","estimate","bias","s.e.","z-value","p-value")
+rownames(tab) <- c("intercept", "A","B","A cdot B")
+kableExtra::kbl(tab, booktabs=TRUE, format="latex", digits=c(1,3,3,3,2,2))
+
+# %>%  ## change to format="latex" for paper
+#   kableExtra::add_header_above(c(" ","MLE"=3))
+
 ```
 
 
@@ -373,7 +418,7 @@ kableExtra::kbl(res_w, "latex", booktabs = TRUE, digits = c(1,3,3,3,2,2),
 ```
 
 The code below plots the empirical biases as boxplots.
-```{r boxplot, eval=FALSE}
+```{r boxplot, eval=FALSE, echo=FALSE}
 library(dplyr)
 library(tidyr)
 library(ggplot2)

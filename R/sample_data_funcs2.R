@@ -8,8 +8,6 @@
 ##' @param LHS vector of names
 ##' @param sim logical: should data be generated, or just the density function returned?
 ##'
-##' @details
-##'
 ##' @export
 get_X_dens <- function (n, fam, eta, link, pars, LHS, sim=TRUE) {
   d <- length(fam)
