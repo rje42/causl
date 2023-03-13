@@ -1,2 +1,52 @@
 # causl
 Methods for Specifying, Simulating from and Fitting Causal Models
+
+## Basic Idea
+
+This package enables one to simulate from a _frugal parameterization_, that is
+one where we have a specific marginal causal quantity of interest and use something 
+like a copula to model its dependence structure. 
+
+### Example: Marginal structural model
+
+```mermaid
+graph TD
+    A(Z) --> B(X)
+    B --> C(Y)
+    A --> C
+```
+
+Suppose we have A marginal structural model (MSM) considers 
+$$
+P(y \,|\, do(x)) = \sum_z P(z) \cdot P(y \,|\, z, x)
+$$
+A frugal parameterization for this quantity would be a parametric model for
+$P(y \,|\, do(x))$, another for $P(z,x)$, and a third for the dependence between
+$Y$ and $Z$ conditional on $X$.  We could use a copula for this, or a conditional
+odds ratio if $Y$ and $Z$ are both discrete. 
+
+One example would consist of setting
+\begin{align*}
+Z &\sim \operatorname{Exp}(1)\\
+X \mid Z=z &\sim N(z/2, \, 1)\\
+Y \mid do(X=x) &\sim N((x-1)/2, \, 1),
+\end{align*}
+with a Gaussian copula between $Z$ and $Y$ with correlation $\rho = 2\operatorname{expit}(1)$.
+
+## Sample Code
+
+We can specify such a marginal causal model with the following syntax.  
+```
+# formulae corresponding to covariates, treatments, outcomes and the dependence
+forms <- list(Z ~ 1, X ~ Z, Y ~ X, ~ 1)
+# vector of model families (3=gamma/exponential, 1=normal/Gaussian)
+fam <- c(3, 1, 1, 1)
+# list of parameters, including 'beta' (regression params) and 'phi' dispersion
+pars <- list(Z = list(beta=1, phi=1),
+             X = list(beta=c(0,0.5), phi=1),
+             Y = list(beta=c(-0.5,0.5), phi=1),
+             cop = list(beta=1))
+
+# now simulate 100 observations
+rfrugalParam(n=100, formulas=forms, pars=pars, family=fam)
+```
