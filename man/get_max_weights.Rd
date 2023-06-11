@@ -20,6 +20,8 @@ get_max_weights(pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, link, ...)
 \item{ranges}{range of segments}
 
 \item{link}{link functions for treatments}
+
+\item{...}{not currently used}
 }
 \description{
 Get maximum weight for each segment of a distribution

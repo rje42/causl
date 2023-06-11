@@ -45,8 +45,8 @@
 ##' Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton, 4 for Gumbel,
 ##' 5 for Frank, 6 for Joe and 11 for FGM copulas.
 ##'
-##' \code{pars} should be a named list containing: either entries \code{z},
-##' \code{x}, \code{y} and \code{cop}, or variable names that correspond to the LHS of
+##' \code{pars} should be a named list containing variable names that correspond
+##' to the LHS of
 ##' formulae in \code{formulas}.  Each of these should themselves be a list
 ##' containing \code{beta} (a vector of regression parameters) and (possibly)
 ##' \code{phi}, a dispersion parameter.  For any discrete variable that is a
@@ -104,7 +104,7 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
 
   ## process the four main arguments
   tmp <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
-                        kwd=kwd)
+                        kwd=kwd, ordering = (method == "inversion"))
   formulas <- tmp$formulas
   pars <- tmp$pars
   family <- tmp$family
@@ -162,123 +162,176 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
 
   ## set up output
   out <- data.frame(matrix(0, ncol=dZ+dX+dY, nrow=n))
-  names(out) <- c(LHS_Z, LHS_X, LHS_Y)
+  names(out) <- vars
 
   if (!datNULL) {
     out <- cbind(dat, out)
   }
 
-  if (careful) {
-    ## get sample Z values
-    Z0s <- gen_X_values(n, famX=famZ, pars=pars, LHS_X=LHS_Z, dX=dZ)$datX
-    unb2_cts <- famZ %in% c(1,2)
-    unb_cts <- famZ %in% c(3,6)
-    b01 <- famZ == 4
-    rg <- list()
+  ## choose appropriate method
+  if (method == "inversion") {  ## inversion method
+    ## code to get causal order
+    order <- tmp$order
+    qZs <- out[LHS_Z]
 
-    ## get range of bins for unbounded continuous variables
-    for (i in which(unb2_cts)) {
-      rg[[i]] <- range(Z0s[,i])
-      rg[[i]][1] <- floor(rg[[i]][1])
-      rg[[i]][2] <- ceiling(rg[[i]][2])
-    }
-    for (i in which(unb_cts)) {
-      rg[[i]] <- c(0, ceiling(max(Z0s[,i])))
-    }
-    for (i in which(b01)) {
-      rg[[i]] <- c(0,1)
-    }
+    for (i in seq_along(order)) {
+      ## code to get Y quantiles conditional on different Zs
+      if (order[i] > dZ+dX) {
+        ## simulate Y variable
+        qY <- runif(n)
+        wh <- order[i] - dZ - dX
+        # print(wh)
 
-    ## then find constant needed over this space
-    tmp <- gen_X_values(n, famX=famX, pars=pars, LHS_X=LHS_X, dX=dX, sim=FALSE)
-    M <- get_max_weights(pars=pars, forms_X=formulas[[2]], fam_X = famX,
-                         qden = tmp$qden, fam_Z=famZ, LHS_Z=LHS_Z, ranges=rg,
-                         link=link[[2]])
-  }
+        for (j in seq_len(dZ)) {
+          curr_qZ <- qZs[[vars[j]]]
+          X <- model.matrix(formulas[[4]][[wh]][[j]], data=out)
+          curr_fam <- family[[4]][wh,j]
+          curr_par <- pars[[kwd]]$beta[[wh]][[j]]
+          # eta <- X %*% curr_par
+          qY <- rescaleCop(cbind(curr_qZ,qY), X=X, pars=curr_par, family=curr_fam) #, link=link[[4]][i,j])
+        }
+        ##
+        X <- model.matrix(formulas[[3]][[wh]], data=out)
+        qY <- rescaleVar(qY, X=X, family=famY[wh], pars=pars[[LHS_Y[wh]]],
+                         link=link[[3]][wh])
 
-  ## ready for loop
-  OK <- rep(FALSE, n)
-  nr <- n
+        out[[vars[order[i]]]] <- qY
+      }
+      else {
+        ## code to simulate Z and X variables in causal order
+        vnm <- vars[order[i]]
+        curr_link <- unlist(link)[order[i]]
 
-  while (nr > 0) {
-    ## obtain treatment values
-    tmp <- gen_X_values(nr, famX=famX, pars=pars, LHS_X=LHS_X, dX=dX)
-    out[!OK,][LHS_X] <- tmp$datX[LHS_X]
-    qden <- tmp$qden
-
-    # ## give default coefficients
-    # if (is.null(pars2$z$beta)) pars2$z$beta = 0
-    # if (is.null(pars2$z$phi)) pars2$z$phi = 1
-
-    ## get linear predictors
-    mms <- vector(mode = "list", length=3)
-    mms[c(1,3)] = rapply(formulas[c(1,3)], model.matrix, data=out[!OK,,drop=FALSE], how = "list")
-    for (i in seq_along(mms[[1]])) {
-      if (ncol(mms[[1]][[i]]) != length(pars[[LHS_Z[i]]]$beta)) stop(paste0("dimension of model matrix for ", LHS_Z[i], " does not match number of coefficients provided"))
-    }
-    for (i in seq_along(mms[[3]])) {
-      if (ncol(mms[[3]][[i]]) != length(pars[[LHS_Y[i]]]$beta)) stop(paste0("dimension of model matrix for ", LHS_Y[i], " does not match number of coefficients provided"))
-    }
-
-    # etas <- vector(mode="list", length=3)
-    # for (i in c(1,3)) {
-    #   etas[[i]] <- mapply(function(x, y) x %*% pars[[y]]$beta, mms[[i]], lhs(formulas[[i]]), SIMPLIFY = FALSE)
-    # }
-    copMM <- model.matrix(formulas[[4]][[1]], out[!OK,,drop=FALSE])
-    if (is.matrix(pars$cop$beta)) {
-      if (nrow(pars$cop$beta) != ncol(copMM)) stop(paste0("dimension of model matrix for copula (", ncol(copMM), ") does not match number of coefficients provided (", nrow(pars$cop$beta),")"))
-    }
-    else if (is.atomic(pars$cop$beta)) {
-      if (length(pars$cop$beta) != ncol(copMM)) stop(paste0("dimension of model matrix for copula (", ncol(copMM), ") does not match number of coefficients provided (", length(pars$cop$beta),")"))
-    }
-
-    # eta <- list()
-    # eta$z <- mms[[1]] %*% pars2$z$beta
-    # eta$y <- mms[[2]] %*% pars2$y$beta
-    # mms[[3]] <- model.matrix(update.formula(formulas[[4]], NULL ~ . ), out)
-
-    ## note that code will be slow if continuous covariates used in vine copula
-    if (length(famCop) > 1) {
-      if (nrow(unique(copMM)) > 25) warning("using vine copulas with continuous covariates may be very slow")
-    }
-    ## get copula data and then modify distributions of Y and Z
-    out[!OK,output] <- sim_CopVal(out[!OK,output,drop=FALSE], family=famCop,
-                                  par = pars$cop, par2=pars$cop$par2, model_matrix=copMM)
-    if (careful) OB <- rep(FALSE, nr)
-
-    for (i in seq_along(LHS_Z)) {
-      out[[LHS_Z[i]]][!OK] <- rescaleVar(out[[LHS_Z[i]]][!OK], X=mms[[1]][[i]],
-                                         family=famZ[i], pars=pars[[LHS_Z[i]]],
-                                         link=link[[1]][i])
-      if (careful) {
-        tmpZ <- out[[LHS_Z[i]]][!OK]
-        if (famZ[i] <= 2 || famZ[i] == 4) OB <- OB | (tmpZ < rg[[i]][1]) | (tmpZ > rg[[i]][2])
-        else if (famZ[i] %in% c(3,6)) OB <- OB | (tmpZ > rg[[i]][2])
+        if (vnm %in% LHS_X) {
+          curr_form <- formulas[[2]][[order[i]-dZ]]
+          curr_fam <- famX[order[i]-dZ]
+        }
+        else {
+          curr_form <- formulas[[1]][[order[i]]]
+          curr_fam <- famZ[order[i]]
+        }
+        MM <- model.matrix(curr_form, data=out)
+        eta <- MM %*% pars[[vnm]]$beta
+        curr_phi <- pars[[vnm]]$phi
+        tmp <- sim_glm(fam=curr_fam, eta=eta, phi=curr_phi, link=curr_link)
+        out[[vnm]] <- tmp
+        if (vnm %in% LHS_Z) qZs[[vnm]] <- attr(tmp, "quantile")
       }
     }
-    for (i in seq_along(LHS_Y)) out[[LHS_Y[i]]][!OK] <- rescaleVar(out[[LHS_Y[i]]][!OK], X=mms[[3]][[i]],
-                                                                   family=famY[i], pars=pars[[LHS_Y[i]]],
-                                                                   link=link[[3]][i])
-
-    mms[[2]] = lapply(formulas[[2]], model.matrix, data=out[!OK,,drop=FALSE])
-    for (i in seq_along(mms[[2]])) {
-      if (ncol(mms[[2]][[i]]) != length(pars[[LHS_X[i]]]$beta)) stop(paste0("dimension of model matrix for ", LHS_X[i], " does not match number of coefficients provided"))
-    }
-
-    ## perform rejection sampling
-    wts <- rejectionWeights(out[LHS_X][!OK,,drop=FALSE], mms[[2]], family=famX, pars=pars[LHS_X], qden = qden, link=link[[2]])
+  }
+  else if (method == "rejection") { ## rejection sampling method
     if (careful) {
-      wts[OB] <- 0  # for out of bounds values of Z
-      wts <- wts/M
-      if (any(wts > 1)) stop(paste("Weights ", paste(which(wts > 1), collapse=", "), " are > 1", sep=""))
-    }
-    else {
-      con$max_wt <- max(max(wts), con$max_wt)
-      wts <- wts/con$max_wt
+      ## get sample Z values
+      Z0s <- gen_X_values(n, famX=famZ, pars=pars, LHS_X=LHS_Z, dX=dZ)$datX
+      unb2_cts <- famZ %in% c(1,2)
+      unb_cts <- famZ %in% c(3,6)
+      b01 <- famZ == 4
+      rg <- list()
+
+      ## get range of bins for unbounded continuous variables
+      for (i in which(unb2_cts)) {
+        rg[[i]] <- range(Z0s[,i])
+        rg[[i]][1] <- floor(rg[[i]][1])
+        rg[[i]][2] <- ceiling(rg[[i]][2])
+      }
+      for (i in which(unb_cts)) {
+        rg[[i]] <- c(0, ceiling(max(Z0s[,i])))
+      }
+      for (i in which(b01)) {
+        rg[[i]] <- c(0,1)
+      }
+
+      ## then find constant needed over this space
+      tmp <- gen_X_values(n, famX=famX, pars=pars, LHS_X=LHS_X, dX=dX, sim=FALSE)
+      M <- get_max_weights(pars=pars, forms_X=formulas[[2]], fam_X = famX,
+                           qden = tmp$qden, fam_Z=famZ, LHS_Z=LHS_Z, ranges=rg,
+                           link=link[[2]])
     }
 
-    OK[!OK] <- runif(nr) < wts
-    nr <- sum(!OK)
+    ## ready for loop
+    OK <- rep(FALSE, n)
+    nr <- n
+
+    while (nr > 0) {
+      ## obtain treatment values
+      tmp <- gen_X_values(nr, famX=famX, pars=pars, LHS_X=LHS_X, dX=dX)
+      out[!OK,][LHS_X] <- tmp$datX[LHS_X]
+      qden <- tmp$qden
+
+      # ## give default coefficients
+      # if (is.null(pars2$z$beta)) pars2$z$beta = 0
+      # if (is.null(pars2$z$phi)) pars2$z$phi = 1
+
+      ## get linear predictors
+      mms <- vector(mode = "list", length=3)
+      mms[c(1,3)] = rapply(formulas[c(1,3)], model.matrix, data=out[!OK,,drop=FALSE], how = "list")
+      for (i in seq_along(mms[[1]])) {
+        if (ncol(mms[[1]][[i]]) != length(pars[[LHS_Z[i]]]$beta)) stop(paste0("dimension of model matrix for ", LHS_Z[i], " does not match number of coefficients provided"))
+      }
+      for (i in seq_along(mms[[3]])) {
+        if (ncol(mms[[3]][[i]]) != length(pars[[LHS_Y[i]]]$beta)) stop(paste0("dimension of model matrix for ", LHS_Y[i], " does not match number of coefficients provided"))
+      }
+
+      # etas <- vector(mode="list", length=3)
+      # for (i in c(1,3)) {
+      #   etas[[i]] <- mapply(function(x, y) x %*% pars[[y]]$beta, mms[[i]], lhs(formulas[[i]]), SIMPLIFY = FALSE)
+      # }
+      copMM <- model.matrix(formulas[[4]][[1]], out[!OK,,drop=FALSE])
+      if (is.matrix(pars$cop$beta)) {
+        if (nrow(pars$cop$beta) != ncol(copMM)) stop(paste0("dimension of model matrix for copula (", ncol(copMM), ") does not match number of coefficients provided (", nrow(pars$cop$beta),")"))
+      }
+      else if (is.atomic(pars$cop$beta)) {
+        if (length(pars$cop$beta) != ncol(copMM)) stop(paste0("dimension of model matrix for copula (", ncol(copMM), ") does not match number of coefficients provided (", length(pars$cop$beta),")"))
+      }
+
+      # eta <- list()
+      # eta$z <- mms[[1]] %*% pars2$z$beta
+      # eta$y <- mms[[2]] %*% pars2$y$beta
+      # mms[[3]] <- model.matrix(update.formula(formulas[[4]], NULL ~ . ), out)
+
+      ## note that code will be slow if continuous covariates used in vine copula
+      if (length(famCop) > 1) {
+        if (nrow(unique(copMM)) > 25) warning("using vine copulas with continuous covariates may be very slow")
+      }
+      ## get copula data and then modify distributions of Y and Z
+      out[!OK,output] <- sim_CopVal(out[!OK,output,drop=FALSE], family=famCop,
+                                    par = pars$cop, par2=pars$cop$par2, model_matrix=copMM)
+      if (careful) OB <- rep(FALSE, nr)
+
+      for (i in seq_along(LHS_Z)) {
+        out[[LHS_Z[i]]][!OK] <- rescaleVar(out[[LHS_Z[i]]][!OK], X=mms[[1]][[i]],
+                                           family=famZ[i], pars=pars[[LHS_Z[i]]],
+                                           link=link[[1]][i])
+        if (careful) {
+          tmpZ <- out[[LHS_Z[i]]][!OK]
+          if (famZ[i] <= 2 || famZ[i] == 4) OB <- OB | (tmpZ < rg[[i]][1]) | (tmpZ > rg[[i]][2])
+          else if (famZ[i] %in% c(3,6)) OB <- OB | (tmpZ > rg[[i]][2])
+        }
+      }
+      for (i in seq_along(LHS_Y)) out[[LHS_Y[i]]][!OK] <- rescaleVar(out[[LHS_Y[i]]][!OK], X=mms[[3]][[i]],
+                                                                     family=famY[i], pars=pars[[LHS_Y[i]]],
+                                                                     link=link[[3]][i])
+
+      mms[[2]] = lapply(formulas[[2]], model.matrix, data=out[!OK,,drop=FALSE])
+      for (i in seq_along(mms[[2]])) {
+        if (ncol(mms[[2]][[i]]) != length(pars[[LHS_X[i]]]$beta)) stop(paste0("dimension of model matrix for ", LHS_X[i], " does not match number of coefficients provided"))
+      }
+
+      ## perform rejection sampling
+      wts <- rejectionWeights(out[LHS_X][!OK,,drop=FALSE], mms[[2]], family=famX, pars=pars[LHS_X], qden = qden, link=link[[2]])
+      if (careful) {
+        wts[OB] <- 0  # for out of bounds values of Z
+        wts <- wts/M
+        if (any(wts > 1)) stop(paste("Weights ", paste(which(wts > 1), collapse=", "), " are > 1", sep=""))
+      }
+      else {
+        con$max_wt <- max(max(wts), con$max_wt)
+        wts <- wts/con$max_wt
+      }
+
+      OK[!OK] <- runif(nr) < wts
+      nr <- sum(!OK)
+    }
   }
 
   rownames(out) <- NULL

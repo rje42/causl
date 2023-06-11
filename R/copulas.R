@@ -365,3 +365,34 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
   out
 }
 
+##' Vectorized conditional copula function
+##'
+##' @param U matrix of quantiles
+##' @param copula family of copula to use
+##' @param param vector of parameters
+##' @param par2 Degrees of freedom for t-copula
+##' @param inverse should inverse CDF be returned?
+##'
+##' @details Should have \code{nrow(U) = length(param)}.
+##' @importFrom copula cCopula
+##'
+cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
+  ## check param has right length
+  if (length(param) != nrow(U)) {
+    if (length(param) == 1) param <- rep_len(param, nrow(U))
+    else stop("'param' should have single entry or one for each row of 'U'")
+  }
+  ## get list of copulas
+  if (missing(par2)) {
+    cops <- lapply(param, copula)
+  } else {
+    cops <- lapply(param, function(x) copula(x,par2=par2))
+  }
+
+  splU <- apply(U, 1, FUN = function(x) x, simplify = FALSE)
+  out <- mapply(function (x,y) cCopula(x,y,inverse=inverse), splU, cops)
+
+  if (is.matrix(out)) out <- t(out)
+
+  return(out)
+}

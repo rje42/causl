@@ -124,6 +124,8 @@ sim_X <- function(n, fam_x, theta, offset, sim=TRUE) {
 ##' @export
 rescaleVar <- function(U, X, pars, family=1, link) {
 
+  # cat("fam=", family, ", link=", link, "\n", sep="")
+
   ## get linear component
   eta <- X %*% pars$beta
   phi <- pars$phi
@@ -177,6 +179,68 @@ rescaleVar <- function(U, X, pars, family=1, link) {
   # nms <- names(dat)[grep("z", names(dat))]
 
   return(Y)
+}
+
+
+##' Rescale quantiles to conditional copula
+##'
+##' @param U vector of quantiles
+##' @param X model matrix of covariates
+##' @param pars list of parameters (see details)
+##' @param family variety of copula to use
+## @param link link function
+##'
+##' @details \code{family} can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
+##' Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. Gamma distributed,
+##' beta distributed or discrete respectively. \code{pars} should be a list
+##' with entries \code{beta} and \code{phi}, as well as possibly \code{par2} if
+##' \code{family=2}.
+##' \code{U} should have the same length as \code{X} has rows, and \code{X}
+##' should have the same number of columns as the length of \code{pars$beta}.
+##'
+##' @return vector of rescaled quantiles
+##'
+##' @importFrom copula normalCopula tCopula
+##'
+##' @export
+rescaleCop <- function(U, X, pars, family=1) {
+
+  ## get linear component
+  eta <- X %*% pars
+
+  ## make U normal, t or gamma
+  if (family == 1) {
+    # if (link == "tanh")
+    param <- 2*expit(eta) - 1
+    Y <- cVCopula(U, copula = normalCopula, param = param)
+  }
+  else if (family == 2) {
+    # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
+    param <- 2*expit(eta) - 1
+    Y <- cVCopula(U, copula = tCopula, par2=pars$par2, param = param)
+  }
+  else if (family == 3) {
+    param <- exp(eta) - 1
+    Y <- cVCopula(U, copula = claytonCopula, param = param)
+  }
+  else if (family == 4) {
+    param <- exp(eta) + 1
+    Y <- cVCopula(U, copula = gumbelCopula, param = param)
+  }
+  else if (family == 5) {
+    param <- eta
+    Y <- cVCopula(U, copula = frankCopula, param = param)
+  }
+  else if (family == 6) {
+    param <- exp(eta) + 1
+    Y <- cVCopula(U, copula = joeCopula, param = param)
+  }
+  else stop("family must be between 0 and 5")
+
+  ### get Z values to correct families
+  # nms <- names(dat)[grep("z", names(dat))]
+
+  return(Y[,ncol(Y)])
 }
 
 
@@ -515,3 +579,66 @@ linksList <- list(
 
 familyVals <- data.frame(val=0:6,
                          family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"))
+
+##' Simulate from a GLM
+##'
+##' Simulate values from some generalized linear models
+##'
+sim_glm <- function (family, eta, phi, par2, link) {
+
+  n <- length(eta)
+
+  ## get the densities for x
+  if (family == 1) {
+    if (link=="identity") mu <- eta
+    else if (link=="inverse") mu <- 1/eta
+    else if (link=="log") mu <- exp(eta)
+    else stop("Not a valid link function for the Gaussian distribution")
+
+    x <- rnorm(n, mu, sd=sqrt(phi))
+    qx <- pnorm(x, mu, sd=sqrt(phi))
+  }
+  else if (family == 2) {
+    if (link=="identity") mu <- eta
+    else if (link=="inverse") mu <- 1/eta
+    else if (link=="log") mu <- exp(eta)
+    else stop("Not a valid link function for the t-distribution")
+
+    x <- rt(n, df=par2)*sqrt(phi) + mu
+    qx <- qt((x - mu)/sqrt(phi), df=par2)
+  }
+  else if (family == 3) {
+    if (link=="log") mu <- exp(eta)
+    else if (link=="identity") mu <- eta
+    else if (link=="inverse") mu <- 1/eta
+    else stop("Not a valid link function for the gamma distribution")
+
+    x <- rgamma(n, shape=1/phi, scale=phi*mu)
+    qx <- pgamma(x, shape=1/phi, scale=phi*mu)
+  }
+  else if (family == 4) {
+    if (link=="logit") mu <- expit(eta)
+    else if (link=="probit") mu <- pnorm(eta)
+    else stop("Not a valid link function for the beta distribution")
+
+    th1 <- mu/phi
+    th2 <- (1-mu)/phi
+
+    x <- rbeta(n, th1, th2)
+    qx <- qbeta(x, th1, th2)
+  }
+  else if (family == 5) {
+    if (link=="logit") mu <- expit(eta)
+    else if (link=="probit") mu <- pnorm(eta)
+    else stop("Not a valid link function for the Bernoulli distribution")
+
+    x <- rbinom(n, size=1, prob=mu)
+    qx <- dbinom(x, size=1, prob=mu)
+  }
+  else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
+
+  ## return quantile
+  attr(x, "quantile") <- qx
+
+  return(x)
+}
