@@ -33,7 +33,7 @@ rfrugalParam(
 \item{careful}{logical: should full rejection sampling method be used with
 correctly computed weight?}
 
-\item{method}{only \code{"rejection"} is valid}
+\item{method}{\code{"rejection"} or \code{"inversion"}}
 
 \item{control}{list of options for the algorithm}
 
@@ -77,8 +77,8 @@ The family variables for the copula are also numeric and taken from
 Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton, 4 for Gumbel,
 5 for Frank, 6 for Joe and 11 for FGM copulas.
 
-\code{pars} should be a named list containing: either entries \code{z},
-\code{x}, \code{y} and \code{cop}, or variable names that correspond to the LHS of
+\code{pars} should be a named list containing variable names that correspond
+to the LHS of
 formulae in \code{formulas}.  Each of these should themselves be a list
 containing \code{beta} (a vector of regression parameters) and (possibly)
 \code{phi}, a dispersion parameter.  For any discrete variable that is a

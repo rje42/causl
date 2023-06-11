@@ -7,6 +7,7 @@
 ##' @param qden density of proposals
 ##' @param ranges range of segments
 ##' @param link link functions for treatments
+##' @param ... not currently used
 ##'
 get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, link, ...) {
   # if (!missing(link)) warning("Link argument is ignored")

@@ -21,8 +21,8 @@ structural model_ (MSM):
 $P(y \mid do(x)) = \sum_z P(z) \cdot P(y \mid z, x).$
 A frugal parameterization for this quantity would be a parametric model for
 $P(y \mid do(x))$, another for $P(z,x)$, and a third for the dependence between
-$Y$ and $Z$ conditional on $X$.  We could use a copula for this, or a conditional
-odds ratio if $Y$ and $Z$ are both discrete. 
+$Y$ and $Z$ conditional on $X$.  We could use a (conditional) copula for this 
+last model, or a conditional odds ratio if $Y$ and $Z$ are both discrete. 
 
 One example would consist of setting
 $Z \sim \operatorname{Exp}(1)$, with $X \mid Z=z \sim N(z/2, 1)$

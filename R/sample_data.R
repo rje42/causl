@@ -5,8 +5,9 @@
 ##' @param family families for Z,X,Y and copula
 ##' @param link list of link functions
 ##' @param kwd keyword for copula
+##' @param ordering logical: should an ordering of variables be computed?
 ##'
-process_inputs <- function (formulas, pars, family, link, kwd) {
+process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
 
   ## check we have four groups of formulas
   if (length(formulas) != 4) stop("formulas must have length 4")
@@ -78,12 +79,27 @@ process_inputs <- function (formulas, pars, family, link, kwd) {
   # formsZ <- merge_formulas(formulas[[1]])$old_forms
   # setmatch(LHS_Z, rhs_vars(formsZ))
   # formsY <- merge_formulas(formulas[[3]])$old_forms
-  if (any(unlist(lapply(rhs_vars(formulas[[3]]),
-                        function(x) any(x %in% LHS_Z))))) stop("Covariates cannot be direct predictors for outcomes")
-  if (any(unlist(lapply(rhs_vars(formulas[[1]]),
-                        function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot be direct predictors for covariates")
-  if (any(unlist(lapply(rhs_vars(formulas[[3]]),  # could relax this
-                        function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot directly predict one another")
+  if (ordering) {
+    ord_mat <- matrix(0, nrow=sum(dim), ncol=sum(dim))
+
+    ## get adjacency matrix of dependencies
+    vars <- c(LHS_Z, LHS_X, LHS_Y)
+    ord_mat[seq_len(dZ), ] <- 1*t(sapply(formsZ, function(x) vars %in% attr(x, "term.labels")))
+    ord_mat[dZ + seq_len(dX), ] <- 1*t(sapply(formsX, function(x) vars %in% attr(x, "term.labels")))
+    ord_mat[dZ + dX + seq_len(dY), ] <- 1*t(sapply(formsY, function(x) vars %in% attr(x, "term.labels")))
+
+    order <- topOrd(ord_mat)
+    if (any(is.na(order))) stop("Formulae contain cyclic dependencies")
+  }
+  else {
+    if (any(unlist(lapply(rhs_vars(formulas[[3]]),
+                          function(x) any(x %in% LHS_Z))))) stop("Covariates cannot be direct predictors for outcomes")
+    if (any(unlist(lapply(rhs_vars(formulas[[1]]),
+                          function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot be direct predictors for covariates")
+    if (any(unlist(lapply(rhs_vars(formulas[[3]]),  # could relax this
+                          function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot directly predict one another")
+    order <- NULL
+  }
   #
   # if (any(sapply(formsZ,
   #        function(x) any(attr(x, "term.labels")[attr(x, "order") == 1] %in% LHS_Y)))) stop("Outcomes cannot be direct predictors for covariates")
@@ -122,35 +138,63 @@ process_inputs <- function (formulas, pars, family, link, kwd) {
     if (famY[i] <= 3 && is.null(pars[[LHS_Y[i]]]$phi))
       stop(paste(LHS_Y[i], "needs a phi parameter"))
 
-  ## ensure that copula parameters are in correct matrix format
-  if (!is.matrix(pars[[kwd]]$beta)) {
-    pars[[kwd]]$beta <- matrix(pars[[kwd]]$beta, ncol=choose(dZ+dY,2))
-    form_cop <- terms(formulas[[4]][[1]])
-    if (nrow(pars[[kwd]]$beta) != length(attr(form_cop, "term.labels"))+attr(form_cop, "intercept")) stop("Wrong number of regression parameters for copula")
-  }
-  if (length(in_form) > 0) {
-    if (any(pars[[kwd]]$beta[,in_form] != 0)) {
-      warning("Parameters in copula for objects already related by regression; setting copula parameters to zero")
-      pars[[kwd]]$beta[,in_form] <- 0
+
+
+  if (ordering) {
+    ## put some validation code in here for inversion method
+
+    ## get formulas in right format
+    if (!is.list(formulas[[4]])) {
+      formulas[[4]] <- rep(list(formulas[[4]]), dY)
+    }
+    if (!is.list(formulas[[4]][[1]])) {
+      formulas[[4]] <- lapply(formulas[[4]], function(x) rep(list(x), dZ))
+    }
+
+    ## get parameters in right format
+    if (!is.list(pars[[kwd]]$beta)) {
+      pars[[kwd]]$beta <- rep(list(pars[[kwd]]$beta), dY)
+    }
+    if (!is.list(pars[[kwd]]$beta[[1]])) {
+      pars[[kwd]]$beta <- lapply(pars[[kwd]]$beta, function(x) rep(list(x), dZ))
+    }
+
+    ## get family in right format
+    if (!is.matrix(famCop)) {
+      family[[4]] <- matrix(famCop, dY, dZ)
     }
   }
+  else {
+    ## ensure that copula parameters are in correct matrix format
+    if (!is.matrix(pars[[kwd]]$beta)) {
+      pars[[kwd]]$beta <- matrix(pars[[kwd]]$beta, ncol=choose(dZ+dY,2))
+      form_cop <- terms(formulas[[4]][[1]])
+      if (nrow(pars[[kwd]]$beta) != length(attr(form_cop, "term.labels"))+attr(form_cop, "intercept")) stop("Wrong number of regression parameters for copula")
+    }
+    if (length(in_form) > 0) {
+      if (any(pars[[kwd]]$beta[,in_form] != 0)) {
+        warning("Parameters in copula for objects already related by regression; setting copula parameters to zero")
+        pars[[kwd]]$beta[,in_form] <- 0
+      }
+    }
 
-  ## code to check if Y or Z is included in copula formula
-  if (any(c(LHS_Z,LHS_Y) %in% rhs_vars(formulas[[4]])[[1]])) stop("copula cannot depend upon Z or Y variables")
+    ## code to check if Y or Z is included in copula formula
+    if (any(c(LHS_Z,LHS_Y) %in% rhs_vars(formulas[[4]])[[1]])) stop("copula cannot depend upon Z or Y variables")
+  }
 
   ## set up link functions
   link <- link_setup(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
 
   return(list(formulas=formulas, pars=pars, family=family, link=link,
               LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y),
-              dim=dim, in_form=in_form))
+              dim=dim, in_form=in_form, order=order))
 }
 
 
 ##' Sample from a causal model
 ##'
 ##' Obtain samples from a causal model using the rejection sampling approach of
-##' Evans and Didelez (2021).
+##' Evans and Didelez (2023).
 ##'
 ##' @param n number of samples required
 ##' @param formulas list of lists of formulas
@@ -189,8 +233,8 @@ process_inputs <- function (formulas, pars, family, link, kwd) {
 ##' 5 for Frank, 6 for Joe and 11 for FGM copulas.
 ##'
 ##' \code{pars} should be a named list containing: either entries \code{z},
-##' \code{x}, \code{y} and \code{cop}, or variable names that correspond to the LHS of
-##' formulae in \code{formulas}.  Each of these should themselves be a list
+##' \code{x}, \code{y} and \code{cop}, or variable names that correspond to the
+##' LHS of formulae in \code{formulas}.  Each of these should themselves be a list
 ##' containing \code{beta} (a vector of regression parameters) and (possibly)
 ##' \code{phi}, a dispersion parameter.  For any discrete variable that is a
 ##' treatment, you can also specify \code{p}, an initial proportion to simulate
