@@ -29,7 +29,7 @@ causalSamp(
 
 \item{dat}{data frame of covariates}
 
-\item{method}{\code{"rejection"} (default) or \code{"inversion"}}
+\item{method}{only \code{"rejection"} is valid}
 
 \item{control}{list of options for the algorithm}
 

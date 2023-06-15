@@ -33,7 +33,7 @@ rfrugalParam(
 \item{careful}{logical: should full rejection sampling method be used with
 correctly computed weight?}
 
-\item{method}{\code{"rejection"} or \code{"inversion"}}
+\item{method}{either \code{"rejection"} (the default) or \code{"inversion"}}
 
 \item{control}{list of options for the algorithm}
 

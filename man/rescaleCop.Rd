@@ -7,7 +7,7 @@
 rescaleCop(U, X, pars, family = 1)
 }
 \arguments{
-\item{U}{vector of quantiles}
+\item{U}{matrix of quantiles}
 
 \item{X}{model matrix of covariates}
 
@@ -22,6 +22,9 @@ vector of rescaled quantiles
 Rescale quantiles to conditional copula
 }
 \details{
+The variable to be transformed must be in the final column of
+\code{U}, with variables being conditioned upon in the earlier columns.
+
 \code{family} can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
 Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. Gamma distributed,
 beta distributed or discrete respectively. \code{pars} should be a list

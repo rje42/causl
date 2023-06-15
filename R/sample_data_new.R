@@ -11,7 +11,7 @@
 ##' @param dat optional data frame of covariates
 ##' @param careful logical: should full rejection sampling method be used with
 ##' correctly computed weight?
-##' @param method only \code{"rejection"} is valid
+##' @param method either \code{"rejection"} (the default) or \code{"inversion"}
 ##' @param control list of options for the algorithm
 ##' @param seed random seed used for replication
 ##'

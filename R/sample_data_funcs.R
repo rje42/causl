@@ -184,13 +184,16 @@ rescaleVar <- function(U, X, pars, family=1, link) {
 
 ##' Rescale quantiles to conditional copula
 ##'
-##' @param U vector of quantiles
+##' @param U matrix of quantiles
 ##' @param X model matrix of covariates
 ##' @param pars list of parameters (see details)
 ##' @param family variety of copula to use
 ## @param link link function
 ##'
-##' @details \code{family} can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
+##' @details The variable to be transformed must be in the final column of
+##' \code{U}, with variables being conditioned upon in the earlier columns.
+##'
+##' \code{family} can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
 ##' Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. Gamma distributed,
 ##' beta distributed or discrete respectively. \code{pars} should be a list
 ##' with entries \code{beta} and \code{phi}, as well as possibly \code{par2} if
@@ -205,6 +208,10 @@ rescaleVar <- function(U, X, pars, family=1, link) {
 ##' @export
 rescaleCop <- function(U, X, pars, family=1) {
 
+  if (!is.matrix(U)) stop("'U' should be a matrix")
+  if (!is.matrix(X)) stop("'X' should be a matrix")
+  if (nrow(U) != nrow(X)) stop("'U' and 'X' should have same number of rows")
+
   ## get linear component
   eta <- X %*% pars
 
@@ -212,28 +219,28 @@ rescaleCop <- function(U, X, pars, family=1) {
   if (family == 1) {
     # if (link == "tanh")
     param <- 2*expit(eta) - 1
-    Y <- cVCopula(U, copula = normalCopula, param = param)
+    Y <- cVCopula(U, copula = normalCopula, param = param, inverse=TRUE)
   }
   else if (family == 2) {
     # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
     param <- 2*expit(eta) - 1
-    Y <- cVCopula(U, copula = tCopula, par2=pars$par2, param = param)
+    Y <- cVCopula(U, copula = tCopula, par2=pars$par2, param = param, inverse=TRUE)
   }
   else if (family == 3) {
     param <- exp(eta) - 1
-    Y <- cVCopula(U, copula = claytonCopula, param = param)
+    Y <- cVCopula(U, copula = claytonCopula, param = param, inverse=TRUE)
   }
   else if (family == 4) {
     param <- exp(eta) + 1
-    Y <- cVCopula(U, copula = gumbelCopula, param = param)
+    Y <- cVCopula(U, copula = gumbelCopula, param = param, inverse=TRUE)
   }
   else if (family == 5) {
     param <- eta
-    Y <- cVCopula(U, copula = frankCopula, param = param)
+    Y <- cVCopula(U, copula = frankCopula, param = param, inverse=TRUE)
   }
   else if (family == 6) {
     param <- exp(eta) + 1
-    Y <- cVCopula(U, copula = joeCopula, param = param)
+    Y <- cVCopula(U, copula = joeCopula, param = param, inverse=TRUE)
   }
   else stop("family must be between 0 and 5")
 
