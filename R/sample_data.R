@@ -139,8 +139,10 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
       stop(paste(LHS_Y[i], "needs a phi parameter"))
 
 
-
   if (ordering) {
+
+
+
     ## put some validation code in here for inversion method
 
     ## get formulas in right format
@@ -185,9 +187,14 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
   ## set up link functions
   link <- link_setup(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
 
+  ## other useful variables
+  output <- c(LHS_Z, LHS_Y)
+  vars <- c(LHS_Z, LHS_X, LHS_Y)
+
   return(list(formulas=formulas, pars=pars, family=family, link=link,
-              LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y),
-              dim=dim, in_form=in_form, order=order))
+              LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y), kwd=kwd,
+              dim=dim, in_form=in_form, vars=vars, output=output,
+              order=order))
 }
 
 

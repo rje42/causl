@@ -4,7 +4,7 @@ author: "Robin J. Evans"
 date: "10/06/2023"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Hidden Variables}
+  %\VignetteIndexEntry{Inversion Tutorial}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

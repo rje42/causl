@@ -574,6 +574,7 @@ link_setup <- function(link, family, vars) {
   return(link_out)
 }
 
+##' @export
 linksList <- list(
   gaussian = c("identity", "inverse", "log"),
   t = c("identity", "inverse", "log"),
@@ -583,20 +584,30 @@ linksList <- list(
   lognormal = c("exp", "identity")
 )
 
-
+##' @export
 familyVals <- data.frame(val=0:6,
                          family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"))
+
+#' @describeIn glm_sim Old name
+sim_glm <- function (family, eta, phi, par2, link) {
+  glm_sim(family, eta, phi, par2, link)
+}
 
 ##' Simulate from a GLM
 ##'
 ##' Simulate values from some generalized linear models
 ##'
-sim_glm <- function (family, eta, phi, par2, link) {
+##' @export
+glm_sim <- function (family, eta, phi, par2, link) {
 
   n <- length(eta)
+  if (missing(link)) {
+    ## get the default link for this family
+    link <- familyVals[familyVals$val==family,2]
+  }
 
   ## get the densities for x
-  if (family == 1) {
+  if (family == 1 || family == 6) {
     if (link=="identity") mu <- eta
     else if (link=="inverse") mu <- 1/eta
     else if (link=="log") mu <- exp(eta)
@@ -604,6 +615,8 @@ sim_glm <- function (family, eta, phi, par2, link) {
 
     x <- rnorm(n, mu, sd=sqrt(phi))
     qx <- pnorm(x, mu, sd=sqrt(phi))
+
+    if (family == 6) out <- exp(out)
   }
   else if (family == 2) {
     if (link=="identity") mu <- eta
