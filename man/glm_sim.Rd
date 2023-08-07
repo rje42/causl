@@ -2,10 +2,18 @@
 % Please edit documentation in R/sample_data_funcs.R
 \name{sim_glm}
 \alias{sim_glm}
+\alias{glm_sim}
 \title{Simulate from a GLM}
 \usage{
 sim_glm(family, eta, phi, par2, link)
+
+glm_sim(family, eta, phi, par2, link)
 }
 \description{
 Simulate values from some generalized linear models
 }
+\section{Functions}{
+\itemize{
+\item \code{sim_glm()}: Old name
+
+}}
