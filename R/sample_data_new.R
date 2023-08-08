@@ -247,6 +247,7 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
     if (careful) OB <- rep(FALSE, nr)
 
     for (i in seq_along(LHS_Z)) {
+      mms[[1]][[i]] <- model.matrix(formulas[[1]][[i]], data=out[!OK,,drop=FALSE])
       out[[LHS_Z[i]]][!OK] <- rescaleVar(out[[LHS_Z[i]]][!OK], X=mms[[1]][[i]],
                                          family=famZ[i], pars=pars[[LHS_Z[i]]],
                                          link=link[[1]][i])
@@ -256,9 +257,12 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
         else if (famZ[i] %in% c(3,6)) OB <- OB | (tmpZ > rg[[i]][2])
       }
     }
-    for (i in seq_along(LHS_Y)) out[[LHS_Y[i]]][!OK] <- rescaleVar(out[[LHS_Y[i]]][!OK], X=mms[[3]][[i]],
+    for (i in seq_along(LHS_Y)) {
+      mms[[3]][[i]] <- model.matrix(formulas[[3]][[i]], data=out[!OK,,drop=FALSE])
+      out[[LHS_Y[i]]][!OK] <- rescaleVar(out[[LHS_Y[i]]][!OK], X=mms[[3]][[i]],
                                                                    family=famY[i], pars=pars[[LHS_Y[i]]],
                                                                    link=link[[3]][i])
+    }
 
     mms[[2]] = lapply(formulas[[2]], model.matrix, data=out[!OK,,drop=FALSE])
     for (i in seq_along(mms[[2]])) {
