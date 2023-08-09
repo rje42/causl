@@ -289,7 +289,7 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
   ## use the C++ implementation
   if (useC2) {
     ## transform to standard normal, but ensure that discrete variables are not transformed
-    x[,dim(Sigma)[2]-length(trunc)] <- qnorm(x[,dim(Sigma)[2]-length(trunc)])
+    x[,seq_len(dim(Sigma)[2]-length(trunc))] <- qnorm(x[,seq_len(dim(Sigma)[2]-length(trunc))])
 
     ## if all the same matrix, use single copula implementation
     if (N == 1) {
@@ -364,4 +364,5 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
 
   out
 }
+
 
