@@ -259,7 +259,7 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
   if(is.null(trunc)) return(dGaussCop(x, Sigma, log=log, useC=useC))
   ## check that trunc values are valid
   if (any(is.na(unlist(trunc)))) stop("NA or NaN in trunc values")
-  if (any(unlist(trunc) > 1 || unlist(trunc) < 0)) stop("trunc values not in [0,1]")
+  if (any(unlist(trunc) > 1 | unlist(trunc) < 0)) stop("trunc values not in [0,1]")
 
   d <- ncol(x)
   m <- length(trunc)

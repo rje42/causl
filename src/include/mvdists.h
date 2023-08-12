@@ -15,4 +15,4 @@ arma::vec dGDcop(arma::mat const &x,
                  Rcpp::List trunc,
                  bool const logd);
 
-
+void Rpr(Rcpp::NumericVector x);
