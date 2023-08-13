@@ -252,7 +252,7 @@ dfgmCopula <- function(u1, u2, alpha) {
 ##' @export
 dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
 
-  if(is.null(dim(x))) stop("x must be a matrix-like object")
+  if(is.null(dim(x)) || length(dim(x)) != 2) stop("x must be a matrix-like object")
   if(is.null(dim(Sigma))) stop("Sigma must be a matrix-like object")
 
   ## if no truncation points given, then assume just a Gaussian copula

@@ -221,9 +221,9 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   if (any(phi < 0)) return(-Inf)
 
   nv <- length(phi)
-  nc <- ncol(dat)
+  nc <- length(inCop)
   if (length(family) != nc) stop(paste0("family should have length ", nc))
-  else if (nv != nc) stop(paste0("length of phi should equal number of columns in dat"))
+  else if (nv != nc) stop(paste0("phi should have length ", nv))
 
   if (fam_cop == 2 && any(par2 <= 0)) stop("par2 must be positive for t-copula")
 
@@ -281,15 +281,15 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
       ## deal with Gaussian and t-copulas
       if (fam_cop == 1) {
-        # if (any(family == 5)) {
-        #   new_ord <- order(family[inCop])
-        #   dat_u2 <- dat_u[,inCop,drop=FALSE][,new_ord,drop=FALSE]
-        #   Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
-        #   cop <- dGaussDiscCop(dat_u2, Sigma=Sigma, trunc=mms$trunc, log=TRUE, useC=useC)
-        # }
-        # else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
+        if (any(family == 5 | family == 0)) {
+          # new_ord <- order(family[inCop])
+          dat_u2 <- dat_u[,inCop,drop=FALSE]#[,new_ord,drop=FALSE]
+          # Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
+          cop <- dGaussDiscCop(dat_u2, Sigma=Sigma, trunc=attr(mm, "trunc"), log=TRUE, useC=useC)
+        }
+        else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
 
-        cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
+        # cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
       }
       else if (fam_cop == 2) {
         #q_dat <- qt(as.matrix(dat_u), df=par2)
