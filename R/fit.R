@@ -65,11 +65,42 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   fam_cop <- last(family)
   link <- link_setup(link, family = family[-length(family)])
 
+  ## reorder variables so that discrete ones come last
+  ## for discrete variables, plug in empirical probabilities
+  disc <- family[-length(family)] == 5 | family[-length(family)] == 0
   LHS <- lhs(forms[-length(forms)])
+  trunc <- list()
+  if (any(disc)) {
+    wh_disc <- which(disc)
+
+    inCop <- unlist(LHS)
+    # ninCop <- setdiff(names(dat), inCop)
+    # dat <- dat[,c(inCop, ninCop)]
+
+    ## tabulate discrete variables
+    for (i in seq_along(wh_disc)) {
+      trunc[[i]] <- tabulate(dat[[LHS[wh_disc[i]]]] + 1)
+      if (sum(trunc[[i]]) == 0) stop("tabulation of values failed")
+      trunc[[i]] <- trunc[[i]]/sum(trunc[[i]])
+    }
+
+    ## then move discrete variables to the end
+    wh_cnt <- which(!disc)
+    new_ord <- c(wh_cnt, wh_disc, length(forms))
+    new_ord0 <- new_ord[-length(new_ord)]
+    dat[inCop] <- dat[inCop][new_ord0]
+    LHS <- LHS[new_ord0]
+    forms <- forms[new_ord]
+    family <- family[new_ord]
+    link <- link[new_ord0]
+  }
+
   full_form <- merge_formulas(forms)
   wh <- full_form$wh
   mm <- model.matrix(full_form$formula, data=dat)
   # mms = lapply(forms, model.matrix, data=dat)
+  ## attach truncation values as an attribute of the model matrix
+  attr(mm, "trunc") <- trunc
 
   ## set secondary parameter to 4 if in a t-Copula model
   if (missing(par2)) {
@@ -81,6 +112,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   }
 
 
+  ## get some intitial parameter values
   beta_start2 <- initializeParams2(dat, formulas=forms, family=family, link=link,
                                    full_form=full_form, kwd=kwd)
   theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
@@ -88,7 +120,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## other arguments to nll2()
   other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
-                      inCop = seq_along(LHS),
+                      inCop = seq_along(inCop),
                       fam_cop=fam_cop, fam=family[-length(family)], par2=par2,
                       useC=useC)
 
