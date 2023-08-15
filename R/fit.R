@@ -88,7 +88,13 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
     wh_cnt <- which(!disc)
     new_ord <- c(wh_cnt, wh_disc, length(forms))
     new_ord0 <- new_ord[-length(new_ord)]
-    dat[inCop] <- dat[inCop][new_ord0]
+    
+    
+    ord <- seq_len(ncol(dat))  
+    ord[match(inCop,names(dat))] <- ord[match(inCop,names(dat))[new_ord0]]
+    dat <- dat[,ord]
+               
+    # dat[inCop] <- dat[inCop][new_ord0]
     LHS <- LHS[new_ord0]
     forms <- forms[new_ord]
     family <- family[new_ord]
