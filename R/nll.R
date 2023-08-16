@@ -210,7 +210,7 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
 
 ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
                  family=rep(1,nc), link, par2=NULL, useC=TRUE,
-                exclude_Z = FALSE, outcome = "Y") {
+                exclude_Z = FALSE, outcome = "y") {
 
   if (missing(inCop)) inCop <- seq_along(dat)
 
