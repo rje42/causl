@@ -149,7 +149,7 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
     }
 
     if (only_masks) {
-      phi_m[family %in% 1:3] <- 1
+      phi_m[family[-length(family)] %in% 1:3] <- 1
     }
     else {
       ## pick mean and sd...

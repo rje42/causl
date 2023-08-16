@@ -209,7 +209,8 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
 
 
 ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
-                 family=rep(1,nc), link, par2=NULL, useC=TRUE) {
+                 family=rep(1,nc), link, par2=NULL, useC=TRUE,
+                exclude_Z = FALSE, outcome = "y") {
 
   if (missing(inCop)) inCop <- seq_along(dat)
 
@@ -238,7 +239,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   for (i in which(family != 5)) {
     tmp <- univarDens(dat[,i], eta[,i], phi=phi[i], family=family[i])
     log_den[,i] <- tmp$ld
-    dat_u[,i] <- tmp$u
+    dat_u[,i] <- pmax(pmin(tmp$u,1-1e-10),1e-10)
   }
   # wh_trunc = 0
   ## deal with discrete variables separately
@@ -307,7 +308,13 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
     cop <- log(causl::dfgmCopula(dat_u[,1], dat_u[,2], alpha=par[[1]]))
   }
 
-  out <- cop + rowSums(log_den)
+  if (exclude_Z == FALSE) {
+    out <- cop + rowSums(log_den)
+    
+  } else{
+    wh_y <- which(colnames(dat) == outcome)
+    out <- cop + log_den[,wh_y]
+  }
 
   out
 }
