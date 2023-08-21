@@ -110,7 +110,7 @@ arma::vec dGDcop2(arma::mat const &x,
   // Rprintf("x2.n_rows = %i, x2.n_cols = %i\n", x2.n_rows, x2.n_cols);
   // Rprintf("x2(0,0) = %1.1e\n", x2(0,0));
 
-  arma::mat wh = arma::zeros(n,q);
+  // arma::mat wh = arma::zeros(n,q);
 
   //Rcpp::NumericVector upper(p), lower(p);
   arma::mat upper(n,q), lower(n,q);
@@ -314,7 +314,7 @@ arma::vec dGDcop(arma::mat const &x,
   Rprintf("x2(0,0) = %1.1e\n", x2(0,0));
 
 
-  arma::mat wh = arma::zeros(n,q);
+  // arma::mat wh = arma::zeros(n,q);
 
   //Rcpp::NumericVector upper(p), lower(p);
   arma::mat upper(n,q), lower(n,q);
@@ -450,7 +450,7 @@ arma::vec dGDcop_sig(arma::mat const &x,
   // Rprintf("n = %i\n", n);
 
   // set up matrices for later use
-  arma::mat wh = arma::zeros(n,q);
+  // arma::mat wh = arma::zeros(n,q);
 
   //Rcpp::NumericVector upper(p), lower(p);
   arma::mat upper(n,q), lower(n,q);
@@ -470,7 +470,6 @@ arma::vec dGDcop_sig(arma::mat const &x,
     trunc2[j] = tmp3;
   }
 
-
   for (uword i = 0; i < n; i++) {
     // Rprintf("%i %i %i\n", p, sigma.n_rows, sigma.n_cols);
     // split the matrix into continuous/discrete pieces
@@ -483,6 +482,11 @@ arma::vec dGDcop_sig(arma::mat const &x,
     arma::mat sigma1_0 = SchurC(sigma1, sigma0, sigma10);
     arma::mat sigma1cov = sigma1_0.cols(0,q-1);
     arma::mat sigma1mn = sigma1_0.cols(q,sigma1_0.n_cols-1);
+
+    // get conditional mean for discrete part
+    arma::mat condmn = x.cols(0,p-1) * sigma1mn.t();
+    arma::mat x2 = x.cols(p,x.n_cols-1);
+    // x2 = x2 - condmn;
 
     // Rprintf("%i %i %i\n", sigma1_0.n_elem, sigma1cov.n_elem, sigma1mn.n_elem);
 
@@ -507,9 +511,6 @@ arma::vec dGDcop_sig(arma::mat const &x,
     out(i) = rootisum - 0.5 * (arma::dot(z, z) - arma::dot(x.row(i), x.row(i)));
 
     // Rprintf("n = %i, p = %i, q = %i, x.n_rows = %i, x.n_cols = %i\n", n, p, q, x.n_rows, x.n_cols);
-    arma::mat condmn = x.cols(0,p-1) * sigma1mn.t();
-    arma::mat x2 = x.cols(p,x.n_cols-1);
-    // x2 = x2 - condmn;
 
     // Rprintf("x2.n_rows = %i, x2.n_cols = %i\n", x2.n_rows, x2.n_cols);
     // Rprintf("x2(0,0) = %1.1e\n", x2(0,0));
@@ -611,6 +612,195 @@ arma::vec dGDcop_sig(arma::mat const &x,
   return exp(out);
 }
 
+// [[Rcpp::export]]
+arma::vec dGDcop2_sig(arma::mat const &x,
+                      arma::cube const &sigma,
+                      arma::mat const &eta,
+                      int q,
+                      bool const logd = false) {
+
+  // If no discrete component, then just call Gaussian only function
+  if (q == 0) return(dGcop_sig(x, sigma, logd));
+  int p = x.n_cols - q;
+
+  // n = number of instances
+  uword const n = x.n_rows;
+  //d = x.n_cols;
+  arma::vec out(n);
+  arma::rowvec z;
+  // uword const p = sigma.n_rows - trunc.length();   // p = no of cts components
+  // Rprintf("n = %i\n", n);
+
+  // set up matrices for later use
+  // arma::mat wh = arma::zeros(n,q);
+
+
+
+  //Rcpp::NumericVector upper(p), lower(p);
+  arma::mat upper(n,q), lower(n,q);
+  Rcpp::IntegerMatrix infin(n,q);
+  // Rcpp::NumericVector tmp2;
+  // Rcpp::List trunc2(trunc.length());
+
+  for (uword j = 0; j < q; j++) {
+    // Rprintf("j = %i\n", j);
+    // tmp2 = trunc[j];
+    // Rprintf("tmp2(0) = %2e, tmp2(1) = %2e\n", tmp2(0), tmp2(1));
+    // Rcpp::NumericVector tmp3 = Rcpp::cumsum(tmp2);
+
+    // tmp3.push_front(0);
+    // tmp3 = qnorm(tmp3);
+    // Rprintf("tmp2: %2e %2e\n", tmp3(0), tmp3(1));
+    // trunc2[j] = tmp3;
+  }
+
+  double zo[2] = {0.0, 1.0};
+
+  for (uword i = 0; i < n; i++) {
+    // Rprintf("%i %i %i\n", p, sigma.n_rows, sigma.n_cols);
+    // split the matrix into continuous/discrete pieces
+    arma::mat sigma0 = sigma.slice(i).submat(0,0,p-1,p-1);
+    arma::mat sigma1 = sigma.slice(i).submat(p,p,sigma.n_rows-1, sigma.n_cols-1);
+    arma::mat sigma10 = sigma.slice(i).submat(p,0,sigma.n_rows-1, p-1);
+
+    // Rprintf("%i %i %i\n", sigma0.n_elem, sigma1.n_elem, sigma10.n_elem);
+    // get the conditional covariance given the continuous part
+    arma::mat sigma1_0 = SchurC(sigma1, sigma0, sigma10);
+    arma::mat sigma1cov = sigma1_0.cols(0,q-1);
+    arma::mat sigma1mn = sigma1_0.cols(q,sigma1_0.n_cols-1);
+
+    arma::mat condmn = x.cols(0,p-1) * sigma1mn.t() + eta.cols(p,eta.n_cols-1);
+    arma::mat x2 = x.cols(p,x.n_cols-1);
+    // Rprintf("%i %i %i\n", sigma1_0.n_elem, sigma1cov.n_elem, sigma1mn.n_elem);
+
+    // double const constants = -(double)d/2.0 * log2pi;
+
+    // mat const rooti = arma::inv(trimatu(arma::chol(sigma)));
+    // check that continuous part has positive definite covariance
+    arma::vec const eig = arma::eig_sym(sigma0);
+    if (any(eig < 0)) {
+      out(i) = NA_REAL;
+      continue;
+      // for (uword i = 0; i < n; i++) out(i) = nan;
+    }
+    arma::mat const rooti = arma::inv(trimatu(arma::chol(sigma0)));
+    double const rootisum = arma::sum(log(rooti.diag()));
+
+    // Rprintf("%3e\n", rootisum);
+
+    z = x.row(i);
+    inplace_tri_mat_mult(z, rooti);
+    // Rprintf("%3e %3e\n", z(0), z(1));
+    out(i) = rootisum - 0.5 * (arma::dot(z, z) - arma::dot(x.row(i), x.row(i)));
+
+    // Rprintf("n = %i, p = %i, q = %i, x.n_rows = %i, x.n_cols = %i\n", n, p, q, x.n_rows, x.n_cols);
+    // x2 = x2 - condmn;
+
+    // Rprintf("x2.n_rows = %i, x2.n_cols = %i\n", x2.n_rows, x2.n_cols);
+    // Rprintf("x2(0,0) = %1.1e\n", x2(0,0));
+
+    // Rprintf("here...");
+
+    // now go through getting upper and lower limits
+    for (uword j = 0; j < q; j++) {
+      // Rprintf("0...");
+      // tmp2 = trunc2[j];
+      // Rprintf("%e %e\n", tmp2(0), tmp2(1));
+
+      // Rprintf("(i,j)=(%i,%i), length(tmp2) = %i...x2(i,j) = %e, tmp2(x2(i,j)) = %e\n", i, j, tmp2.length(), x2(i,j), tmp2(x2(i,j)));
+      infin(i,j) = x2(i,j);
+      if (infin(i,j) == 0) {
+        lower(i,j) = -1e10;
+        upper(i,j) = condmn(i,j)/sqrt(sigma1cov(j,j));
+      }
+      else if (infin(i,j) == 1) {
+        lower(i,j) = condmn(i,j)/sqrt(sigma1cov(j,j));
+        upper(i,j) = 1e10;
+      }
+    }
+
+    // Rprintf("1...");
+
+    arma::mat correl1cov(q, q, arma::fill::eye);
+
+    // Rprintf("2...");
+
+    // turn covariance into a correlation matrix
+    for (uword j1 = 0; j1 < q-1; j1++) for (uword j2 = j1+1; j2 < q; j2++) {
+      correl1cov(j1,j2) = correl1cov(j2,j1) = sigma1cov(j1,j2)/sqrt(sigma1cov(j1,j1)*sigma1cov(j2,j2));
+    }
+
+    // Rprintf("3...\n");
+
+    // arma::mat cDec = arma::chol(sigma1cov);
+    double tmp[q*(q-1)/2];
+
+    // assign upper triangular elements of correlation to tmp
+    int ct = 0;
+    for (uword j=0; j < q; j++) {
+      for (uword i=0; i < j; i++) {
+        tmp[ct] = correl1cov(i,j);
+        ct += 1;
+      }
+    }
+
+    // set up elements for FORTRAN function
+    double zmn[q];
+    for (uword j = 0; j < q; j++) {
+      zmn[j] = 0.0;
+    }
+    int df = 0, rnd = 1, inform = 0;
+    int maxpts = 25000;
+    double abseps = 1E-3, releps = 0.0;
+
+    // set up limits and indicators of infinite limits
+    double lower2[q], upper2[q];
+    int infin2[q];
+    double error = 0.0, value = 0.0;
+
+    for (uword j = 0; j < q; j++) {
+      lower2[j] = lower(i,j);
+      upper2[j] = upper(i,j);
+      infin2[j] = infin(i,j);
+    }
+
+    // C_mvtdst2(&q);
+
+    int q2 = q;
+
+    // Rprintf("q2 = %i\n", q2);
+    // Rprintf("df = %i\n", df);
+    // Rpr(lower2, q);
+    // Rpr(upper2, q);
+    // Rpri(infin2, q);
+    //
+    // Rprintf("tmp, zmn:\n");
+    // Rpr(tmp, q*(q-1)/2);
+    // Rpr(zmn, q);
+
+    C_mvtdst(&q2, // N
+             &df,  // DEGREES OF FREEDOM
+             lower2,  // LOWER
+             upper2,  // UPPER
+             infin2,  // INF INDICATOR
+             tmp,     // COVARIANCE
+             zmn,     // DELTA
+             &maxpts,  // MAXPTS
+             &abseps,  // ABSEPS
+             &releps,  // RELEPS
+             &error, // ERROR
+             &value, // VALUE
+             &inform,  // INFORM
+             &rnd);  //RND
+
+             // Rprintf("value = %f\n", value);
+             out(i) += log(value);
+  }
+
+  if (logd)
+    return out;
+  return exp(out);
+}
 
 // // C++ function to compute density at points of Gaussian copula
 // // [[Rcpp::export]]

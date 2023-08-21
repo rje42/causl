@@ -90,6 +90,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dGDcop2_sig
+arma::vec dGDcop2_sig(arma::mat const& x, arma::cube const& sigma, arma::mat const& eta, int q, bool const logd);
+RcppExport SEXP _causl_dGDcop2_sig(SEXP xSEXP, SEXP sigmaSEXP, SEXP etaSEXP, SEXP qSEXP, SEXP logdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat const& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::cube const& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< arma::mat const& >::type eta(etaSEXP);
+    Rcpp::traits::input_parameter< int >::type q(qSEXP);
+    Rcpp::traits::input_parameter< bool const >::type logd(logdSEXP);
+    rcpp_result_gen = Rcpp::wrap(dGDcop2_sig(x, sigma, eta, q, logd));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_causl_g", (DL_FUNC) &_causl_g, 1},
@@ -98,6 +113,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_causl_dGDcop2", (DL_FUNC) &_causl_dGDcop2, 4},
     {"_causl_dGDcop", (DL_FUNC) &_causl_dGDcop, 4},
     {"_causl_dGDcop_sig", (DL_FUNC) &_causl_dGDcop_sig, 4},
+    {"_causl_dGDcop2_sig", (DL_FUNC) &_causl_dGDcop2_sig, 5},
     {NULL, NULL, 0}
 };
 

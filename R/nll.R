@@ -285,7 +285,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
           # new_ord <- order(family[inCop])
           dat_u2 <- dat_u[,inCop,drop=FALSE]#[,new_ord,drop=FALSE]
           # Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
-          cop <- dGaussDiscCop(dat_u2, Sigma=Sigma, trunc=attr(mm, "trunc"), log=TRUE, useC=useC)
+          # cop <- dGaussDiscCop(dat_u2, Sigma=Sigma, trunc=attr(mm, "trunc"), log=TRUE, useC=useC)
+          cop <- dGaussDiscCop2(dat_u2, Sigma=Sigma, eta=eta[,inCop,drop=FALSE], log=TRUE, useC=useC)
         }
         else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
 
