@@ -427,12 +427,12 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
     ## if all the same matrix, use single copula implementation
     if (N == 1) {
       dim(Sigma) <- c(d,d)
-      out <- c(dGDcop2(x, Sigma, trunc=trunc, logd = log))
+      out <- c(dGDcop2(x, Sigma, trunc=trunc, logd = TRUE))
       if (log) return(out)
       else return(exp(out))
     }
     else {
-      out <- c(dGDcop2_sig(x = x, sigma = Sigma, eta = eta, q = m, logd = log))
+      out <- c(dGDcop2_sig(x = x, sigma = Sigma, eta = eta, q = m, logd = TRUE))
       if (log) return(out)
       else return(exp(out))
     }

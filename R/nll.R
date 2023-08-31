@@ -219,7 +219,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   }
 
   if (any(phi < 0)) return(-Inf)
-
+  
   nv <- length(phi)
   nc <- length(inCop)
   if (length(family) != nc) stop(paste0("family should have length ", nc))
@@ -227,6 +227,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
   if (fam_cop == 2 && any(par2 <= 0)) stop("par2 must be positive for t-copula")
 
+  ## number of discrete variables
+  ndisc <- sum(family %in% c(5,0))
   ## compute etas for each variable
   eta <- mm %*% beta
 
@@ -245,7 +247,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   for (i in which(family == 5)) {
     # wh_trunc <- wh_trunc + 1
     tmp <- univarDens(dat[,i], eta[,i], family=family[i])
-    log_den[,i] <- tmp$ld
+    # log_den[,i] <- tmp$ld
+    log_den[,i] <- 0 #### CHANGED HERE XI
     dat_u[,i] <- tmp$u
   }
 
@@ -286,7 +289,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
           dat_u2 <- dat_u[,inCop,drop=FALSE]#[,new_ord,drop=FALSE]
           # Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
           # cop <- dGaussDiscCop(dat_u2, Sigma=Sigma, trunc=attr(mm, "trunc"), log=TRUE, useC=useC)
-          cop <- dGaussDiscCop2(dat_u2, Sigma=Sigma, eta=eta[,inCop,drop=FALSE], log=TRUE, useC=useC)
+          cop <- dGaussDiscCop2(dat_u2, m = ndisc, Sigma=Sigma, eta=eta[,inCop,drop=FALSE], log=TRUE, useC=useC)
         }
         else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
 
