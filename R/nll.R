@@ -290,7 +290,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
           # Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
           eta2 <- eta
           # columns of eta that correspond to discrete variables
-          eta_disc <- eta[,(nc - ndisc+1):nc]
+          eta_disc <- as.matrix(eta[,(nc - ndisc+1):nc])
           # link functions that correspond to discrete variables
           link_disc <- link[(nc - ndisc+1):nc]
           # which columns to convert
