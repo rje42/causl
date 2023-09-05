@@ -714,13 +714,14 @@ arma::vec dGDcop2_sig(arma::mat const &x,
         lower(i,j) = -1e10;
         upper(i,j) = - condmn(i,j)/sqrt(sigma1cov(j,j));
         // XI
-        // marg(i,j) = R::pnorm(- condmn(i,j)/sqrt(sigma1cov(j,j)), 0.0,1.0,1,1);
+        // marg(i,j) = R::pnorm(- eta(i,p + j), 0.0,1.0,1,1);
+        // Rprintf("marg(i,j)) = %i\n", marg(i,j));
       }
       else if (infin(i,j) == 1) {
         lower(i,j) = - condmn(i,j)/sqrt(sigma1cov(j,j));
         upper(i,j) = 1e10;
         // XI
-        // marg(i,j) = R::pnorm(- condmn(i,j)/sqrt(sigma1cov(j,j)), 0.0,1.0,0,1);
+        // marg(i,j) = R::pnorm(- eta(i,p + j), 0.0,1.0,0,1);
         
       }
     }

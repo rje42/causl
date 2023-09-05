@@ -288,8 +288,20 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
           # new_ord <- order(family[inCop])
           dat_u2 <- dat_u[,inCop,drop=FALSE]#[,new_ord,drop=FALSE]
           # Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
-          # cop <- dGaussDiscCop(dat_u2, Sigma=Sigma, trunc=attr(mm, "trunc"), log=TRUE, useC=useC)
-          cop <- dGaussDiscCop2(dat_u2, m = ndisc, Sigma=Sigma, eta=eta[,inCop,drop=FALSE], log=TRUE, useC=useC)
+          eta2 <- eta
+          # columns of eta that correspond to discrete variables
+          eta_disc <- eta[,(nc - ndisc+1):nc]
+          # link functions that correspond to discrete variables
+          link_disc <- link[(nc - ndisc+1):nc]
+          # which columns to convert
+          eta_disc[,which(link_disc == "logit")] <- qnorm(expit(eta_disc[,which(link_disc == "logit")]))
+          
+          eta2[,(nc - ndisc+1):nc] <- eta_disc
+          
+          # conversion from logit to probit scale
+          # eta2[,(nc - ndisc+1):nc] <- qnorm(expit(eta[,(nc - ndisc+1):nc]))
+          
+          cop <- dGaussDiscCop2(dat_u2, m = ndisc, Sigma=Sigma, eta=eta2[,inCop,drop=FALSE], log=TRUE, useC=useC)
         }
         else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
 
