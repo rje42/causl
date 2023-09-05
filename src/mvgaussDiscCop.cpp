@@ -3,8 +3,9 @@
 #include "include/mvtnorm.h"
 #include "include/mvdists.h"
 
-// #include <Rcpp.h>
-// using namespace Rcpp;
+
+#include <Rcpp.h>
+using namespace Rcpp;
 
 void Rpr(double* x, int len) {
   // int len = x.length();
@@ -637,7 +638,7 @@ arma::vec dGDcop2_sig(arma::mat const &x,
 
 
   //Rcpp::NumericVector upper(p), lower(p);
-  arma::mat upper(n,q), lower(n,q);
+  arma::mat upper(n,q), lower(n,q), marg(n,q);
   Rcpp::IntegerMatrix infin(n,q);
   // Rcpp::NumericVector tmp2;
   // Rcpp::List trunc2(trunc.length());
@@ -711,14 +712,21 @@ arma::vec dGDcop2_sig(arma::mat const &x,
       infin(i,j) = x2(i,j);
       if (infin(i,j) == 0) {
         lower(i,j) = -1e10;
-        upper(i,j) = condmn(i,j)/sqrt(sigma1cov(j,j));
+        upper(i,j) = - condmn(i,j)/sqrt(sigma1cov(j,j));
+        // XI
+        // marg(i,j) = R::pnorm(- eta(i,p + j), 0.0,1.0,1,1);
+        // Rprintf("marg(i,j)) = %i\n", marg(i,j));
       }
       else if (infin(i,j) == 1) {
-        lower(i,j) = condmn(i,j)/sqrt(sigma1cov(j,j));
+        lower(i,j) = - condmn(i,j)/sqrt(sigma1cov(j,j));
         upper(i,j) = 1e10;
+        // XI
+        // marg(i,j) = R::pnorm(- eta(i,p + j), 0.0,1.0,0,1);
+        
       }
     }
-
+    // out(i) -= sum(marg.row(i));
+      
     // Rprintf("1...");
 
     arma::mat correl1cov(q, q, arma::fill::eye);

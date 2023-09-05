@@ -368,8 +368,9 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
 ##' Density of a Mixed Copula
 ##'
 ##' @param x matrix of samples on (0,1)
+##' @param m number of discrete variables
+##' @param eta eta matrix
 ##' @param Sigma collection of matrices
-##' @param trunc list of truncation points
 ##' @param log logical: return log=density?
 ##' @param useC logical: use the C routine?
 ##'
@@ -377,24 +378,24 @@ dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
 ##' @importFrom mvtnorm pmvnorm
 ##'
 ##' @export
-dGaussDiscCop2 <- function(x, Sigma, eta, log=FALSE, useC=TRUE) {
+dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
 
   if(is.null(dim(x)) || length(dim(x)) != 2) stop("x must be a matrix-like object")
   if(is.null(dim(Sigma))) stop("Sigma must be a matrix-like object")
 
   ## if no truncation points given, then assume just a Gaussian copula
-  if(is.null(trunc)) return(dGaussCop(x, Sigma, log=log, useC=useC))
+  # if(is.null(trunc)) return(dGaussCop(x, Sigma, log=log, useC=useC))
   ## check that trunc values are valid
-  if (any(is.na(unlist(trunc)))) stop("NA or NaN in trunc values")
-  if (any(unlist(trunc) > 1 | unlist(trunc) < 0)) stop("trunc values not in [0,1]")
+  # if (any(is.na(unlist(trunc)))) stop("NA or NaN in trunc values")
+  # if (any(unlist(trunc) > 1 | unlist(trunc) < 0)) stop("trunc values not in [0,1]")
 
   d <- ncol(x)
-  m <- length(trunc)
-  if (any(sapply(trunc, is.matrix))) {
-    useC2 <- FALSE
-    mv_trunc <- TRUE
-  }
-  else useC2 <- useC
+  # m <- length(trunc)
+  # if (any(sapply(trunc, is.matrix))) {
+  #   useC2 <- FALSE
+  #   mv_trunc <- TRUE
+  # }
+  # else useC2 <- useC
   n <- nrow(x)
   N <- length(Sigma)/d^2
   dim(Sigma) <- c(d,d,N)
@@ -410,12 +411,18 @@ dGaussDiscCop2 <- function(x, Sigma, eta, log=FALSE, useC=TRUE) {
     if (log) return(-Inf)
     else return(0)
   }
+  
+  ## check if all sigma matrices are the same
+  
+  # Sigma2 <- rep(Sigma[,,1],dim(Sigma)[3])
+  # dim(Sigma2) <- dim(Sigma)
+  # same_mat <- prod(Sigma2 == Sigma)
 
 
   ## use the C++ implementation
-  if (useC2) {
+  if (useC) {
     ## transform to standard normal, but ensure that discrete variables are not transformed
-    x[,seq_len(dim(Sigma)[2]-length(trunc))] <- qnorm(x[,seq_len(dim(Sigma)[2]-length(trunc))])
+    x[,seq_len(dim(Sigma)[2] - m)] <- qnorm(x[,seq_len(dim(Sigma)[2] - m)])
 
     ## if all the same matrix, use single copula implementation
     if (N == 1) {
@@ -425,7 +432,7 @@ dGaussDiscCop2 <- function(x, Sigma, eta, log=FALSE, useC=TRUE) {
       else return(exp(out))
     }
     else {
-      out <- c(dGDcop_sig(x, Sigma, trunc=trunc, logd = TRUE))
+      out <- c(dGDcop2_sig(x = x, sigma = Sigma, eta = eta, q = m, logd = TRUE))
       if (log) return(out)
       else return(exp(out))
     }
@@ -452,34 +459,34 @@ dGaussDiscCop2 <- function(x, Sigma, eta, log=FALSE, useC=TRUE) {
   xd <- x[,d-m+seq_len(m),drop=FALSE]
 
   ## if different truncation values for each variable, then deal with this
-  if (mv_trunc) {
-    truncM <- abind::abind(trunc, along=3)
-    cumPM <- apply(truncM, c(1,3), function(x) c(0,cumsum(x))) # cumulative probabilities
-    upper <- lower <- xd
-    idx <- cbind(c(xd+1), seq_len(n), rep(seq_len(m), each=n))
-    lower[] <- cumPM[idx]
-    idx[,1] <- idx[,1] + 1
-    upper[] <- cumPM[idx]
-    lower <- qnorm(pmax(0,lower))  ## put on normal scale
-    upper <- qnorm(pmin(1,upper))
-    dim(lower) <- dim(upper) <- c(n,m)
-    lower <- lapply(asplit(lower, 1), c)
-    upper <- lapply(asplit(upper, 1), c)
-
-    if (N == n) {
-      ## ALLOW THIS TO DEAL WITH A DISCRETE OUTCOME AS WELL
-      SigmaC <- asplit(SigmaC, 3)
-      SigmaM <- asplit(Sigma[d-m+seq_len(m),d-m+seq_len(m),,drop=FALSE], 3)
-      out <- mapply(function(x,y,z) log(pmvnorm(x,y,sigma=z)), lower, upper, SigmaC) +
-        - mapply(function(x,y,z) log(pmvnorm(x,y,sigma=z)), lower, upper, SigmaM)
-    }
-    else if (N == 1) {
-      SigmaM <- Sigma[d-m+seq_len(m),d-m+seq_len(m),1]
-      dim(SigmaC) <- dim(SigmaM) <- c(m,m)
-      out <- mapply(function(x,y) log(pmvnorm(x,y,sigma=SigmaC)), lower, upper) +
-        - mapply(function(x,y) log(pmvnorm(x,y,sigma=SigmaM)), lower, upper)
-    }
-  }
+  # if (mv_trunc) {
+  #   truncM <- abind::abind(trunc, along=3)
+  #   cumPM <- apply(truncM, c(1,3), function(x) c(0,cumsum(x))) # cumulative probabilities
+  #   upper <- lower <- xd
+  #   idx <- cbind(c(xd+1), seq_len(n), rep(seq_len(m), each=n))
+  #   lower[] <- cumPM[idx]
+  #   idx[,1] <- idx[,1] + 1
+  #   upper[] <- cumPM[idx]
+  #   lower <- qnorm(pmax(0,lower))  ## put on normal scale
+  #   upper <- qnorm(pmin(1,upper))
+  #   dim(lower) <- dim(upper) <- c(n,m)
+  #   lower <- lapply(asplit(lower, 1), c)
+  #   upper <- lapply(asplit(upper, 1), c)
+  # 
+  #   if (N == n) {
+  #     ## ALLOW THIS TO DEAL WITH A DISCRETE OUTCOME AS WELL
+  #     SigmaC <- asplit(SigmaC, 3)
+  #     SigmaM <- asplit(Sigma[d-m+seq_len(m),d-m+seq_len(m),,drop=FALSE], 3)
+  #     out <- mapply(function(x,y,z) log(pmvnorm(x,y,sigma=z)), lower, upper, SigmaC) +
+  #       - mapply(function(x,y,z) log(pmvnorm(x,y,sigma=z)), lower, upper, SigmaM)
+  #   }
+  #   else if (N == 1) {
+  #     SigmaM <- Sigma[d-m+seq_len(m),d-m+seq_len(m),1]
+  #     dim(SigmaC) <- dim(SigmaM) <- c(m,m)
+  #     out <- mapply(function(x,y) log(pmvnorm(x,y,sigma=SigmaC)), lower, upper) +
+  #       - mapply(function(x,y) log(pmvnorm(x,y,sigma=SigmaM)), lower, upper)
+  #   }
+  # }
 
   if (d > m) {
     rest <- dGaussCop(x=x[,seq_len(d-m),drop=FALSE], Sigma[seq_len(d-m),seq_len(d-m),,drop=FALSE], log = TRUE, useC=useC)

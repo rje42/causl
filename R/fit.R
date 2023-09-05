@@ -122,7 +122,8 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
                       inCop = seq_along(inCop),
                       fam_cop=fam_cop, fam=family[-length(family)], par2=par2,
-                      useC=useC)
+                      useC=useC,
+                      link = link)
 
   ## parameters to
   maxit <- con$maxit
