@@ -247,8 +247,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   for (i in which(family == 5)) {
     # wh_trunc <- wh_trunc + 1
     tmp <- univarDens(dat[,i], eta[,i], family=family[i])
-    # log_den[,i] <- tmp$ld
-    log_den[,i] <- 0 #### CHANGED HERE XI
+    log_den[,i] <- tmp$ld
+    # log_den[,i] <- 0 #### CHANGED HERE XI
     dat_u[,i] <- tmp$u
   }
 

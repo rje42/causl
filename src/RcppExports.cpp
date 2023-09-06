@@ -48,20 +48,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// dGDcop2
-arma::vec dGDcop2(arma::mat const& x, arma::mat const& sigma, Rcpp::List trunc, bool const logd);
-RcppExport SEXP _causl_dGDcop2(SEXP xSEXP, SEXP sigmaSEXP, SEXP truncSEXP, SEXP logdSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat const& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::mat const& >::type sigma(sigmaSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type trunc(truncSEXP);
-    Rcpp::traits::input_parameter< bool const >::type logd(logdSEXP);
-    rcpp_result_gen = Rcpp::wrap(dGDcop2(x, sigma, trunc, logd));
-    return rcpp_result_gen;
-END_RCPP
-}
 // dGDcop
 arma::vec dGDcop(arma::mat const& x, arma::mat const& sigma, Rcpp::List trunc, bool const logd);
 RcppExport SEXP _causl_dGDcop(SEXP xSEXP, SEXP sigmaSEXP, SEXP truncSEXP, SEXP logdSEXP) {
@@ -105,15 +91,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dGDcop2
+arma::vec dGDcop2(arma::mat const& x, arma::mat const& sigma, arma::mat const& eta, int q, bool const logd);
+RcppExport SEXP _causl_dGDcop2(SEXP xSEXP, SEXP sigmaSEXP, SEXP etaSEXP, SEXP qSEXP, SEXP logdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat const& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat const& >::type sigma(sigmaSEXP);
+    Rcpp::traits::input_parameter< arma::mat const& >::type eta(etaSEXP);
+    Rcpp::traits::input_parameter< int >::type q(qSEXP);
+    Rcpp::traits::input_parameter< bool const >::type logd(logdSEXP);
+    rcpp_result_gen = Rcpp::wrap(dGDcop2(x, sigma, eta, q, logd));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_causl_g", (DL_FUNC) &_causl_g, 1},
     {"_causl_dGcop", (DL_FUNC) &_causl_dGcop, 3},
     {"_causl_dGcop_sig", (DL_FUNC) &_causl_dGcop_sig, 3},
-    {"_causl_dGDcop2", (DL_FUNC) &_causl_dGDcop2, 4},
     {"_causl_dGDcop", (DL_FUNC) &_causl_dGDcop, 4},
     {"_causl_dGDcop_sig", (DL_FUNC) &_causl_dGDcop_sig, 4},
     {"_causl_dGDcop2_sig", (DL_FUNC) &_causl_dGDcop2_sig, 5},
+    {"_causl_dGDcop2", (DL_FUNC) &_causl_dGDcop2, 5},
     {NULL, NULL, 0}
 };
 
