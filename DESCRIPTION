@@ -1,7 +1,7 @@
 Package: causl
 Type: Package
 Title: Methods for Specifying, Simulating from and Fitting Causal Models
-Version: 0.4.3.9000
+Version: 0.5.0.9000
 Authors@R: c(
   person("Robin", "Evans", , "evans@stats.ox.ac.uk", role = c("aut", "cre")))
 Description: Model multivariate distributions using causal parameters.
