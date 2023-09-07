@@ -413,10 +413,9 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
   }
   
   ## check if all sigma matrices are the same
-  
-  # Sigma2 <- rep(Sigma[,,1],dim(Sigma)[3])
-  # dim(Sigma2) <- dim(Sigma)
-  # same_mat <- prod(Sigma2 == Sigma)
+  Sigma2 <- rep(Sigma[,,1],dim(Sigma)[3])
+  dim(Sigma2) <- dim(Sigma)
+  same_mat <- prod(Sigma2 == Sigma)
 
 
   ## use the C++ implementation
@@ -425,9 +424,9 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
     x[,seq_len(dim(Sigma)[2] - m)] <- qnorm(x[,seq_len(dim(Sigma)[2] - m)])
 
     ## if all the same matrix, use single copula implementation
-    if (N == 1) {
-      dim(Sigma) <- c(d,d)
-      out <- c(dGDcop2(x, Sigma, trunc=trunc, logd = TRUE))
+    if (same_mat) {
+      Sigma1 <- Sigma[,,1]
+      out <- c(dGDcop2(x = x, sigma = Sigma1, eta = eta, q = m, logd = TRUE))
       if (log) return(out)
       else return(exp(out))
     }

@@ -247,8 +247,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   for (i in which(family == 5)) {
     # wh_trunc <- wh_trunc + 1
     tmp <- univarDens(dat[,i], eta[,i], family=family[i])
-    # log_den[,i] <- tmp$ld
-    log_den[,i] <- 0 #### CHANGED HERE XI
+    log_den[,i] <- tmp$ld
+    # log_den[,i] <- 0 #### CHANGED HERE XI
     dat_u[,i] <- tmp$u
   }
 
@@ -290,7 +290,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
           # Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
           eta2 <- eta
           # columns of eta that correspond to discrete variables
-          eta_disc <- eta[,(nc - ndisc+1):nc]
+          eta_disc <- as.matrix(eta[,(nc - ndisc+1):nc])
           # link functions that correspond to discrete variables
           link_disc <- link[(nc - ndisc+1):nc]
           # which columns to convert
