@@ -339,7 +339,7 @@ print.cop_fit <- function(x, sandwich = TRUE, digits=3, ...) {
     cat("copula parameters:\n")
     print(formulas[[length(formulas)]])
 
-    if (nrow(x$pars[[i+1]]$beta) == 1 || ncol(x$pars[[i+1]]$beta) == 1) {
+    if (nrow(x$pars[[i+1]]$beta) == 1) {
       if (sandwich) {
         tab = cbind(est=c(x$pars[[i+1]]$beta), se=c(x$pars[[i+1]]$beta_se), sandwich=c(x$pars[[i+1]]$beta_sandwich))
         if (ncol(x$pars[[i+1]]$beta) == 1) {

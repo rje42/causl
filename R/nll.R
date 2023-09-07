@@ -219,7 +219,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   }
 
   if (any(phi < 0)) return(-Inf)
-  
+
   nv <- length(phi)
   nc <- length(inCop)
   if (length(family) != nc) stop(paste0("family should have length ", nc))
@@ -290,17 +290,18 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
           # Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
           eta2 <- eta
           # columns of eta that correspond to discrete variables
-          eta_disc <- as.matrix(eta[,(nc - ndisc+1):nc])
+          eta_disc <- eta[,nc-ndisc + seq_len(ndisc),drop=FALSE]
+
           # link functions that correspond to discrete variables
-          link_disc <- link[(nc - ndisc+1):nc]
+          link_disc <- link[nc-ndisc + seq_len(ndisc)]
           # which columns to convert
           eta_disc[,which(link_disc == "logit")] <- qnorm(expit(eta_disc[,which(link_disc == "logit")]))
-          
-          eta2[,(nc - ndisc+1):nc] <- eta_disc
-          
+
+          eta2[,nc-ndisc + seq_len(ndisc)] <- eta_disc
+
           # conversion from logit to probit scale
           # eta2[,(nc - ndisc+1):nc] <- qnorm(expit(eta[,(nc - ndisc+1):nc]))
-          
+
           cop <- dGaussDiscCop2(dat_u2, m = ndisc, Sigma=Sigma, eta=eta2[,inCop,drop=FALSE], log=TRUE, useC=useC)
         }
         else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
