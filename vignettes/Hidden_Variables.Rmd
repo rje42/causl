@@ -78,9 +78,17 @@ Indeed, they are all within two standard errors of their nominal values.
 
 We can also fit the data using maximum likelihood directly.  Set \code{eval=TRUE} 
 to run this chunk.
-```{r fit_data, eval=FALSE, cache=TRUE}
+```{r fit_data, eval=TRUE, cache=TRUE}
 out <- fitCausal(dat, formulas = list(L ~ A0, Y ~ A0*A1, ~1), family = c(3,3,1))
 out
 ```
 Again, all estimates are within two standard errors of the true values.
-
+```{r fit_data, eval=TRUE, cache=TRUE}
+out <- fitCausal(dat, formulas = list(L ~ A0, Y ~ A0*A1, ~1), family = c(3,3,1))
+out
+```
+```{r fit_dataU, eval=TRUE, cache=TRUE}
+dat <- dplyr::mutate(dat, Z = qnorm(U))
+out <- fitCausal(dat[1:2e2,], formulas = list(L ~ A0, Z ~ 1, Y ~ A0*A1, ~A0), family = c(3,1,3,1))
+out
+```
