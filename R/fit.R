@@ -69,11 +69,12 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## for discrete variables, plug in empirical probabilities
   disc <- family[-length(family)] == 5 | family[-length(family)] == 0
   LHS <- lhs(forms[-length(forms)])
+  inCop <- unlist(LHS)
   trunc <- list()
+
   if (any(disc)) {
     wh_disc <- which(disc)
 
-    inCop <- unlist(LHS)
     # ninCop <- setdiff(names(dat), inCop)
     # dat <- dat[,c(inCop, ninCop)]
 
@@ -86,9 +87,8 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
 
     ## then move discrete variables to the end
     wh_cnt <- which(!disc)
-    new_ord <- c(wh_cnt, wh_disc, length(forms))
+    new_ord <- c(wh_cnt, wh_disc, length(forms))  # adjust for multiple copula formulae
     new_ord0 <- new_ord[-length(new_ord)]
-    dat[inCop] <- dat[inCop][new_ord0]
     LHS <- LHS[new_ord0]
     forms <- forms[new_ord]
     family <- family[new_ord]
