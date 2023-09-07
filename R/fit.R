@@ -69,11 +69,12 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## for discrete variables, plug in empirical probabilities
   disc <- family[-length(family)] == 5 | family[-length(family)] == 0
   LHS <- lhs(forms[-length(forms)])
+  inCop <- unlist(LHS)
   trunc <- list()
+
   if (any(disc)) {
     wh_disc <- which(disc)
 
-    inCop <- unlist(LHS)
     # ninCop <- setdiff(names(dat), inCop)
     # dat <- dat[,c(inCop, ninCop)]
 
@@ -86,15 +87,9 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
 
     ## then move discrete variables to the end
     wh_cnt <- which(!disc)
-    new_ord <- c(wh_cnt, wh_disc, length(forms))
+    new_ord <- c(wh_cnt, wh_disc, length(forms))  # adjust for multiple copula formulae
     new_ord0 <- new_ord[-length(new_ord)]
-    
-    
-    ord <- seq_len(ncol(dat))  
-    ord[match(inCop,names(dat))] <- ord[match(inCop,names(dat))[new_ord0]]
-    dat <- dat[,ord]
-               
-    # dat[inCop] <- dat[inCop][new_ord0]
+s
     LHS <- LHS[new_ord0]
     forms <- forms[new_ord]
     family <- family[new_ord]
@@ -128,7 +123,8 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
                       inCop = seq_along(inCop),
                       fam_cop=fam_cop, fam=family[-length(family)], par2=par2,
-                      useC=useC)
+                      useC=useC,
+                      link = link)
 
   ## parameters to
   maxit <- con$maxit
@@ -344,7 +340,7 @@ print.cop_fit <- function(x, sandwich = TRUE, digits=3, ...) {
     cat("copula parameters:\n")
     print(formulas[[length(formulas)]])
 
-    if (nrow(x$pars[[i+1]]$beta) == 1 || ncol(x$pars[[i+1]]$beta) == 1) {
+    if (nrow(x$pars[[i+1]]$beta) == 1) {
       if (sandwich) {
         tab = cbind(est=c(x$pars[[i+1]]$beta), se=c(x$pars[[i+1]]$beta_se), sandwich=c(x$pars[[i+1]]$beta_sandwich))
         if (ncol(x$pars[[i+1]]$beta) == 1) {
