@@ -3,7 +3,8 @@ Type: Package
 Title: Methods for Specifying, Simulating from and Fitting Causal Models
 Version: 0.5.0.9000
 Authors@R: c(
-  person("Robin", "Evans", , "evans@stats.ox.ac.uk", role = c("aut", "cre")))
+  person("Robin", "Evans", , "evans@stats.ox.ac.uk", role = c("aut", "cre")),
+  person("Xi", "Lin", , "xi.lin@stx.ox.ac.uk", role = c("aut")))
 Description: Model multivariate distributions using causal parameters.
 License: GPL-2
 LazyData: TRUE
