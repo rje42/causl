@@ -89,7 +89,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
     wh_cnt <- which(!disc)
     new_ord <- c(wh_cnt, wh_disc, length(forms))  # adjust for multiple copula formulae
     new_ord0 <- new_ord[-length(new_ord)]
-s
+
     LHS <- LHS[new_ord0]
     forms <- forms[new_ord]
     family <- family[new_ord]
