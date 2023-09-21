@@ -4,14 +4,14 @@
 \alias{rescaleCop}
 \title{Rescale quantiles to conditional copula}
 \usage{
-rescaleCop(U, X, pars, family = 1)
+rescaleCop(U, X, beta, family = 1, par2)
 }
 \arguments{
 \item{U}{matrix of quantiles}
 
 \item{X}{model matrix of covariates}
 
-\item{pars}{list of parameters (see details)}
+\item{beta}{list of parameters (see details)}
 
 \item{family}{variety of copula to use}
 }

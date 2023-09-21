@@ -9,6 +9,11 @@
 ##'
 process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
 
+  # ## check list of formula
+  # if (ordering && !is.numeric(family[[1]]) && ("formula" %in% class(formulas[[1]]))) {
+  #   process_inputs2(formulas, pars, family, link, kwd)
+  # }
+
   ## check we have four groups of formulas
   if (length(formulas) != 4) stop("formulas must have length 4")
   if (missing(pars)) stop("Must supply parameter values")
@@ -32,7 +37,10 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
   else stop("family should be a list, or vector of length 4")
 
   ## check that supplied parameters are sufficient
-  nms <- lapply(pars, names)
+  nm_pars <- names(pars)
+  wh_cop <- which(nm_pars == kwd)
+  if (is.na(wh_cop)) stop("No parameters specified for copula")
+  nms <- lapply(pars[-wh_cop], names)
   bpres <- sapply(nms, function(x) "beta" %in% x)
   if (!all(bpres)) {
     plur <- sum(!bpres) > 1
@@ -56,6 +64,11 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
   LHS_Z <- lhs(formulas[[1]])
   LHS_X <- lhs(formulas[[2]])
   LHS_Y <- lhs(formulas[[3]])
+  rep_pars <- match(c(LHS_Z,LHS_X,LHS_Y), nm_pars, nomatch = 0L)
+  if (any(rep_pars == 0)) {
+    wh_nrep <- c(LHS_Z,LHS_X,LHS_Y)[rep_pars==0]
+    stop(paste0("Variable ", paste(wh_nrep, collapse=", "), "not represented in the parameters list"))
+  }
 
   formsZ <- lapply(formulas[[1]], terms)
   formsX <- lapply(formulas[[2]], terms)
@@ -141,8 +154,6 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
 
   if (ordering) {
 
-
-
     ## put some validation code in here for inversion method
 
     ## get formulas in right format
@@ -154,16 +165,37 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
     }
 
     ## get parameters in right format
-    if (!is.list(pars[[kwd]]$beta)) {
-      pars[[kwd]]$beta <- rep(list(pars[[kwd]]$beta), dY)
+    if (!setequal(names(pars[[kwd]]), LHS_Y)) {
+      if ("beta" %in% names(pars[[kwd]])) {
+        pars[[kwd]] <- list(list(list(beta=pars[[kwd]]$beta)))
+        names(pars[[kwd]]) <- LHS_Y
+      }
+      else {
+        nrep <- setdiff(LHS_Y, names(pars[[kwd]]))
+        if (length(nrep) > 0) stop(paste0("Variable ", paste(nrep, collapse=", "), "not represented in the copula parameters list"))
+        rep <- setdiff(names(pars[[kwd]]), LHS_Y)
+        if (length(rep) > 0) stop(paste0("Variable ", paste(nrep, collapse=", "), "represented in copula parameters list but not a response variable"))
+        stop("Shouldn't get here")
+      }
     }
-    if (!is.list(pars[[kwd]]$beta[[1]])) {
-      pars[[kwd]]$beta <- lapply(pars[[kwd]]$beta, function(x) rep(list(x), dZ))
-    }
+
+    # ## TRY TO CODE UP CHECK THAT EVERY COMBINATION HAS A beta PARAMETER
+    # if (any(!sapply(lapply(pars[[kwd]], names), "beta" %in% x))) {
+    #   stop("")
+    # }
 
     ## get family in right format
     if (!is.matrix(famCop)) {
-      family[[4]] <- matrix(famCop, dY, dZ)
+      if (dY == 1) {
+        family[[4]] <- list(unlist(family[[4]]))
+        names(family[[4]]) <- LHS_Y
+      }
+      else if (is.matrix(family[[4]]) && nrow(family[[4]] == dY)) {
+        family[[4]] <- apply(family[[4]], 1, c, simplify = FALSE)
+      }
+      else if (is.list(family[[4]]) && length(family[[4]] == dY)) {
+        if (any(lengths(family[[4]]) != dZ + seq_len(dY) - 1)) stop("Incorrect format of family parameters for copula with inversion method")
+      }
     }
   }
   else {
@@ -197,6 +229,10 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
               order=order))
 }
 
+# ##' Process inputs given in linear form
+# process_inputs2(formulas, pars, family, link, kwd, ordering=FALSE) {
+#   if (length(formulas))
+# }
 
 ##' Sample from a causal model
 ##'

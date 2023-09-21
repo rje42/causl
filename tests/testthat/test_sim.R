@@ -70,12 +70,12 @@ test_that("simulation works 3b", {
   expect_lt(abs(x_p[2]-0.5), 0.01)
 })
 
-set.seed(123)
+set.seed(124)
 fam <- c(1,5,1,1)
 pars <- list(z = list(beta=0, phi=1),
              x = list(beta=c(0,0.5)),
              y = list(beta=c(0,0.5), phi=0.5),
-             cop = list(beta=list(1)))
+             cop = list(y=list(z=list(beta=1))))
 dat <- rfrugalParam(1e4, formulas = forms, family=fam, par=pars,
                     method="inversion")
 

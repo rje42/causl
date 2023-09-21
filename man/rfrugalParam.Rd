@@ -7,8 +7,8 @@
 rfrugalParam(
   n,
   formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x), list(~1)),
+  family = c(1, 1, 1, 1),
   pars,
-  family,
   link = NULL,
   dat = NULL,
   careful = FALSE,
@@ -22,9 +22,9 @@ rfrugalParam(
 
 \item{formulas}{list of lists of formulas}
 
-\item{pars}{list of lists of parameters}
-
 \item{family}{families for Z,X,Y and copula}
+
+\item{pars}{list of lists of parameters}
 
 \item{link}{list of link functions}
 
@@ -49,11 +49,6 @@ Evans and Didelez (2021).
 \details{
 Samples from a given causal model using rejection sampling (or,
 if everything is discrete, direct sampling).
-
-The logical \code{careful} enables one to implement the full rejection
-sampling method, which means we do get exact samples.  However, this method
-may be slow, and in particular if we have an outlying value it may run very
-slowly indeed.
 
 The entries for  \code{formula} and \code{family} should each be a
 list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and
@@ -96,13 +91,18 @@ increases verbosity of output), \code{warn} (which currently does nothing),
 is recalled.
 Control parameters also include \code{cop}, which gives a keyword for the
 copula that defaults to \code{"cop"}.
+
+The logical \code{careful} enables one to implement the full rejection
+sampling method, which means we do get exact samples.  However, this method
+may be slow, and in particular if we have an outlying value it may run very
+slowly indeed.
 }
 \examples{
 pars <- list(z=list(beta=0, phi=1),
              x=list(beta=c(0,0.5), phi=1),
              y=list(beta=c(0,0.5), phi=0.5),
              cop=list(beta=1))
-causalSamp(100, pars = pars)
+rfrugalSim(100, pars = pars)
 
 
 }
