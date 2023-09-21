@@ -1,5 +1,51 @@
+##' Get weights for rejection sampling
+##'
+##' @param dat data frame of variables to change conditional distribution of
+##' @param mms list of model matrices
+##' @param family vector of distribution families
+##' @param pars parameters for new distributions
+##' @param qden functions for densities used to simulate variables
+##' @param link link functions for GLMs
+##'
+##' @return a numeric vector of weights
+##'
+##' @export
+rejectionWeights <- function (dat, mms,# formula,
+                              family, pars, qden, link) {
+
+  d <- ncol(dat)
+
+  if (d != length(mms)) stop("Inconsistent length of dat and mms")
+  if (d != length(family)) stop("Inconsistent length of dat and family")
+  if (d != length(pars)) stop("Inconsistent length of dat and pars")
+  if (d != length(qden)) stop("Inconsistent length of dat and family")
+
+  betas <- lapply(pars, function(x) x$beta)
+  eta <- mapply(function(X,y) X %*% y, mms, betas, SIMPLIFY = FALSE)
+
+  nms <- names(dat)
+
+  ## collect phi and par2 parameters
+  phi <- par2 <- numeric(d)
+  for (i in which(family %in% c(1:3,6))) {
+    phi[i] <- pars[[nms[i]]]$phi
+    if (family[i] == 2) par2[i] <- pars[[nms[i]]]$par2
+  }
+
+  wts <- get_X_density(dat, eta=eta, phi=phi, qden=qden, family=family,
+                       link=link, par2=par2)
+
+  if (any(is.na(wts))) stop("Problem with weights")
+
+  wts
+}
+
+
 ##' @describeIn sim_inversion Rejection sampling code
 sim_rejection <- function (out, proc_inputs, careful, control) {
+
+  n <- nrow(out)
+
   ## unpack proc_inputs
   formulas <- proc_inputs$formulas
   pars <- proc_inputs$pars

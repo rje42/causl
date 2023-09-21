@@ -5,8 +5,8 @@
 ##'
 ##' @param n number of samples required
 ##' @param formulas list of lists of formulas
-##' @param pars list of lists of parameters
 ##' @param family families for Z,X,Y and copula
+##' @param pars list of lists of parameters
 ##' @param link list of link functions
 ##' @param dat optional data frame of covariates
 ##' @param careful logical: should full rejection sampling method be used with
@@ -17,11 +17,6 @@
 ##'
 ##' @details Samples from a given causal model using rejection sampling (or,
 ##' if everything is discrete, direct sampling).
-##'
-##' The logical \code{careful} enables one to implement the full rejection
-##' sampling method, which means we do get exact samples.  However, this method
-##' may be slow, and in particular if we have an outlying value it may run very
-##' slowly indeed.
 ##'
 ##' The entries for  \code{formula} and \code{family} should each be a
 ##' list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and
@@ -67,12 +62,17 @@
 ##' Control parameters also include \code{cop}, which gives a keyword for the
 ##' copula that defaults to \code{"cop"}.
 ##'
+##' The logical \code{careful} enables one to implement the full rejection
+##' sampling method, which means we do get exact samples.  However, this method
+##' may be slow, and in particular if we have an outlying value it may run very
+##' slowly indeed.
+##'
 ##' @examples
 ##' pars <- list(z=list(beta=0, phi=1),
 ##'              x=list(beta=c(0,0.5), phi=1),
 ##'              y=list(beta=c(0,0.5), phi=0.5),
 ##'              cop=list(beta=1))
-##' causalSamp(100, pars = pars)
+##' rfrugalSim(100, pars = pars)
 ##'
 ## @importFrom frugalSim sim_chain
 ##'
@@ -80,8 +80,8 @@
 ##'
 ##' @export
 rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x), list( ~ 1)),
-                       pars, family, link=NULL, dat=NULL, careful=FALSE, method="rejection",
-                       control=list(), seed) {
+                       family = c(1,1,1,1), pars, link=NULL, dat=NULL, careful=FALSE,
+                       method="rejection", control=list(), seed) {
 
   # get control parameters or use defaults
   con = list(max_wt = 1, warn = 1, cop="cop", trace=0)
