@@ -1,5 +1,4 @@
 ## check that dGDCop2_sig works in the way that is intended
-Sigma <- matrix(c(1,0.3,0.3,1), 2, 2)
 forms <- list(Z ~ 1, X ~ Z, Y ~ X, ~ X)
 pars <- list(Z = list(beta = 0, phi = 1),
              X = list(beta = c(0,0.5)),
@@ -12,16 +11,16 @@ dat <- rfrugalParam(1e4, formulas = forms, family = c(1,5,5,1), pars = pars,
 
 modX <- glm(X ~ Z, data=dat, family=binomial)
 ps <- predict(modX, type = "response")
-dat <- dplyr::mutate(dat, wt = X/ps + (1-X)/(1-ps))
-modY <- glm(Y ~ X, data=dat, family=binomial, weights = wt)
+wt <- dat$X/ps + (1-dat$X)/(1-ps)
+modY <- suppressWarnings(glm(Y ~ X, data=dat, family=binomial, weights = wt))
 
 test_that("distribution is correct", {
-  expect_true(sqrt(sum(modX$coef - c(0,0.5))^2) < 0.1)
-  expect_true(sqrt(sum(modY$coef - c(-0.25,0.5))^2) < 0.1)
+  expect_true(sqrt(sum(modX$coef - c(0,0.5))^2) < 0.01)
+  expect_true(sqrt(sum(modY$coef - c(-0.25,0.5))^2) < 0.05)
 })
 
 ## try fitting model by ML
-out <- fitCausal(dat[1:5e2,], formulas = list(Y ~ X, Z ~ 1, ~ X), family=c(5,1,1))
+out <- fitCausal(dat[1:1e3,], formulas = list(Y ~ X, Z ~ 1, ~ X), family=c(5,1,1))
 
 test_that("fitting works", {
   expect_true(sqrt(sum(out$pars$Y$beta - c(-0.25,0.5))^2) < 0.1)

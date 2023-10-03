@@ -52,8 +52,6 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   method <- con$method
   con <- con[-c(1,2,3)]
 
-  # nll1 <- nll3(dat, formulas=formulas, family=family, link=link, par2=par2, kwd=kwd)
-
   ## may need to fix this to allow more flexibility in copula
   d <- length(formulas) - 1
   if (length(family) != length(formulas)) {

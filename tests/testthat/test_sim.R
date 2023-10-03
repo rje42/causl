@@ -69,3 +69,20 @@ test_that("simulation works 3b", {
   expect_gt(z_p, 0.02)
   expect_lt(abs(x_p[2]-0.5), 0.01)
 })
+
+set.seed(124)
+fam <- c(1,5,1,1)
+pars <- list(z = list(beta=0, phi=1),
+             x = list(beta=c(0,0.5)),
+             y = list(beta=c(0,0.5), phi=0.5),
+             cop = list(y=list(z=list(beta=1))))
+dat <- rfrugalParam(1e4, formulas = forms, family=fam, par=pars,
+                    method="inversion")
+
+z_p <- ks.test(pnorm(dat$z), runif(1e4))$p.value
+x_p <- glm(x ~ z, family=binomial, data=dat)$coef
+
+test_that("simulation (inv) works 1", {
+  expect_gt(z_p, 0.05)
+  expect_lt(abs(x_p[2]-0.5), 0.02)
+})

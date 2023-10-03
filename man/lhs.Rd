@@ -2,12 +2,17 @@
 % Please edit documentation in R/utility.R
 \name{lhs}
 \alias{lhs}
+\alias{lhs<-}
 \title{Get LHSs of list of formulae}
 \usage{
 lhs(formulas)
+
+lhs(formulas) <- value
 }
 \arguments{
 \item{formulas}{list of formulae}
+
+\item{value}{charachter vector to assign}
 }
 \description{
 Get LHSs of list of formulae
@@ -16,3 +21,8 @@ Get LHSs of list of formulae
 Returns character vector containing left-hand sides of a list of
 formulae.
 }
+\section{Functions}{
+\itemize{
+\item \code{lhs(formulas) <- value}: Assign LHSs to list of formulas
+
+}}

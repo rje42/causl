@@ -1,0 +1,42 @@
+---
+title: "Discrete Variables Copula"
+author: "Robin J. Evans"
+date: "`r Sys.Date()`"
+output: pdf_document
+vignette: >
+  %\VignetteIndexEntry{Discrete Variables Copula}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Incorporating discrete variables
+
+We can also fit models in which some of the covariates and/or outcomes are 
+binary.  For example, suppose we assume that 
+\begin{align*}
+Z_1 &\sim N(0, \sigma_1^2) & Z_2 &\sim \text{Bernoulli}(p_2) & Y \mid do(X=x) \sim N(0, \sigma_y^2)
+\end{align*}
+and $X \mid Z_1=z_1,Z_2=z_2 \sim \text{Bernoulli}(q)$, and we assume a Gaussian
+copula over $Z_1,Z_2,Y$ with correlation $R$, where $\rho_{Z_1Z_2} = 0.5$, 
+$\rho_{Z_1Y} = 0.3$ and $\rho_{Z_2Y} = 0.4$.
+
+Then we can set up this model in the usual way:
+```{r settings}
+forms <- list(list(Z1 ~ 1, Z2 ~ 1), X ~ Z1*Z2, Y ~ X, ~ 1)
+fams <- list(c(1,5), 5, 1, 1)
+pars <- list(Z1 = list(beta=0, phi=1),
+             Z2 = list(beta=0),
+             X = list(beta=c(-0.3,0.1,0.2,0)),
+             Y = list(beta=c(-0.25, 0.5), phi=0.5),
+             cop = list(beta=matrix(c(0.5,0.3,0.4), nrow=1)))
+```
+
+```{r simulate}
+set.seed(123)
+n <- 1e4
+dat <- rfrugalParam(n, formulas = forms, family = fams, pars = pars)
+```

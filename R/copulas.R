@@ -241,133 +241,6 @@ dfgmCopula <- function(u1, u2, alpha) {
 ##' Density of a Mixed Copula
 ##'
 ##' @param x matrix of samples on (0,1)
-##' @param Sigma collection of matrices
-##' @param trunc list of truncation points
-##' @param log logical: return log=density?
-##' @param useC logical: use the C routine?
-##'
-##' @return numeric vector of densities
-##' @importFrom mvtnorm pmvnorm
-##'
-##' @export
-dGaussDiscCop <- function(x, Sigma, trunc, log=FALSE, useC=TRUE) {
-
-  if(is.null(dim(x)) || length(dim(x)) != 2) stop("x must be a matrix-like object")
-  if(is.null(dim(Sigma))) stop("Sigma must be a matrix-like object")
-
-  ## if no truncation points given, then assume just a Gaussian copula
-  if(is.null(trunc)) return(dGaussCop(x, Sigma, log=log, useC=useC))
-  ## check that trunc values are valid
-  if (any(is.na(unlist(trunc)))) stop("NA or NaN in trunc values")
-  if (any(unlist(trunc) > 1 | unlist(trunc) < 0)) stop("trunc values not in [0,1]")
-
-  d <- ncol(x)
-  m <- length(trunc)
-  if (any(sapply(trunc, is.matrix))) {
-    useC2 <- FALSE
-    mv_trunc <- TRUE
-  }
-  else useC2 <- useC
-  n <- nrow(x)
-  N <- length(Sigma)/d^2
-  dim(Sigma) <- c(d,d,N)
-
-  if (any(x[,seq_len(d-m)] <= 0) ||
-      any(x[,seq_len(d-m)] >= 1) ||
-      any(x[,d-m+seq_len(m)] < 0)) {
-    stop("x's outside valid range")
-  }
-
-  ## if matrix invalid, then return 0/-Inf
-  if (any(is.na(Sigma))) {
-    if (log) return(-Inf)
-    else return(0)
-  }
-
-
-  ## use the C++ implementation
-  if (useC2) {
-    ## transform to standard normal, but ensure that discrete variables are not transformed
-    x[,seq_len(dim(Sigma)[2]-length(trunc))] <- qnorm(x[,seq_len(dim(Sigma)[2]-length(trunc))])
-
-    ## if all the same matrix, use single copula implementation
-    if (N == 1) {
-      dim(Sigma) <- c(d,d)
-      out <- c(dGDcop2(x, Sigma, trunc=trunc, logd = TRUE))
-      if (log) return(out)
-      else return(exp(out))
-    }
-    else {
-      out <- c(dGDcop_sig(x, Sigma, trunc=trunc, logd = TRUE))
-      if (log) return(out)
-      else return(exp(out))
-    }
-
-    # else if (N != n) {
-    #   Sigma <- Sigma[,,rep_len(seq_len(N), n)]
-    #   if (N > n) warning("Some matrices not used")
-    #   else if (N < n) warning("Recycling used")
-    # }
-    # # Sigma <- unlist(apply(Sigma, 3, list), recursive = FALSE)
-    # out <- c(dGcop_sig(qnorm(x), Sigma, logd=TRUE))
-    # # out <- out - rowSums(dnorm(qnorm(x), log=TRUE))
-    #
-    # if (log) return(c(out))
-    # else return(c(exp(out)))
-  }
-  # else {
-  #   stop("Not implemented in R")
-  # }
-
-  SigmaC <- apply(Sigma, 3, schur, seq_len(m)+d-m, seq_len(m)+d-m, seq_len(d-m))
-  dim(SigmaC) <- c(m,m,N)
-
-  xd <- x[,d-m+seq_len(m),drop=FALSE]
-
-  ## if different truncation values for each variable, then deal with this
-  if (mv_trunc) {
-    truncM <- abind::abind(trunc, along=3)
-    cumPM <- apply(truncM, c(1,3), function(x) c(0,cumsum(x))) # cumulative probabilities
-    upper <- lower <- xd
-    idx <- cbind(c(xd+1), seq_len(n), rep(seq_len(m), each=n))
-    lower[] <- cumPM[idx]
-    idx[,1] <- idx[,1] + 1
-    upper[] <- cumPM[idx]
-    lower <- qnorm(pmax(0,lower))  ## put on normal scale
-    upper <- qnorm(pmin(1,upper))
-    dim(lower) <- dim(upper) <- c(n,m)
-    lower <- lapply(asplit(lower, 1), c)
-    upper <- lapply(asplit(upper, 1), c)
-
-    if (N == n) {
-      ## ALLOW THIS TO DEAL WITH A DISCRETE OUTCOME AS WELL
-      SigmaC <- asplit(SigmaC, 3)
-      SigmaM <- asplit(Sigma[d-m+seq_len(m),d-m+seq_len(m),,drop=FALSE], 3)
-      out <- mapply(function(x,y,z) log(pmvnorm(x,y,sigma=z)), lower, upper, SigmaC) +
-        - mapply(function(x,y,z) log(pmvnorm(x,y,sigma=z)), lower, upper, SigmaM)
-    }
-    else if (N == 1) {
-      SigmaM <- Sigma[d-m+seq_len(m),d-m+seq_len(m),1]
-      dim(SigmaC) <- dim(SigmaM) <- c(m,m)
-      out <- mapply(function(x,y) log(pmvnorm(x,y,sigma=SigmaC)), lower, upper) +
-        - mapply(function(x,y) log(pmvnorm(x,y,sigma=SigmaM)), lower, upper)
-    }
-  }
-
-  if (d > m) {
-    rest <- dGaussCop(x=x[,seq_len(d-m),drop=FALSE], Sigma[seq_len(d-m),seq_len(d-m),,drop=FALSE], log = TRUE, useC=useC)
-    out <- out + rest
-  }
-
-  if (!log) out <- exp(out)
-
-  out
-}
-
-
-##' Density of a Mixed Copula
-##'
-##' @param x matrix of samples on (0,1)
 ##' @param m number of discrete variables
 ##' @param eta eta matrix
 ##' @param Sigma collection of matrices
@@ -411,7 +284,8 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
     if (log) return(-Inf)
     else return(0)
   }
-  
+
+
   ## check if all sigma matrices are the same
   Sigma2 <- rep(Sigma[,,1],dim(Sigma)[3])
   dim(Sigma2) <- dim(Sigma)
@@ -471,7 +345,7 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
   #   dim(lower) <- dim(upper) <- c(n,m)
   #   lower <- lapply(asplit(lower, 1), c)
   #   upper <- lapply(asplit(upper, 1), c)
-  # 
+  #
   #   if (N == n) {
   #     ## ALLOW THIS TO DEAL WITH A DISCRETE OUTCOME AS WELL
   #     SigmaC <- asplit(SigmaC, 3)
@@ -497,3 +371,34 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
   out
 }
 
+##' Vectorized conditional copula function
+##'
+##' @param U matrix of quantiles
+##' @param copula family of copula to use
+##' @param param vector of parameters
+##' @param par2 Degrees of freedom for t-copula
+##' @param inverse should inverse CDF be returned?
+##'
+##' @details Should have \code{nrow(U) = length(param)}.
+##' @importFrom copula cCopula
+##'
+cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
+  ## check param has right length
+  if (length(param) != nrow(U)) {
+    if (length(param) == 1) param <- rep_len(param, nrow(U))
+    else stop("'param' should have single entry or one for each row of 'U'")
+  }
+  ## get list of copulas
+  if (missing(par2)) {
+    cops <- lapply(param, copula)
+  } else {
+    cops <- lapply(param, function(x) copula(x,par2=par2))
+  }
+
+  splU <- apply(U, 1, FUN = function(x) x, simplify = FALSE)
+  out <- mapply(function (x,y) cCopula(x,y,inverse=inverse), splU, cops)
+
+  if (is.matrix(out)) out <- t(out)
+
+  return(out)
+}
