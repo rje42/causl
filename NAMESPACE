@@ -2,6 +2,7 @@
 
 S3method(print,cop_fit)
 export(causalSamp)
+export(copulaVals)
 export(dGaussCop)
 export(dGaussDiscCop2)
 export(dfgmCopula)
