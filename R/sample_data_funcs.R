@@ -450,7 +450,7 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
 
 ##' Numbers for parametric families
 ##'
-##' A data frame containing
+##' Each function returns a data frame containing
 ##' \itemize{
 ##' \item \code{val}: an integer
 ##' \item \code{family}: a vector giving the associated parametric family for that integer.
@@ -459,6 +459,11 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
 ##' @export
 familyVals <- data.frame(val=0:6,
                          family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"))
+
+##' @describeIn familyVals Values for copula families
+copulaVals <- data.frame(val=c(1:6,11),
+                         family=c("gaussian", "t", "Clayton", "Gumbel", "Frank", "Joe", "FGM"))
+
 
 #' @describeIn glm_sim Old name
 #' @inherit glm_sim

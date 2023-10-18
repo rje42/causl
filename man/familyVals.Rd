@@ -3,18 +3,28 @@
 \docType{data}
 \name{familyVals}
 \alias{familyVals}
+\alias{copulaVals}
 \title{Numbers for parametric families}
 \format{
+An object of class \code{data.frame} with 7 rows and 2 columns.
+
 An object of class \code{data.frame} with 7 rows and 2 columns.
 }
 \usage{
 familyVals
+
+copulaVals
 }
 \description{
-A data frame containing
+Each function returns a data frame containing
 \itemize{
 \item \code{val}: an integer
 \item \code{family}: a vector giving the associated parametric family for that integer.
 }
 }
+\section{Functions}{
+\itemize{
+\item \code{copulaVals}: Values for copula families
+
+}}
 \keyword{datasets}
