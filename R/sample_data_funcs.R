@@ -130,18 +130,27 @@ rescaleVar <- function(U, X, pars, family=1, link) {
 
   ## make U normal, t or gamma
   if (family == 1) {
-    if (link == "identity") Y <- qnorm(U, mean = eta, sd=sqrt(phi))
-    else if (link == "log") Y <- qnorm(U, mean = exp(eta), sd=sqrt(phi))
-    else if (link == "inverse") Y <- qnorm(U, mean = 1/eta, sd=sqrt(phi))
-    else stop("invalid link function for Gaussian distribution")
+    fam <- normal(link=link)
+    mu <- fam$linkinv(eta)
+    pars <- c(pars, list(mu=mu))
+    Y <- fam$scale(U, pars)
+    # if (link == "identity") Y <- qnorm(U, mean = eta, sd=sqrt(phi))
+    # else if (link == "log") Y <- qnorm(U, mean = exp(eta), sd=sqrt(phi))
+    # else if (link == "inverse") Y <- qnorm(U, mean = 1/eta, sd=sqrt(phi))
+    # else stop("invalid link function for Gaussian distribution")
   }
   else if (family == 2) {
     # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
 
-    if (link == "identity") Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
-    else if (link == "log") Y <- sqrt(phi)*qt(U, df=pars$par2) + exp(eta)
-    else if (link == "inverse") Y <- sqrt(phi)*qt(U, df=pars$par2) + 1/eta
-    else stop("invalid link function for t-distribution")
+    fam <- student(link=link)
+    mu <- fam$linkinv(eta)
+    pars <- c(pars, list(mu=mu))
+    Y <- fam$scale(U, pars)
+
+    # if (link == "identity") Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
+    # else if (link == "log") Y <- sqrt(phi)*qt(U, df=pars$par2) + exp(eta)
+    # else if (link == "inverse") Y <- sqrt(phi)*qt(U, df=pars$par2) + 1/eta
+    # else stop("invalid link function for t-distribution")
   }
   else if (family == 3) {
     # Y <- qexp(U, rate = 1/(exp(eta)*sqrt(phi)))
@@ -171,6 +180,9 @@ rescaleVar <- function(U, X, pars, family=1, link) {
     # }
     # Y <- rowSums(mat)
   }
+  # else if (family == 6) {
+  #
+  # }
   else stop("family must be between 0 and 5")
 
   ### get Z values to correct families
@@ -405,8 +417,8 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
       if (link[i] == "identity") mu <- eta[[i]]
       else if (link[i] == "exp") mu <- log(eta[[i]])
       else stop("invalid link function for log-normal distribution")
-      if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]])
-      else wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]](dat[,i]))
+      if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*sqrt(phi[i])*qden[[i]])
+      else wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*sqrt(phi[i])*qden[[i]](dat[,i]))
     }
     else stop("family[[2]] must be in the range 1 to 6")
   }
@@ -421,6 +433,13 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
 ##' @param link the input given to causalSamp()
 ##' @param family the list of families for Z,X and Y variables
 ##' @param vars a list of vectors of variable names with the same structure as \code{family}
+##'
+##' @details Note that \code{beta} and \code{lognormal} are not exponential
+##' dispersion families.  For the \code{beta} distribution we use the approach
+##' outlined in Cribari-Neta and Zeileis (2010), and for the \code{lognormal}
+##' we just treat as a normal distribution that is then exponentiated.
+##'
+##' @references F. Cribari-Neto, and A. Zeileis. Beta regression in R. \emph{Journal of Statistical Software} 34: 1-24, 2010.
 ##'
 ##' @export
 link_setup <- function(link, family, vars) {
@@ -513,5 +532,97 @@ linksList <- list(
 )
 
 
-familyVals <- data.frame(val=0:6,
-                         family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"))
+# familyVals <- data.frame(val=0:6,
+#                          family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"))
+
+familyVals <- data.frame(val=0:6,  #:7,
+                         family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"),
+                         func=c(NA, "normal", "student", NA, NA, NA, NA)) #, "poisson"))
+# ,                         phi=c(FALSE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, FALSE),
+#                          par2=c(FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE))
+
+##' @describeIn familyVals Values for copula families
+##' @export
+copulaVals <- data.frame(val=c(1:6,11),
+                         family=c("gaussian", "t", "Clayton", "Gumbel", "Frank", "Joe", "FGM"))
+
+
+#' @describeIn glm_sim Old name
+#' @inherit glm_sim
+sim_glm <- function (family, eta, phi, par2, link) {
+  glm_sim(family, eta, phi, par2, link)
+}
+
+##' Simulate from a GLM
+##'
+##' Simulate values from some generalized linear models
+##'
+##' @inherit rejectionWeights
+##' @inherit get_X_density
+##'
+##' @export
+glm_sim <- function (family, eta, phi, par2, link) {
+
+  n <- length(eta)
+  if (missing(link)) {
+    ## get the default link for this family
+    link <- familyVals[familyVals$val==family,2]
+  }
+
+  ## get the densities for x
+  if (family == 1 || family == 6) {
+    if (link=="identity") mu <- eta
+    else if (link=="inverse") mu <- 1/eta
+    else if (link=="log") mu <- exp(eta)
+    else stop("Not a valid link function for the Gaussian distribution")
+
+    x <- rnorm(n, mu, sd=sqrt(phi))
+    qx <- pnorm(x, mu, sd=sqrt(phi))
+
+    if (family == 6) out <- exp(out)
+  }
+  else if (family == 2) {
+    if (link=="identity") mu <- eta
+    else if (link=="inverse") mu <- 1/eta
+    else if (link=="log") mu <- exp(eta)
+    else stop("Not a valid link function for the t-distribution")
+
+    x <- rt(n, df=par2)*sqrt(phi) + mu
+    qx <- qt((x - mu)/sqrt(phi), df=par2)
+  }
+  else if (family == 3) {
+    if (link=="log") mu <- exp(eta)
+    else if (link=="identity") mu <- eta
+    else if (link=="inverse") mu <- 1/eta
+    else stop("Not a valid link function for the gamma distribution")
+
+    x <- rgamma(n, shape=1/phi, scale=phi*mu)
+    qx <- pgamma(x, shape=1/phi, scale=phi*mu)
+  }
+  else if (family == 4) {
+    if (link=="logit") mu <- expit(eta)
+    else if (link=="probit") mu <- pnorm(eta)
+    else stop("Not a valid link function for the beta distribution")
+
+    th1 <- mu/phi
+    th2 <- (1-mu)/phi
+
+    x <- rbeta(n, th1, th2)
+    qx <- qbeta(x, th1, th2)
+  }
+  else if (family == 5) {
+    if (link=="logit") mu <- expit(eta)
+    else if (link=="probit") mu <- pnorm(eta)
+    else stop("Not a valid link function for the Bernoulli distribution")
+
+    x <- rbinom(n, size=1, prob=mu)
+    qx <- dbinom(x, size=1, prob=mu)
+  }
+  else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
+
+  ## return quantile
+  attr(x, "quantile") <- qx
+
+  return(x)
+}
+
