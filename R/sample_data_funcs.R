@@ -625,4 +625,3 @@ glm_sim <- function (family, eta, phi, par2, link) {
 
   return(x)
 }
-
