@@ -21,7 +21,7 @@ get_max_weights(pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, link, ...)
 
 \item{link}{link functions for treatments}
 
-\item{...}{additional arguments}
+\item{...}{not currently used}
 }
 \description{
 Get maximum weight for each segment of a distribution

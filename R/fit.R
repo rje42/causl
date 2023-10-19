@@ -56,8 +56,6 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   method <- con$method
   con <- con[-c(1,2,3)]
 
-  # nll1 <- nll3(dat, formulas=formulas, family=family, link=link, par2=par2, kwd=kwd)
-
   ## may need to fix this to allow more flexibility in copula
   d <- length(formulas) - 1
   if (length(family) != length(formulas)) {
@@ -73,11 +71,13 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## for discrete variables, plug in empirical probabilities
   disc <- family[-length(family)] == 5 | family[-length(family)] == 0
   LHS <- lhs(forms[-length(forms)])
+
+  inCop <- unlist(LHS)
   trunc <- list()
+
   if (any(disc)) {
     wh_disc <- which(disc)
 
-    inCop <- unlist(LHS)
     # ninCop <- setdiff(names(dat), inCop)
     # dat <- dat[,c(inCop, ninCop)]
 
@@ -90,9 +90,9 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
 
     ## then move discrete variables to the end
     wh_cnt <- which(!disc)
-    new_ord <- c(wh_cnt, wh_disc, length(forms))
+    new_ord <- c(wh_cnt, wh_disc, length(forms))  # adjust for multiple copula formulae
     new_ord0 <- new_ord[-length(new_ord)]
-    dat[inCop] <- dat[inCop][new_ord0]
+
     LHS <- LHS[new_ord0]
     forms <- forms[new_ord]
     family <- family[new_ord]
@@ -115,17 +115,6 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## attach truncation values as an attribute of the model matrix
   attr(mm, "trunc") <- trunc
 
-  ## for discrete variables, plug in empirical probabilities
-  trunc <- list()
-  wh_disc <- which(family == 5)
-
-  for (i in seq_along(wh_disc)) {
-    trunc[[i]] <- tabulate(dat[[LHS[wh_disc[i]]]] + 1)
-    if (sum(trunc[[i]]) == 0) stop("tabulation of values failed")
-    trunc[[i]] <- trunc[[i]]/sum(trunc[[i]])
-  }
-  attr(mm, "trunc") <- trunc
-
   ## set secondary parameter to 4 if in a t-Copula model
   if (missing(par2)) {
     if (fam_cop == 2) {
@@ -146,7 +135,8 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
                       inCop = seq_along(inCop),
                       fam_cop=fam_cop, fam=family[-length(family)], par2=par2,
-                      useC=useC)
+                      useC=useC,
+                      link = link)
 
   ## parameters to
   maxit <- con$maxit
@@ -362,7 +352,7 @@ print.cop_fit <- function(x, sandwich = TRUE, digits=3, ...) {
     cat("copula parameters:\n")
     print(formulas[[length(formulas)]])
 
-    if (nrow(x$pars[[i+1]]$beta) == 1 || ncol(x$pars[[i+1]]$beta) == 1) {
+    if (nrow(x$pars[[i+1]]$beta) == 1) {
       if (sandwich) {
         tab = cbind(est=c(x$pars[[i+1]]$beta), se=c(x$pars[[i+1]]$beta_se), sandwich=c(x$pars[[i+1]]$beta_sandwich))
         if (ncol(x$pars[[i+1]]$beta) == 1) {

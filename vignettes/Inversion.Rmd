@@ -1,0 +1,70 @@
+---
+title: "Inversion Tutorial"
+author: "Robin J. Evans"
+date: "10/06/2023"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Inversion Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+In this tutorial, we show how to simulate using the inversion method, which is
+significantly faster than rejection sampling.  As always, start by loading the 
+package as well as the `survey` package.
+```{r setup, echo=2:3, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE); options(digits=3)
+library(causl)
+library(survey)
+```
+
+
+## Set Up the Model
+
+We begin by setting up the formulas, families and parameter values.  Here we are 
+again a modifed version of the Example R7 from Evans and Didelez (2023).  In this
+case we explicitly parameterize the $U$-$L$ relationship, and have a copula 
+covering only the response variable $Y$.  
+
+```{r setup_model}
+formulas = list(list(U ~ 1, L ~ U*A0),   # covariates
+                list(A0 ~ 1, A1 ~ A0*L), # treatments
+                Y ~ A0*A1,             # outcome
+                list(Y=list(U ~ A0*A1, L ~ A0*A1)))   # copula formulas defined differently
+fam = list(c(4,3), c(5,5), c(3), c(1,1))
+
+pars <- list(A0 = list(beta = 0),
+             U = list(beta = 0, phi=0.5),
+             L = list(beta = c(0.3,0.5,-0.2,-0.1), phi=1),
+             A1 = list(beta = c(-0.3,0.4,0.3,0)),
+             Y = list(beta = c(-0.5,0.2,0.3,0), phi=1),
+             cop = list(Y=list(U=list(beta=c(1,0,0,0)), L=list(beta=c(0.5,0,0,0)))) 
+             )  # parameters also different
+```
+
+```{r simulate}
+set.seed(123)
+n <- 1e4
+dat <- rfrugalParam(n, formulas, family=fam, pars=pars, method="inversion")
+# dat <- causalSamp(n, formulas, family=fam, pars=pars)
+```
+We can then check that parameter estimates match the intended values:
+```{r check_data}
+summary(glm(L ~ U*A0, family=Gamma(link="log"), data=dat))$coef
+glmA1 <- glm(A1 ~ A0*L, family=binomial, data=dat)
+summary(glmA1)$coef
+w <- predict(glmA1, type="response")
+wt <- dat$A1/w + (1-dat$A1)/(1-w)
+
+## wrong model
+mod_w <- svyglm(Y ~ A0*A1, family=Gamma(link="log"), 
+                design = svydesign(~1, weights=rep(1,nrow(dat)), data=dat))
+summary(mod_w)$coef
+## correct model
+mod_c <- svyglm(Y ~ A0*A1, family=Gamma(link="log"), 
+                design = svydesign(~1, weights=wt, data=dat))
+summary(mod_c)$coef
+```
+The `A0` and `A1` coefficients of the naïve and correct models show that
+IPW works very well.  
+

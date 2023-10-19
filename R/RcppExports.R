@@ -13,15 +13,19 @@ dGcop_sig <- function(x, sigma, logd = FALSE) {
     .Call(`_causl_dGcop_sig`, x, sigma, logd)
 }
 
-dGDcop2 <- function(x, sigma, trunc, logd = FALSE) {
-    .Call(`_causl_dGDcop2`, x, sigma, trunc, logd)
-}
-
 dGDcop <- function(x, sigma, trunc, logd = FALSE) {
     .Call(`_causl_dGDcop`, x, sigma, trunc, logd)
 }
 
 dGDcop_sig <- function(x, sigma, trunc, logd = FALSE) {
     .Call(`_causl_dGDcop_sig`, x, sigma, trunc, logd)
+}
+
+dGDcop2_sig <- function(x, sigma, eta, q, logd = FALSE) {
+    .Call(`_causl_dGDcop2_sig`, x, sigma, eta, q, logd)
+}
+
+dGDcop2 <- function(x, sigma, eta, q, logd = FALSE) {
+    .Call(`_causl_dGDcop2`, x, sigma, eta, q, logd)
 }
 

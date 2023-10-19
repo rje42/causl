@@ -124,9 +124,12 @@ sim_X <- function(n, fam_x, theta, offset, sim=TRUE) {
 ##' @export
 rescaleVar <- function(U, X, pars, family=1, link) {
 
+  # cat("fam=", family, ", link=", link, "\n", sep="")
+
   ## get linear component
   eta <- X %*% pars$beta
   phi <- pars$phi
+  if (is.null(phi) && family %in% 1:3) stop("Variance parameter should be specified")
 
   ## make U normal, t or gamma
   if (family == 1) {
@@ -189,6 +192,76 @@ rescaleVar <- function(U, X, pars, family=1, link) {
   # nms <- names(dat)[grep("z", names(dat))]
 
   return(Y)
+}
+
+
+##' Rescale quantiles to conditional copula
+##'
+##' @param U matrix of quantiles
+##' @param X model matrix of covariates
+##' @param beta list of parameters (see details)
+##' @param family variety of copula to use
+## @param link link function
+##'
+##' @details The variable to be transformed must be in the final column of
+##' \code{U}, with variables being conditioned upon in the earlier columns.
+##'
+##' \code{family} can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
+##' Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. Gamma distributed,
+##' beta distributed or discrete respectively. \code{pars} should be a list
+##' with entries \code{beta} and \code{phi}, as well as possibly \code{par2} if
+##' \code{family=2}.
+##' \code{U} should have the same length as \code{X} has rows, and \code{X}
+##' should have the same number of columns as the length of \code{pars$beta}.
+##'
+##' @return vector of rescaled quantiles
+##'
+##' @importFrom copula normalCopula tCopula
+##' @inherit sim_glm
+##'
+##' @export
+rescaleCop <- function(U, X, beta, family=1, par2) {
+
+  if (!is.matrix(U)) stop("'U' should be a matrix")
+  if (!is.matrix(X)) stop("'X' should be a matrix")
+  if (nrow(U) != nrow(X)) stop("'U' and 'X' should have same number of rows")
+
+  ## get linear component
+  eta <- X %*% beta
+
+  ## make U normal, t or gamma
+  if (family == 1) {
+    # if (link == "tanh")
+    param <- 2*expit(eta) - 1
+    Y <- cVCopula(U, copula = normalCopula, param = param, inverse=TRUE)
+  }
+  else if (family == 2) {
+    # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
+    param <- 2*expit(eta) - 1
+    Y <- cVCopula(U, copula = tCopula, par2=par2, param = param, inverse=TRUE)
+  }
+  else if (family == 3) {
+    param <- exp(eta) - 1
+    Y <- cVCopula(U, copula = claytonCopula, param = param, inverse=TRUE)
+  }
+  else if (family == 4) {
+    param <- exp(eta) + 1
+    Y <- cVCopula(U, copula = gumbelCopula, param = param, inverse=TRUE)
+  }
+  else if (family == 5) {
+    param <- eta
+    Y <- cVCopula(U, copula = frankCopula, param = param, inverse=TRUE)
+  }
+  else if (family == 6) {
+    param <- exp(eta) + 1
+    Y <- cVCopula(U, copula = joeCopula, param = param, inverse=TRUE)
+  }
+  else stop("family must be between 0 and 5")
+
+  ### get Z values to correct families
+  # nms <- names(dat)[grep("z", names(dat))]
+
+  return(Y[,ncol(Y)])
 }
 
 
@@ -315,30 +388,15 @@ sim_CopVal <- function(dat, family, par, par2, model_matrix) {
   return(dat)
 }
 
-##' Get weights for rejection sampling
+##' Get density of treatments
 ##'
-##' @param dat data frame of variables to change conditional distribution of
-##' @param mms list of model matrices
-##' @param family vector of distribution families
-##' @param pars parameters for new distributions
-##' @param qden functions for densities used to simulate variables
-##' @param link link functions for GLMs
+##' @inherit rejectionWeights
+##' @param eta list (or matrix) of linear forms
+##' @param phi vector of dispersion coefficients
+##' @param par2 vector of degrees of freedom
+##' @param log logical: should log-density be returned?
 ##'
-##' @return a numeric vector of weights
-##'
-##' @export
-rejectionWeights <- function (dat, mms,# formula,
-                           family, pars, qden, link) {
-
-  d <- ncol(dat)
-
-  if (d != length(mms)) stop("Inconsistent length of dat and mms")
-  if (d != length(family)) stop("Inconsistent length of dat and family")
-  if (d != length(pars)) stop("Inconsistent length of dat and pars")
-  if (d != length(qden)) stop("Inconsistent length of dat and family")
-
-  betas <- lapply(pars, function(x) x$beta)
-  eta <- mapply(function(X,y) X %*% y, mms, betas, SIMPLIFY = FALSE)
+get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
 
   nms <- names(dat)
 
@@ -417,8 +475,8 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
       if (link[i] == "identity") mu <- eta[[i]]
       else if (link[i] == "exp") mu <- log(eta[[i]])
       else stop("invalid link function for log-normal distribution")
-      if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*sqrt(phi[i])*qden[[i]])
-      else wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*sqrt(phi[i])*qden[[i]](dat[,i]))
+      if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]])
+      else wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]](dat[,i]))
     }
     else stop("family[[2]] must be in the range 1 to 6")
   }
@@ -535,6 +593,15 @@ linksList <- list(
 # familyVals <- data.frame(val=0:6,
 #                          family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"))
 
+##' Numbers for parametric families
+##'
+##' Each function returns a data frame containing
+##' \itemize{
+##' \item \code{val}: an integer
+##' \item \code{family}: a vector giving the associated parametric family for that integer.
+##' }
+##'
+##' @export
 familyVals <- data.frame(val=0:6,  #:7,
                          family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"),
                          func=c(NA, "normal", "student", NA, NA, NA, NA)) #, "poisson"))

@@ -6,7 +6,7 @@
 \alias{copulaVals}
 \title{Numbers for parametric families}
 \format{
-An object of class \code{data.frame} with 7 rows and 2 columns.
+An object of class \code{data.frame} with 7 rows and 3 columns.
 
 An object of class \code{data.frame} with 7 rows and 2 columns.
 }
@@ -22,18 +22,9 @@ Each function returns a data frame containing
 \item \code{family}: a vector giving the associated parametric family for that integer.
 }
 }
-\details{
-Note that \code{beta} and \code{lognormal} are not exponential
-dispersion families.  For the \code{beta} distribution we use the approach
-outlined in Cribari-Neta and Zeileis (2010), and for the \code{lognormal}
-we just treat as a normal distribution that is then exponentiated.
-}
 \section{Functions}{
 \itemize{
 \item \code{copulaVals}: Values for copula families
 
 }}
-\references{
-F. Cribari-Neto, and A. Zeileis. Beta regression in R. \emph{Journal of Statistical Software} 34: 1-24, 2010.
-}
 \keyword{datasets}
