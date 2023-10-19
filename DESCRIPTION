@@ -7,7 +7,7 @@ Authors@R: c(
 Description: Model multivariate distributions using causal parameters.
 License: GPL-2
 LazyData: TRUE
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3
 Encoding: UTF-8
 Depends: R (>= 3.5.0), 
   rje, 
@@ -32,3 +32,4 @@ Suggests:
 VignetteBuilder: knitr
 NeedsCompilation: yes
 Config/testthat/edition: 3
+Roxygen: list(markdown = TRUE)
