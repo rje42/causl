@@ -102,6 +102,20 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
     ord_mat[dZ + seq_len(dX), ] <- 1*t(sapply(formsX, function(x) vars %in% attr(x, "term.labels")))
     ord_mat[dZ + dX + seq_len(dY), ] <- 1*t(sapply(formsY, function(x) vars %in% attr(x, "term.labels")))
 
+    if (!is.null(formulas[[4]][LHS_Y])) {
+      ## look for possible loops in copula formulae
+      cop_frms <- formulas[[4]][LHS_Y]
+      if (is.list(cop_frms) && length(cop_frms) > 0 && is.list(cop_frms[[1]])) {
+        pred <- lapply(cop_frms, function (x) sapply(x, lhs))
+        ord_mat[dZ + dX + seq_len(dY), ] <- ord_mat[dZ + dX + seq_len(dY), ] +
+          1*t(sapply(pred, function(x) vars %in% x))
+        ord_mat[] <- pmin(ord_mat, 1)
+      }
+    }
+
+    ord_mat[dZ + dX + seq_len(dY), ] <- ord_mat[dZ + dX + seq_len(dY), ] +
+      1*t(sapply(formsY, function(x) vars %in% attr(x, "term.labels")))
+
     order <- topOrd(ord_mat)
     if (any(is.na(order))) stop("Formulae contain cyclic dependencies")
   }
