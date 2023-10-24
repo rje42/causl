@@ -73,6 +73,9 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
   formsZ <- lapply(formulas[[1]], terms)
   formsX <- lapply(formulas[[2]], terms)
   formsY <- lapply(formulas[[3]], terms)
+  if (is.list(formulas[[4]]) && length(formulas[[4]]) > 0) {
+    ## put in code to check that copulae formulas and parameters have matching lengths
+  }
 
   for (i in seq_along(formulas[[1]])) {
     npar <- length(attr(formsZ[[i]], "term.labels")) + attr(formsZ[[i]], "intercept")
