@@ -221,7 +221,8 @@ rescaleCop <- function(U, X, beta, family=1, par2) {
   if (family == 1) {
     # if (link == "tanh")
     param <- 2*expit(eta) - 1
-    Y <- cVCopula(U, copula = normalCopula, param = param, inverse=TRUE)
+    # Y <- cVCopula(U, copula = normalCopula, param = param, inverse=TRUE)
+    Y <- pnorm(qnorm(U[,2])*sqrt(1-param^2)+param*qnorm(U[,1]))
   }
   else if (family == 2) {
     # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
