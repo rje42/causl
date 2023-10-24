@@ -508,7 +508,7 @@ glm_sim <- function (family, eta, phi, par2, link) {
     else stop("Not a valid link function for the t-distribution")
 
     x <- rt(n, df=par2)*sqrt(phi) + mu
-    qx <- qt((x - mu)/sqrt(phi), df=par2)
+    qx <- pt((x - mu)/sqrt(phi), df=par2)
   }
   else if (family == 3) {
     if (link=="log") mu <- exp(eta)
@@ -528,7 +528,7 @@ glm_sim <- function (family, eta, phi, par2, link) {
     th2 <- (1-mu)/phi
 
     x <- rbeta(n, th1, th2)
-    qx <- qbeta(x, th1, th2)
+    qx <- pbeta(x, th1, th2)
   }
   else if (family == 5) {
     if (link=="logit") mu <- expit(eta)
@@ -538,7 +538,7 @@ glm_sim <- function (family, eta, phi, par2, link) {
     x <- rbinom(n, size=1, prob=mu)
     qx <- dbinom(x, size=1, prob=mu)
   }
-  else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
+  else stop("Only Gaussian, t, beta, gamma, Bernoulli and log-normal distributions are allowed")
 
   ## return quantile
   attr(x, "quantile") <- qx
