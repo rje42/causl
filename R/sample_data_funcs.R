@@ -499,7 +499,10 @@ glm_sim <- function (family, eta, phi, par2, link) {
     x <- rnorm(n, mu, sd=sqrt(phi))
     qx <- pnorm(x, mu, sd=sqrt(phi))
 
-    if (family == 6) out <- exp(out)
+    if (family == 6) {
+      out <- exp(out)
+      qx <- qx/out
+    }
   }
   else if (family == 2) {
     if (link=="identity") mu <- eta
