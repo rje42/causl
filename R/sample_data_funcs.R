@@ -646,7 +646,10 @@ glm_sim <- function (family, eta, phi, par2, link) {
     x <- rnorm(n, mu, sd=sqrt(phi))
     qx <- pnorm(x, mu, sd=sqrt(phi))
 
-    if (family == 6) out <- exp(out)
+    if (family == 6) {
+      out <- exp(out)
+      qx <- qx/out
+    }
   }
   else if (family == 2) {
     if (link=="identity") mu <- eta
@@ -655,7 +658,7 @@ glm_sim <- function (family, eta, phi, par2, link) {
     else stop("Not a valid link function for the t-distribution")
 
     x <- rt(n, df=par2)*sqrt(phi) + mu
-    qx <- qt((x - mu)/sqrt(phi), df=par2)
+    qx <- pt((x - mu)/sqrt(phi), df=par2)
   }
   else if (family == 3) {
     if (link=="log") mu <- exp(eta)
@@ -675,7 +678,7 @@ glm_sim <- function (family, eta, phi, par2, link) {
     th2 <- (1-mu)/phi
 
     x <- rbeta(n, th1, th2)
-    qx <- qbeta(x, th1, th2)
+    qx <- pbeta(x, th1, th2)
   }
   else if (family == 5) {
     if (link=="logit") mu <- expit(eta)
