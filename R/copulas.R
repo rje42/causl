@@ -259,7 +259,6 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
   ## if no truncation points given, then assume just a Gaussian copula
   # if(is.null(trunc)) return(dGaussCop(x, Sigma, log=log, useC=useC))
   ## check that trunc values are valid
-
   # if (any(is.na(unlist(trunc)))) stop("NA or NaN in trunc values")
   # if (any(unlist(trunc) > 1 | unlist(trunc) < 0)) stop("trunc values not in [0,1]")
 
@@ -270,7 +269,6 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
   #   mv_trunc <- TRUE
   # }
   # else useC2 <- useC
-
   n <- nrow(x)
   N <- length(Sigma)/d^2
   dim(Sigma) <- c(d,d,N)
@@ -293,6 +291,7 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
   dim(Sigma2) <- dim(Sigma)
   same_mat <- prod(Sigma2 == Sigma)
 
+
   ## use the C++ implementation
   if (useC) {
     ## transform to standard normal, but ensure that discrete variables are not transformed
@@ -302,7 +301,6 @@ dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
     if (same_mat) {
       Sigma1 <- Sigma[,,1]
       out <- c(dGDcop2(x = x, sigma = Sigma1, eta = eta, q = m, logd = TRUE))
-
       if (log) return(out)
       else return(exp(out))
     }
@@ -404,4 +402,3 @@ cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
 
   return(out)
 }
-

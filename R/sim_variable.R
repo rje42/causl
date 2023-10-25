@@ -23,9 +23,11 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles) {
   vnm <- lhs(formulas[[1]])
   if (length(vnm) != 1L) stop("Unable to extract variable name")
 
+  quantiles[[vnm]] <- qY
+
   LHS_cop <- lhs(formulas[[2]])
 
-  for (i in seq_along(formulas[[2]])) {
+  for (i in rev(seq_along(formulas[[2]]))) {
     X <- model.matrix(formulas[[2]][[i]], data=dat)
     # eta <- X %*% pars[[2]][[i]]$beta
 
@@ -40,7 +42,7 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles) {
   Y <- rescaleVar(qY, X=X, family=family[[1]], pars=pars[[1]], link=link[[1]])
 
   dat[[vnm]] <- Y
-  quantiles[[vnm]] <- qY
+  # quantiles[[vnm]] <- qY
   attr(dat, "quantiles") <- quantiles
 
   return(dat)

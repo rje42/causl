@@ -1,7 +1,7 @@
 Package: causl
 Type: Package
 Title: Methods for Specifying, Simulating from and Fitting Causal Models
-Version: 0.6.2.9000
+Version: 0.7.1.9000
 Authors@R: c(
   person("Robin", "Evans", , "evans@stats.ox.ac.uk", role = c("aut", "cre")),
   person("Xi", "Lin", , "xi.lin@stx.ox.ac.uk", role = c("aut")))
@@ -14,14 +14,12 @@ Depends: R (>= 3.5.0),
   rje, 
   VineCopula
 Imports: copula, 
-  dplyr, 
   numDeriv,
   MASS,
   mvtnorm,
   purrr,
   Rcpp,
-  stats,
-  tidyr
+  stats
 LinkingTo: Rcpp, RcppArmadillo, mvtnorm
 Suggests: 
     abind,
@@ -33,4 +31,3 @@ Suggests:
 VignetteBuilder: knitr
 NeedsCompilation: yes
 Config/testthat/edition: 3
-Roxygen: list(markdown = TRUE)

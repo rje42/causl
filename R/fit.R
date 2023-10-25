@@ -8,7 +8,6 @@
 ##' @param link link functions for each variable
 ##' @param par2 additional parameters if required
 ##' @param sandwich logical: should sandwich standard errors be returned?
-##' @param start vector of parameters to start optimization from
 ##' @param useC logical: should C++ routines be used?
 ## @param init should linear models be used to initialize starting point?
 ##' @param control list of parameters to be passed to \code{optim}
@@ -35,7 +34,7 @@
 ##' @export
 fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
                       family=rep(1,length(formulas)), link, par2,
-                      sandwich=TRUE, start=NULL, useC=TRUE, control=list()) {
+                      sandwich=TRUE, useC=TRUE, control=list()) {
 
   # get control parameters for optim or use defaults
   con <- list(method = "BFGS", newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
@@ -45,9 +44,6 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   matches = pmatch(names(control), names(con))
   con[matches[!is.na(matches)]] = control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ", paste(names(control[is.na(matches)]), sep = ", "))
-
-  ## deal with tibbles etc...
-  dat <- as.data.frame(dat)
 
   ## ensure copula keyword is not a variable name
   kwd <- con$cop
@@ -71,7 +67,6 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## for discrete variables, plug in empirical probabilities
   disc <- family[-length(family)] == 5 | family[-length(family)] == 0
   LHS <- lhs(forms[-length(forms)])
-
   inCop <- unlist(LHS)
   trunc <- list()
 
@@ -128,7 +123,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## get some intitial parameter values
   beta_start2 <- initializeParams2(dat, formulas=forms, family=family, link=link,
                                    full_form=full_form, kwd=kwd)
-  if (is.null(start)) start <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
+  theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
 
   ## other arguments to nll2()
   other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
@@ -141,7 +136,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## parameters to
   maxit <- con$maxit
   conv <- FALSE
-  out2 <- list(par = start)
+  out2 <- list(par = theta_st)
   while (!conv) {
     con$maxit <- min(maxit, 5e3)
     out <- do.call(optim, c(list(fn=nll2, par=out2$par), other_args2, list(method="Nelder-Mead", control=con)))

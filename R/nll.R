@@ -1,7 +1,7 @@
 ##' Get univariate densities and uniform order statistics
 ##'
 ##' @param x vector of observations
-##' @param eta,phi linear component and dispersion parameter
+##' @param eta,phi linear component and dispersion parameters
 ##' @param df degrees of freedom (only for t-distribution)
 ##' @param family numeric indicator of family
 ##' @param link link function
@@ -14,8 +14,6 @@
 ##' observation).
 ##'
 univarDens <- function (x, eta, phi, df, family=1, link) {
-
-  if (!missing(phi) && phi <= 1e-8) phi <- 1e-8
 
   if (missing(link)) link <- linksList[[familyVals[familyVals$val==family,"family"]]][1]
 
@@ -61,35 +59,6 @@ univarDens <- function (x, eta, phi, df, family=1, link) {
   return(list(u=u, ld=lp))
 }
 
-univarDens2 <- function (x, mu, phi, df, family=1, link) {
-
-  if (!missing(phi) && phi <= 1e-8) phi <- 1e-8
-
-  if (missing(link)) link <- linksList[[familyVals[familyVals$val==family,"family"]]][1]
-
-  ## get the densities for x
-  if (family == 1) {
-    lp <- dnorm(x, mu, sd=sqrt(phi), log=TRUE)
-    u <- pnorm(x, mu, sd=sqrt(phi))
-  }
-  else if (family == 2) {
-    lp <- dt((x - mu)/sqrt(phi), df=df, log=TRUE) - log(sqrt(phi))
-    u <- pt((x - mu)/sqrt(phi), df=df)
-  }
-  else if (family == 3) {
-    lp <- dgamma(x, shape=1/phi, scale=phi*mu, log=TRUE)
-    u <- pgamma(x, shape=1/phi, scale=phi*mu)
-  }
-  else if (family == 5) {
-    lp <- x*log(mu) + (1-x)*log(1-mu)
-    lp[is.nan(lp)] <- 0
-    u <- x
-  }
-  else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
-
-  return(list(u=u, ld=lp))
-}
-
 
 ##' Negative log-likelihood
 ##'
@@ -120,8 +89,6 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
   beta[beta > 0] <- theta[seq_len(np)]
   phi[phi > 0] <- theta[-seq_len(np)]
 
-  dat <- as.data.frame(dat)
-
   -sum(ll(dat, mm=mm, beta=beta, phi=phi, inCop=inCop, fam_cop=fam_cop,
       family=family, link=link, par2=par2, useC=useC))
 }
@@ -130,8 +97,6 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
 ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
                  family=rep(1,nc), link, par2=NULL, useC=TRUE,
                 exclude_Z = FALSE, outcome = "y") {
-
-  dat <- as.data.frame(dat)
 
   if (missing(inCop)) inCop <- seq_along(dat)
 
@@ -153,7 +118,6 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   ndisc <- sum(family %in% c(5,0))
   ## compute etas for each variable
   eta <- mm %*% beta
-  mu <- eta2mu(eta[,seq_len(nc),drop=FALSE], link=link)
 
   ## get the densities for each observation
   log_den <- dat_u <- matrix(NA, nrow(dat), nc)
@@ -161,7 +125,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
   ## get univariate densities
   for (i in which(family != 5)) {
-    tmp <- univarDens2(dat[,i], mu[,i], phi=phi[i], family=family[i])
+    tmp <- univarDens(dat[,i], eta[,i], phi=phi[i], family=family[i])
     log_den[,i] <- tmp$ld
     dat_u[,i] <- pmax(pmin(tmp$u,1-1e-10),1e-10)
   }
@@ -169,7 +133,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   ## deal with discrete variables separately
   for (i in which(family == 5)) {
     # wh_trunc <- wh_trunc + 1
-    tmp <- univarDens2(dat[,i], mu[,i], family=family[i])
+    tmp <- univarDens(dat[,i], eta[,i], family=family[i])
     log_den[,i] <- tmp$ld
     # log_den[,i] <- 0 #### CHANGED HERE XI
     dat_u[,i] <- tmp$u
@@ -272,7 +236,7 @@ ests_ses <- function(fit, beta, merged_formula, kwd) {
     return(fit)
   }
 
-  ## get number of parameters and variable
+  ## get number of parameters and varible
   np <- sum(beta$beta_m > 0)
   nv <- sum(regexpr(kwd, colnames(beta$beta_m)) != 1L)
   if (sum(regexpr(kwd, colnames(beta$beta_m)[seq_len(nv)]) != 1L) != nv) stop("beta_m poorly formatted")
@@ -289,9 +253,7 @@ ests_ses <- function(fit, beta, merged_formula, kwd) {
     pars[[i]]$beta <- beta_out[beta$beta_m[,i] > 0, i]
     if (i <= nphi && beta$phi_m[i] > 0) pars[[i]]$phi <- fit$par[np+i]
   }
-  pars[[nv+1]]$beta <- beta_out[apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 1, any),
-                                seq_len(ncol(beta_out)) > nv & apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 2, any),
-                                drop=FALSE]
+  pars[[nv+1]]$beta <- beta_out[beta$beta_m[,nv+1] > 0, nv+seq_len(ncol(beta$beta_m)-nv), drop=FALSE]
 
   ## now deal with standard errors
   if (!is.null(fit$se)) {
@@ -302,9 +264,7 @@ ests_ses <- function(fit, beta, merged_formula, kwd) {
       pars[[i]]$beta_se <- beta_out[beta$beta_m[,i] > 0, i]
       if (beta$phi_m[i] > 0) pars[[i]]$phi_se <- fit$se[np+i]
     }
-    pars[[nv+1]]$beta_se <- beta_out[apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 1, any),
-                                     seq_len(ncol(beta_out)) > nv & apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 2, any),
-                                     drop=FALSE]
+    pars[[nv+1]]$beta_se <- beta_out[beta$beta_m[,nv+1] > 0, nv+seq_len(ncol(beta$beta_m)-nv), drop=FALSE]
     # if (ncol(pars[[nv+1]]$beta_se) == 1) pars[[nv+1]]$beta_se <- c(pars[[nv+1]]$beta_se)
   }
 
@@ -317,9 +277,7 @@ ests_ses <- function(fit, beta, merged_formula, kwd) {
       pars[[i]]$beta_sandwich <- beta_out[beta$beta_m[,i] > 0, i]
       if (beta$phi_m[i] > 0) pars[[i]]$phi_sandwich <- fit$sandwich_se[np+i]
     }
-    pars[[nv+1]]$beta_sandwich <- beta_out[apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 1, any),
-                                           seq_len(ncol(beta_out)) > nv & apply(beta$beta_m[,-seq_len(nv),drop=FALSE] > 0, 2, any),
-                                           drop=FALSE]
+    pars[[nv+1]]$beta_sandwich <- beta_out[beta$beta_m[,nv+1] > 0, nv+seq_len(ncol(beta$beta_m)-nv), drop=FALSE]
   }
 
   for (i in seq_len(nv)) {

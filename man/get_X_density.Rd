@@ -5,8 +5,6 @@
 \title{Get density of treatments}
 \usage{
 get_X_density(dat, eta, phi, qden, family, link, par2, log = FALSE)
-
-get_X_density(dat, eta, phi, qden, family, link, par2, log = FALSE)
 }
 \arguments{
 \item{dat}{data frame of variables to change conditional distribution of}
@@ -29,7 +27,5 @@ get_X_density(dat, eta, phi, qden, family, link, par2, log = FALSE)
 a numeric vector of weights
 }
 \description{
-Get density of treatments
-
 Get density of treatments
 }

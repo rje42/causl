@@ -11,7 +11,6 @@ fitCausal(
   link,
   par2,
   sandwich = TRUE,
-  start = NULL,
   useC = TRUE,
   control = list()
 )
@@ -30,8 +29,6 @@ be the same length as \code{formulas}}
 \item{par2}{additional parameters if required}
 
 \item{sandwich}{logical: should sandwich standard errors be returned?}
-
-\item{start}{vector of parameters to start optimization from}
 
 \item{useC}{logical: should C++ routines be used?}
 
@@ -57,7 +54,7 @@ Useful for altering are \code{trace} (1 shows steps of optimization) and
 the proportion of correlation put into a Gaussian or t-Copula's starting
 values.
 
-\strong{Warning} By default, none of the variables should be called \code{cop}, as
+**Warning** By default, none of the variables should be called \code{cop}, as
 this is reserved for the copula.  The reserved word can be changed using
 the argument \code{cop} within control.
 }

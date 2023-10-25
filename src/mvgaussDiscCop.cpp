@@ -3,6 +3,7 @@
 #include "include/mvtnorm.h"
 #include "include/mvdists.h"
 
+
 #include <Rcpp.h>
 using namespace Rcpp;
 
@@ -398,12 +399,13 @@ arma::vec dGDcop(arma::mat const &x,
 
     // C_mvtdst2(&q);
 
+
     int q2 = q;
     // Rprintf("q = %i, df = %i\n", q2, df);
-    // Rprintf("lower: %3e %3e\n", lower2[0]);
-    // Rprintf("upper: %3e %3e\n", upper2[0]);
-    // Rprintf("infin: %i %i\n", infin2[0]);
-
+    // Rprintf("lower: %e %e\n", lower2[0], lower2[1]);
+    // Rprintf("upper: %e %e\n", upper2[0], upper2[1]);
+    // Rprintf("infin: %i %i\n", infin2[0], infin2[1]);
+    //
     // Rprintf("sigmaUT: ");
     // for (int nn=0; nn < q*(q+1)/2; nn++) Rprintf("%e ", tmp[nn]);
     // Rprintf("\n");
@@ -411,227 +413,29 @@ arma::vec dGDcop(arma::mat const &x,
     // Rprintf("maxpts = %i, abseps = %e, releps = %e\n", maxpts, abseps, releps);
     // Rprintf("error = %e, value = %e, inform = %i, rnd = %i\n", error, value, inform, rnd);
 
-    if (q == 1) {
-      if (infin2[0] == 1) {
-        value = 1.0 - R::pnorm(lower2[0], 0.0, 1.0, 1, 0);
-      }
-      else if (infin2[0] == 0) {
-        value = R::pnorm(upper2[0], 0.0, 1.0, 1, 0);
-      }
-      else if (infin2[0] == 2) {
-        value = R::pnorm(upper2[0], 0.0, 1.0, 1, 0) - R::pnorm(lower2[0], 0.0, 1.0, 1, 0);
-      }
-      else Rcpp::stop("infin2 should take value 0, 1 or 2");
+    C_mvtdst(&q2, // N
+             &df,
+             lower2,
+             upper2,
+             infin2,
+             tmp,
+             zmn,     // DELTA
+             &maxpts,  // MAXPTS
+             &abseps,  // ABSEPS
+             &releps,  // RELEPS
+             &error, // ERROR
+             &value, // VALUE
+             &inform,  // INFORM
+             &rnd);  //RND
 
-    }
-    else {
-      C_mvtdst(&q2, // N
-               &df,
-               lower2,
-               upper2,
-               infin2,
-               tmp,
-               zmn,     // DELTA
-               &maxpts,  // MAXPTS
-               &abseps,  // ABSEPS
-               &releps,  // RELEPS
-               &error, // ERROR
-               &value, // VALUE
-               &inform,  // INFORM
-               &rnd);  //RND
-    }
     // Rprintf("value: %e\n", value);
-
     out(i) += log(value);
   }
-
 
   if (logd)
     return out;
   return exp(out);
 }
-
-
-// // C++ function to compute density at points of Gaussian copula with discrete components
-// //  x :     matrix of values
-// //  sigma : correlation matrix of parameters
-// //  trunc : list of discretization points corresponding to final k dimensions of x/sigma
-// //  logd  : logical: return the log-density?
-// // [[Rcpp::export]]
-// arma::vec dGDcop(arma::mat const &x,
-//            arma::mat const &sigma,
-//            Rcpp::List trunc,
-//            bool const logd = false) {
-//
-//   uword q = trunc.length();
-//   if (q == 0) return(dGcop(x, sigma, logd));
-//
-//   uword const n = x.n_rows;
-//     //d = x.n_cols;
-//   arma::vec out(n);
-//   arma::rowvec z;
-//   uword const p = sigma.n_rows - trunc.length();
-//
-//   Rprintf("%i %i %i\n", p, sigma.n_rows, sigma.n_cols);
-//
-//   arma::mat sigma0 = sigma.submat(0,0,p-1,p-1);
-//   arma::mat sigma1 = sigma.submat(p,p,sigma.n_rows-1, sigma.n_cols-1);
-//   arma::mat sigma10 = sigma.submat(p,0,sigma.n_rows-1, p-1);
-//
-//   Rprintf("%i %i %i\n", sigma0.n_elem, sigma1.n_elem, sigma10.n_elem);
-//
-//   arma::mat sigma1_0 = SchurC(sigma1, sigma0, sigma10);
-//   arma::mat sigma1cov = sigma1_0.cols(0,q-1);
-//   arma::mat sigma1mn = sigma1_0.cols(q,sigma1_0.n_cols-1);
-//
-//   Rprintf("%i %i %i\n", sigma1_0.n_elem, sigma1cov.n_elem, sigma1mn.n_elem);
-//
-//
-//   // double const constants = -(double)d/2.0 * log2pi;
-//
-//   // mat const rooti = arma::inv(trimatu(arma::chol(sigma)));
-//   arma::vec const eig = arma::eig_sym(sigma0);
-//   if (any(eig < 0)) {
-//     out = NA_REAL;
-//     // for (uword i = 0; i < n; i++) out(i) = nan;
-//     return out;
-//   }
-//   arma::mat const rooti = arma::inv(trimatu(arma::chol(sigma0)));
-//   double const rootisum = arma::sum(log(rooti.diag()));
-//
-//  Rprintf("%3e\n", rootisum);
-//
-//   for (uword i = 0; i < n; i++) {
-//     z = x.row(i);
-//     inplace_tri_mat_mult(z, rooti);
-//   Rprintf("%3e %3e\n", z(0), z(1));
-//     out(i) = rootisum - 0.5 * (arma::dot(z, z) - arma::dot(x.row(i), x.row(i)));
-//   }
-//   Rprintf("n = %i, p = %i, q = %i, x.n_rows = %i, x.n_cols = %i\n", n, p, q, x.n_rows, x.n_cols);
-//   arma::mat condmn = x.cols(0,p-1) * sigma1mn.t();
-//   arma::mat x2 = x.cols(p,x.n_cols-1);
-//   // x2 = x2 - condmn;
-//
-//   Rprintf("x2.n_rows = %i, x2.n_cols = %i\n", x2.n_rows, x2.n_cols);
-//   Rprintf("x2(0,0) = %1.1e\n", x2(0,0));
-//
-//
-//   arma::mat wh = arma::zeros(n,q);
-//
-//   //Rcpp::NumericVector upper(p), lower(p);
-//   arma::mat upper(n,q), lower(n,q);
-//   Rcpp::IntegerMatrix infin(n,q);
-//
-//   Rprintf("here...");
-//
-//   Rprintf("q = %i, trunc.length() = %i\n", q, trunc.length());
-//
-//   for (uword j = 0; j < q; j++) {
-//     Rprintf("j = %i\n", j);
-//     Rcpp::NumericVector tmp = trunc[j];
-//     Rprintf("tmp.length() = %i, tmp(0) = %2e, tmp(1) = %2e\n", tmp.length(), tmp(0), tmp(1));
-//
-//     Rcpp::NumericVector tmp2 = Rcpp::cumsum(tmp);
-//     tmp2.push_front(0);
-//     tmp2 = qnorm(tmp2);
-//
-//     for (uword i = 0; i < n; i++) {
-//       Rprintf("(i,j)=(%i,%i)...length(tmp) = %i...x2(i,j) = %0d", i, j, tmp.length(), x2(i,j));
-//       lower(i,j) = (tmp2(x2(i,j)) + condmn(i,j))/sqrt(sigma1cov(j,j));
-//       upper(i,j) = (tmp2(x2(i,j)+1) + condmn(i,j))/sqrt(sigma1cov(j,j));
-//       infin(i,j) = 2 - 2*std::isinf(lower(i,j)) - std::isinf(upper(i,j));
-//     }
-//   }
-//
-//   lower.print();
-//   upper.print();
-//   // infin.print();
-//   Rcpp::Rcout << "infin:\n" << infin << std::endl;
-//
-//   Rprintf("1...");
-//
-//   arma::mat correl1cov(q, q, arma::fill::eye);
-//
-//   Rprintf("2...");
-//
-//   for (uword i = 0; i < q-1; i++) for (uword j = i+1; j < q; j++) {
-//     correl1cov(i,j) = correl1cov(j,i) = sigma1cov(i,j)/sqrt(sigma1cov(i,i)*sigma1cov(j,j));
-//   }
-//
-//   Rprintf("3...");
-//
-//   // arma::mat cDec = arma::chol(sigma1cov);
-//   double tmp[q*(q-1)/2];
-//
-//   // assign upper triangular elements to tmp
-//   int ct = 0;
-//   for (uword j=0; j < q; j++) {
-//     for (uword i=0; i < j; i++) {
-//       tmp[ct] = correl1cov(i,j);
-//       ct += 1;
-//     }
-//   }
-//
-//   double zmn[q];
-//   for (uword j = 0; j < q; j++) {
-//     zmn[j] = 0.0;
-//   }
-//   int df = 0, rnd = 1, inform = 0;
-//   int maxpts = 25000;
-//   double abseps = 1E-3, releps = 0.0;
-//
-//   for (uword i = 0; i < n; i++) {
-//     double lower2[q], upper2[q];
-//     int infin2[q];
-//     double error = 0.0, value = 0.0;
-//
-//     for (uword j = 0; j < q; j++) {
-//       lower2[j] = lower(i,j);
-//       upper2[j] = upper(i,j);
-//       infin2[j] = infin(i,j);
-//     }
-//
-//     // C_mvtdst2(&q);
-//
-//
-//     int q2 = q;
-//     // Rprintf("q = %i, df = %i\n", q2, df);
-//     // Rprintf("lower: %e %e\n", lower2[0], lower2[1]);
-//     // Rprintf("upper: %e %e\n", upper2[0], upper2[1]);
-//     // Rprintf("infin: %i %i\n", infin2[0], infin2[1]);
-//     //
-//     // Rprintf("sigmaUT: ");
-//     // for (int nn=0; nn < q*(q+1)/2; nn++) Rprintf("%e ", tmp[nn]);
-//     // Rprintf("\n");
-//     // Rprintf("delta: %e %e\n", zmn[0], zmn[1]);
-//     // Rprintf("maxpts = %i, abseps = %e, releps = %e\n", maxpts, abseps, releps);
-//     // Rprintf("error = %e, value = %e, inform = %i, rnd = %i\n", error, value, inform, rnd);
-//
-//     C_mvtdst(&q2, // N
-//              &df,
-//              lower2,
-//              upper2,
-//              infin2,
-//              tmp,
-//              zmn,     // DELTA
-//              &maxpts,  // MAXPTS
-//              &abseps,  // ABSEPS
-//              &releps,  // RELEPS
-//              &error, // ERROR
-//              &value, // VALUE
-//              &inform,  // INFORM
-//              &rnd);  //RND
-//
-//              Rprintf("value: %e\n", value);
-//
-//              out(i) += log(value);
-//   }
-//
-//
-//   if (logd)
-//     return out;
-//   return exp(out);
-// }
 
 // [[Rcpp::export]]
 arma::vec dGDcop_sig(arma::mat const &x,
@@ -805,8 +609,8 @@ arma::vec dGDcop_sig(arma::mat const &x,
              &inform,  // INFORM
              &rnd);  //RND
 
-    // Rprintf("value = %f\n", value);
-    out(i) += log(value);
+             // Rprintf("value = %f\n", value);
+             out(i) += log(value);
   }
 
   if (logd)

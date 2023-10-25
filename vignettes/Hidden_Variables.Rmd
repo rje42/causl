@@ -116,7 +116,6 @@ Indeed, they are all within two standard errors of their nominal values.
 # summary(glm(Y ~ A0*A1, family=Gamma(link="log"), weights = wt, data=dat))$coef
 ```
 
-
 ## Maximum likelihood approach
 
 We can also fit the data using maximum likelihood directly.  Set `eval=TRUE` 

@@ -73,6 +73,9 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
   formsZ <- lapply(formulas[[1]], terms)
   formsX <- lapply(formulas[[2]], terms)
   formsY <- lapply(formulas[[3]], terms)
+  if (is.list(formulas[[4]]) && length(formulas[[4]]) > 0) {
+    ## put in code to check that copulae formulas and parameters have matching lengths
+  }
 
   for (i in seq_along(formulas[[1]])) {
     npar <- length(attr(formsZ[[i]], "term.labels")) + attr(formsZ[[i]], "intercept")
@@ -92,7 +95,6 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
   # formsZ <- merge_formulas(formulas[[1]])$old_forms
   # setmatch(LHS_Z, rhs_vars(formsZ))
   # formsY <- merge_formulas(formulas[[3]])$old_forms
-
   if (ordering) {
     ord_mat <- matrix(0, nrow=sum(dim), ncol=sum(dim))
 
@@ -128,7 +130,6 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
                           function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot directly predict one another")
     order <- NULL
   }
-
   #
   # if (any(sapply(formsZ,
   #        function(x) any(attr(x, "term.labels")[attr(x, "order") == 1] %in% LHS_Y)))) stop("Outcomes cannot be direct predictors for covariates")
@@ -407,6 +408,7 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   #
   #   return(dat)
   # }
+
 
   ## set seed to 'seed'
   if (missing(seed)) {

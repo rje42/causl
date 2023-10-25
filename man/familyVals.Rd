@@ -6,7 +6,7 @@
 \alias{copulaVals}
 \title{Numbers for parametric families}
 \format{
-An object of class \code{data.frame} with 7 rows and 3 columns.
+An object of class \code{data.frame} with 7 rows and 2 columns.
 
 An object of class \code{data.frame} with 7 rows and 2 columns.
 }

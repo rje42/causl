@@ -54,7 +54,7 @@ summary(glm(L ~ U*A0, family=Gamma(link="log"), data=dat))$coef
 glmA1 <- glm(A1 ~ A0*L, family=binomial, data=dat)
 summary(glmA1)$coef
 ```
-These indeed close to their true values.  
+These are indeed close to their true values.  
 
 Now we can use inverse probability weighting to estimate the causal effect of
 $A_0,A_1$ on $Y$.
