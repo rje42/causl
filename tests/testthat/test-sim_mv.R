@@ -1,4 +1,4 @@
-library(survey, quietly = TRUE)
+suppressMessages(library(survey, quietly = TRUE))
 
 set.seed(130)
 forms <- list(list(Z1 ~ 1, Z2 ~ Z1), list(X1 ~ Z1 + Z2, X2 ~ Z1*Z2 + X1),

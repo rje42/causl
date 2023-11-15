@@ -14,6 +14,7 @@ rfrugalParam(
   careful = FALSE,
   method = "rejection",
   control = list(),
+  ...,
   seed
 )
 }
@@ -36,6 +37,8 @@ correctly computed weight?}
 \item{method}{either \code{"rejection"} (the default) or \code{"inversion"}}
 
 \item{control}{list of options for the algorithm}
+
+\item{...}{other arguments, such as custom families}
 
 \item{seed}{random seed used for replication}
 }

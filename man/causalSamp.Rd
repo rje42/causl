@@ -40,7 +40,7 @@ A data frame containing the simulated data.
 }
 \description{
 Obtain samples from a causal model using the rejection sampling approach of
-Evans and Didelez (2023).
+Evans and Didelez (2024).
 }
 \details{
 Samples from a given causal model using rejection sampling (or,
@@ -88,6 +88,9 @@ nothing), \code{max_wt} which is set to 1, and increases each time the function
 is recalled.
 Control parameters also include \code{cop}, which gives a keyword for the
 copula that defaults to \code{"cop"}.
+
+This function is kept largely for the replication of simulations from
+Evans and Didelez (2024).
 }
 \examples{
 pars <- list(z=list(beta=0, phi=1),
@@ -97,4 +100,9 @@ pars <- list(z=list(beta=0, phi=1),
 causalSamp(100, pars = pars)
 
 
+}
+\references{
+Evans, R.J. and Didelez, V. Parameterizing and simulating from
+causal models (with discussion). \emph{Journal of the Royal Statistical Society, Series B},
+2024.
 }

@@ -13,6 +13,7 @@
 ##' correctly computed weight?
 ##' @param method either \code{"rejection"} (the default) or \code{"inversion"}
 ##' @param control list of options for the algorithm
+##' @param ... other arguments, such as custom families
 ##' @param seed random seed used for replication
 ##'
 ##' @details Samples from a given causal model using rejection sampling (or,
@@ -86,7 +87,7 @@
 ##' @export
 rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x), list( ~ 1)),
                        family = c(1,1,1,1), pars, link=NULL, dat=NULL, careful=FALSE,
-                       method="rejection", control=list(), seed) {
+                       method="rejection", control=list(), ..., seed) {
 
   # get control parameters or use defaults
   con = list(max_wt = 1, warn = 1, cop="cop", trace=0)

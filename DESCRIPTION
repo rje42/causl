@@ -1,7 +1,7 @@
 Package: causl
 Type: Package
 Title: Methods for Specifying, Simulating from and Fitting Causal Models
-Version: 0.7.1.9000
+Version: 0.7.2.9000
 Authors@R: c(
   person("Robin", "Evans", , "evans@stats.ox.ac.uk", role = c("aut", "cre")),
   person("Xi", "Lin", , "xi.lin@stx.ox.ac.uk", role = c("aut")))
@@ -9,6 +9,7 @@ Description: Model multivariate distributions using causal parameters.
 License: GPL-2
 LazyData: TRUE
 RoxygenNote: 7.2.3
+Roxygen: list(markdown = TRUE)
 Encoding: UTF-8
 Depends: R (>= 3.5.0), 
   rje, 
