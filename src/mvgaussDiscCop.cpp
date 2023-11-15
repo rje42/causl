@@ -300,6 +300,7 @@ arma::vec dGDcop(arma::mat const &x,
 
   Rprintf("%3e\n", rootisum);
 
+  // separate out continuous from discrete components
   for (uword i = 0; i < n; i++) {
     z = x.row(i);
     inplace_tri_mat_mult(z, rooti);
@@ -309,7 +310,7 @@ arma::vec dGDcop(arma::mat const &x,
   Rprintf("n = %i, p = %i, q = %i, x.n_rows = %i, x.n_cols = %i\n", n, p, q, x.n_rows, x.n_cols);
   arma::mat condmn = x.cols(0,p-1) * sigma1mn.t();
   arma::mat x2 = x.cols(p,x.n_cols-1);
-  // x2 = x2 - condmn;
+  // x2 = x2 - condmn;  // this is the discrete part, with continuous mean subtracted
 
   Rprintf("x2.n_rows = %i, x2.n_cols = %i\n", x2.n_rows, x2.n_cols);
   Rprintf("x2(0,0) = %1.1e\n", x2(0,0));
@@ -333,12 +334,16 @@ arma::vec dGDcop(arma::mat const &x,
     Rcpp::NumericVector tmp2 = Rcpp::cumsum(tmp);
     tmp2.push_front(0);
     tmp2 = qnorm(tmp2);
+    // Rcpp::Rcout << "tmp2:\n" << tmp2 << std::endl;
 
     for (uword i = 0; i < n; i++) {
       Rprintf("(i,j)=(%i,%i)...length(tmp) = %i...x2(i,j) = %0d", i, j, tmp.length(), x2(i,j));
       lower(i,j) = (tmp2(x2(i,j)) + condmn(i,j))/sqrt(sigma1cov(j,j));
       upper(i,j) = (tmp2(x2(i,j)+1) + condmn(i,j))/sqrt(sigma1cov(j,j));
       infin(i,j) = 2 - 2*std::isinf(lower(i,j)) - std::isinf(upper(i,j));
+      // if (infin(i,j) < 0) {
+      //   Rcpp::stop("upper and lower end-points should not both be infinite");
+      // }
     }
   }
 
@@ -371,6 +376,7 @@ arma::vec dGDcop(arma::mat const &x,
     }
   }
 
+  // initialize vector of zeros for FORTRAN function
   double zmn[q];
   for (uword j = 0; j < q; j++) {
     zmn[j] = 0.0;
@@ -379,6 +385,7 @@ arma::vec dGDcop(arma::mat const &x,
   int maxpts = 25000;
   double abseps = 1E-3, releps = 0.0;
 
+  // get limits and indicators of infinite limits
   for (uword i = 0; i < n; i++) {
     double lower2[q], upper2[q];
     int infin2[q];
@@ -421,11 +428,9 @@ arma::vec dGDcop(arma::mat const &x,
              &inform,  // INFORM
              &rnd);  //RND
 
-             Rprintf("value: %e\n", value);
-
-             out(i) += log(value);
+    // Rprintf("value: %e\n", value);
+    out(i) += log(value);
   }
-
 
   if (logd)
     return out;

@@ -14,6 +14,7 @@ rfrugalParam(
   careful = FALSE,
   method = "rejection",
   control = list(),
+  ...,
   seed
 )
 }
@@ -37,6 +38,8 @@ correctly computed weight?}
 
 \item{control}{list of options for the algorithm}
 
+\item{...}{other arguments, such as custom families}
+
 \item{seed}{random seed used for replication}
 }
 \value{
@@ -49,6 +52,11 @@ Evans and Didelez (2021).
 \details{
 Samples from a given causal model using rejection sampling (or,
 if everything is discrete, direct sampling).
+
+The logical \code{careful} enables one to implement the full rejection
+sampling method, which means we do get exact samples.  However, this method
+may be slow, and in particular if we have an outlying value it may run very
+slowly indeed.
 
 The entries for  \code{formula} and \code{family} should each be a
 list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and

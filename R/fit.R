@@ -95,8 +95,17 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   }
 
   full_form <- merge_formulas(forms)
-  wh <- full_form$wh
+  # wh <- full_form$wh
+  # dat[full_form$formula]
+
   mm <- model.matrix(full_form$formula, data=dat)
+  ## handle missingness cleanly
+  if (nrow(mm) < nrow(dat)) {
+    nlost <- nrow(dat) - nrow(mm)
+    message(paste0(nlost, " rows deleted due to missing covariates"))
+    mm_vars <- attr(terms(full_form$formula), "variables")
+    dat <- dat[complete.cases(with(dat, eval(mm_vars))),]
+  }
   # mms = lapply(forms, model.matrix, data=dat)
   ## attach truncation values as an attribute of the model matrix
   attr(mm, "trunc") <- trunc

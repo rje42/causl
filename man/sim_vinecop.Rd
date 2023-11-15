@@ -4,7 +4,7 @@
 \alias{sim_vinecop}
 \title{Simulate from vine copula}
 \usage{
-sim_vinecop(dat, family, par, par2 = NULL, model_matrix)
+sim_vinecop(dat, family, par, par2 = NULL, model_matrix, link)
 }
 \arguments{
 \item{dat}{data frame to be filled in}
@@ -16,6 +16,8 @@ sim_vinecop(dat, family, par, par2 = NULL, model_matrix)
 \item{par2}{extra parameters for t-copula}
 
 \item{model_matrix}{design matrix for covariates}
+
+\item{link}{link functions for parameters (currently unused)}
 }
 \value{
 A data frame of the same dimensions as \code{dat}.

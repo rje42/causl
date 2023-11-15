@@ -13,10 +13,16 @@
 ##' correctly computed weight?
 ##' @param method either \code{"rejection"} (the default) or \code{"inversion"}
 ##' @param control list of options for the algorithm
+##' @param ... other arguments, such as custom families
 ##' @param seed random seed used for replication
 ##'
 ##' @details Samples from a given causal model using rejection sampling (or,
 ##' if everything is discrete, direct sampling).
+##'
+##' The logical \code{careful} enables one to implement the full rejection
+##' sampling method, which means we do get exact samples.  However, this method
+##' may be slow, and in particular if we have an outlying value it may run very
+##' slowly indeed.
 ##'
 ##' The entries for  \code{formula} and \code{family} should each be a
 ##' list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and
@@ -81,7 +87,7 @@
 ##' @export
 rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x), list( ~ 1)),
                        family = c(1,1,1,1), pars, link=NULL, dat=NULL, careful=FALSE,
-                       method="rejection", control=list(), seed) {
+                       method="rejection", control=list(), ..., seed) {
 
   # get control parameters or use defaults
   con = list(max_wt = 1, warn = 1, cop="cop", trace=0)
@@ -105,7 +111,6 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
   ## process the four main arguments
   proc_inputs <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
                         kwd=kwd, ordering = (method == "inversion"))
-
 
   # if (method == "particle") {
   #   forms <- tidy_formulas(unlist(formulas), kwd)

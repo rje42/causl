@@ -1,34 +1,68 @@
 gen_X_values <- function (n, famX, pars, LHS_X, dX, sim=TRUE) {
   ## list for densities used to simulate X's
+  if (missing(dX)) dX <- length(LHS_X)
   qden <- vector(mode="list", length=dX)
   out <- data.frame(matrix(0, ncol=dX, nrow=n))
   names(out) <- LHS_X
 
-  for (i in seq_len(dX)) {
-    ## get parameters for X
-    if (famX[i] == 0 || famX[i] == 5) {
-      if (!is.null(pars[[LHS_X[i]]][["p"]])) theta <- pars[[LHS_X[i]]]$p
-      else theta <- 0.5
-      famX[i] <- 5
-    }
-    else if (famX[i] == 1 || famX[i] == 2) {
-      theta <- 2*pars[[LHS_X[i]]]$phi
-    }
-    else if (famX[i] == 6) {
-      theta <- 1.5*pars[[LHS_X[i]]]$phi
-    }
-    else if (famX[i] == 3) {
-      theta <- 2*pars[[LHS_X[i]]]$phi
-    }
-    else if (famX[i] == 4) {
-      theta = c(1,1)
-    }
+  if (is.numeric(famX)) {
+    ## use old style approach
+    for (i in seq_len(dX)) {
+      ## get parameters for X
+      if (famX[i] == 0 || famX[i] == 5) {
+        if (!is.null(pars[[LHS_X[i]]][["p"]])) theta <- pars[[LHS_X[i]]]$p
+        else theta <- 0.5
+        famX[i] <- 5
+      }
+      else if (famX[i] == 1 || famX[i] == 2) {
+        theta <- 2*pars[[LHS_X[i]]]$phi
+      }
+      else if (famX[i] == 6) {
+        theta <- 1.5*pars[[LHS_X[i]]]$phi
+      }
+      else if (famX[i] == 3) {
+        theta <- 2*pars[[LHS_X[i]]]$phi
+      }
+      else if (famX[i] == 4) {
+        theta = c(1,1)
+      }
 
-    ## obtain data for X's
-    tmp <- sim_X(n, fam_x = famX[i], theta=theta, sim=TRUE)
-    out[LHS_X[[i]]] <- tmp$x
-    qden[[i]] <- tmp$qden
+      ## obtain data for X's
+      tmp <- sim_X(n, fam_x = famX[i], theta=theta, sim=sim)
+      out[LHS_X[[i]]] <- tmp$x
+      qden[[i]] <- tmp$qden
+    }
   }
+  else if (is.list(famX) && is(famX, "causl_family")) {
+    for (i in seq_len(dX)) {
+      fam <- famX$name
+      ## get parameters for X
+      if (fam == "binomial") {
+        if (!is.null(pars[[LHS_X[i]]][["p"]])) theta <- pars[[LHS_X[i]]]$p
+        else theta <- 0.5
+        famX[i] <- 5
+      }
+      else if (fam == "gaussian" || fam == "t") {
+        theta <- 2*pars[[LHS_X[i]]]$phi
+      }
+      else if (fam == "lognormal") {
+        theta <- 1.5*pars[[LHS_X[i]]]$phi
+      }
+      else if (fam == "Gamma") {
+        theta <- 2*pars[[LHS_X[i]]]$phi
+      }
+      else if (fam == "beta") {
+        theta = c(1,1)
+      }
+      else stop(paste0("Family for entry ", i, " not recognized"))
+
+      ## obtain data for X's
+      tmp <- sim_X(n, fam_x = famX[[i]], theta=theta, sim=sim)
+      out[LHS_X[[i]]] <- tmp$x
+      qden[[i]] <- tmp$qden
+    }
+  }
+  else stop("famX should be a causl_family list or integer vector")
 
   return(list(datX = out, qden = qden))
 }
@@ -62,39 +96,50 @@ sim_X <- function(n, fam_x, theta, offset, sim=TRUE) {
 
   if (missing(offset)) offset <- 0
 
-  if (fam_x == 1) {
-    if (sim) X <- rnorm(n, mean=offset, sd=sqrt(theta))
-    qden <- function(x) dnorm(x, mean=offset, sd=sqrt(theta))
-  }
-  else if (fam_x == 6) {
-    if (sim) X <- exp(rnorm(n, mean=offset, sd=sqrt(theta)))
-    qden <- function(x) dnorm(log(x), mean=offset, sd=sqrt(theta))/x
-  }
-  else if (fam_x == 2) {
-    if (sim) X <- theta[1]*(rt(n, df=theta[2]) + offset)
-    qden <- function(x) dt((x-offset)/theta[1], df=theta[2])/theta[1]
-  }
-  else if (fam_x == 3) {
-    if (sim) X <- rgamma(n, shape=1, rate=1/theta)
-    qden <- function(x) dgamma(x, shape=1, rate=1/theta)
-  }
-  else if (fam_x == 4) {
-    if (length(theta) == 1) theta <- c(theta, theta)
-    if (sim) X <- rbeta(n, theta[1], theta[2])
-    qden <- function(x) dbeta(x, theta[1], theta[2])
-  }
-  else if (fam_x == 5) {
-    if (sum(theta) > 1) stop("Probabilities must be < 1")
-    if (length(theta) == 1) theta <- c(theta, 1-theta)
-    if (any(theta < 0)) stop("Negative parameters not allowed")
-    if (!isTRUE(all.equal(sum(theta), 1))) {
-      warning("Parameters do not sum to 1, rescaling")
-      theta <- theta/sum(theta)
+  if (is.numeric(fam_x)) {
+    if (fam_x == 1) {
+      if (sim) X <- rnorm(n, mean=offset, sd=sqrt(theta))
+      qden <- function(x) dnorm(x, mean=offset, sd=sqrt(theta))
     }
-    if (sim) X <- sample(length(theta), size=n, replace=TRUE, prob=theta)-1
-    qden <- function(x) theta[x+1]
+    else if (fam_x == 6) {
+      if (sim) X <- exp(rnorm(n, mean=offset, sd=sqrt(theta)))
+      qden <- function(x) dnorm(log(x), mean=offset, sd=sqrt(theta))/x
+    }
+    else if (fam_x == 2) {
+      if (sim) X <- sqrt(theta[1])*(rt(n, df=theta[2]) + offset)
+      qden <- function(x) dt((x-offset)/sqrt(theta[1]), df=theta[2])/sqrt(theta[1])
+    }
+    else if (fam_x == 3) {
+      if (sim) X <- rgamma(n, shape=1, rate=1/theta)
+      qden <- function(x) dgamma(x, shape=1, rate=1/theta)
+    }
+    else if (fam_x == 4) {
+      if (length(theta) == 1) theta <- c(theta, theta)
+      if (sim) X <- rbeta(n, theta[1], theta[2])
+      qden <- function(x) dbeta(x, theta[1], theta[2])
+    }
+    else if (fam_x == 5) {
+      if (sum(theta) > 1) stop("Probabilities must be < 1")
+      if (length(theta) == 1) theta <- c(theta, 1-theta)
+      if (any(theta < 0)) stop("Negative parameters not allowed")
+      if (!isTRUE(all.equal(sum(theta), 1))) {
+        warning("Parameters do not sum to 1, rescaling")
+        theta <- theta/sum(theta)
+      }
+      if (sim) X <- sample(length(theta), size=n, replace=TRUE, prob=theta)-1
+      qden <- function(x) theta[x+1]
+    }
+    else stop("X distribution must be normal (1), t (2), Gamma (3), Beta (4) or categorical (5)")
   }
-  else stop("X distribution must be normal (1), t (2), Gamma (3), Beta (4) or categorical (5)")
+  else if (is(fam_x, "causl_family")) {
+
+    pars <- fam_x$default(theta)[fam_x$pars]
+
+    if (sim) {
+      X <- do.call(fam_x$rdist, c(list(n=n), pars))
+    }
+    qden <- do.call(fam_x$ddist, c(list(x=X), pars))
+  }
 
   if (sim) out <- list(x=X, qden=qden)
   else out <- list(qden)
@@ -136,6 +181,12 @@ rescaleVar <- function(U, X, pars, family=1, link) {
     if (link == "identity") Y <- qnorm(U, mean = eta, sd=sqrt(phi))
     else if (link == "log") Y <- qnorm(U, mean = exp(eta), sd=sqrt(phi))
     else if (link == "inverse") Y <- qnorm(U, mean = 1/eta, sd=sqrt(phi))
+    else stop("invalid link function for Gaussian distribution")
+  }
+  else if (family == 6) {
+    stop()
+    if (link == "identity") Y <- qlnorm(U, meanlog = eta, sdlog=sqrt(phi))
+    else if (link == "exp") Y <- qlnorm(U, meanlog = log(eta), sdlog=sqrt(phi))
     else stop("invalid link function for Gaussian distribution")
   }
   else if (family == 2) {
@@ -399,8 +450,14 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
       else if (link[i] == "inverse") mu <- 1/eta[[i]]
       else stop("not a valid link function for Gaussian distribution")
 
-      if (is.numeric(qden[[i]])) wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi[i]))/qden[[i]]
-      else wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi[i]))/qden[[i]](dat[,i])
+      fam <- get_family(i)
+      dens <- fam()$ddist
+
+      if (is.numeric(qden[[i]])) wts <- wts*dens(dat[,i], mu=mu, phi=phi[i])/qden[[i]]
+      else wts <- wts*dens(dat[,i], mu=mu, phi=phi[i])/qden[[i]](dat[,i])
+
+      # if (is.numeric(qden[[i]])) wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi[i]))/qden[[i]]
+      # else wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi[i]))/qden[[i]](dat[,i])
     }
     else if (family[i] == 2) {
       if (link[i] == "identity") mu <- eta[[i]]
@@ -408,8 +465,14 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
       else if (link[i] == "inverse") mu <- 1/eta[[i]]
       else stop("not a valid link function for t-distribution")
 
-      if (is.numeric(qden[[i]])) wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]])
-      else wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]](dat[,i]))
+      fam <- get_family(i)
+      dens <- fam()$ddist
+
+      if (is.numeric(qden[[i]])) wts <- wts*dens(dat[,i], mu=mu, phi=phi[i], par2=pars[[i]]$par2)/qden[[i]]
+      else wts <- wts*dens(dat[,i], mu=mu, phi=phi[i], par2=pars[[i]]$par2)/qden[[i]](dat[,i])
+
+      # if (is.numeric(qden[[i]])) wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]])
+      # else wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]](dat[,i]))
     }
     else if (family[i] == 3) {
       if (link[i] == "identity") mu <- eta[[i]]
@@ -417,8 +480,13 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
       else if (link[i] == "inverse") mu <- 1/eta[[i]]
       else stop("not a valid link function for t-distribution")
 
-      if (is.numeric(qden[[i]])) wts <- wts*dgamma(dat[,i], rate=1/(mu*phi[i]), shape=1/phi[i])/qden[[i]]
-      else wts <- wts*dgamma(dat[,i], rate=1/(mu*phi[i]), shape=1/phi[i])/qden[[i]](dat[,i])
+      fam <- get_family(i)
+      dens <- fam()$ddist
+
+      if (is.numeric(qden[[i]])) wts <- wts*dens(dat[,i], mu=mu, phi=phi[i])/qden[[i]]
+      else wts <- wts*dens(dat[,i], mu=mu, phi=phi[i])/qden[[i]](dat[,i])
+      # if (is.numeric(qden[[i]])) wts <- wts*dgamma(dat[,i], rate=1/(mu*phi[i]), shape=1/phi[i])/qden[[i]]
+      # else wts <- wts*dgamma(dat[,i], rate=1/(mu*phi[i]), shape=1/phi[i])/qden[[i]](dat[,i])
     }
     else if (family[i] == 4) {
       mu <- expit(eta[[i]])
@@ -434,11 +502,11 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
       else wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]](dat[,i])
     }
     else if (family[i] == 6) {
-      if (link[i] == "identity") mu <- eta[[i]]
-      else if (link[i] == "exp") mu <- log(eta[[i]])
+      if (link[i] == "identity") lmu <- eta[[i]]
+      else if (link[i] == "identity") lmu <- log(eta[[i]] - phi/2)
       else stop("invalid link function for log-normal distribution")
-      if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]])
-      else wts <- wts*dnorm(log(dat[,i]), mean=mu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]](dat[,i]))
+      if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=lmu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]])
+      else wts <- wts*dnorm(log(dat[,i]), mean=lmu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]](dat[,i]))
     }
     else stop("family[[2]] must be in the range 1 to 6")
   }
@@ -489,59 +557,78 @@ glm_sim <- function (family, eta, phi, par2, link) {
     link <- familyVals[familyVals$val==family,2]
   }
 
-  ## get the densities for x
-  if (family == 1 || family == 6) {
+  if (is(family, "causl_family")) {
+    if (!(family$name %in% names(linksList))) stop(paste0("Family ", family$name, " is not a valid and registered family"))
+    if (!(link %in% linksList[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
+
     if (link=="identity") mu <- eta
     else if (link=="inverse") mu <- 1/eta
     else if (link=="log") mu <- exp(eta)
-    else stop("Not a valid link function for the Gaussian distribution")
+    else stop("We shouldn't get here")
 
-    x <- rnorm(n, mu, sd=sqrt(phi))
-    qx <- pnorm(x, mu, sd=sqrt(phi))
+    pars <- list(mu=mu)
+    if ("phi" %in% family$pars) pars <- c(pars, list(phi=phi))
+    if ("par2" %in% family$pars) pars <- c(pars, list(par2=par2))
 
-    if (family == 6) {
-      out <- exp(out)
-      qx <- qx/out
+    x <- do.call(family$rdist, c(list(n=n), pars))
+    qx <- do.call(family$pdist, c(list(x=x), pars))
+  }
+  else if (is.numeric(family)) {
+    ## old style approach
+    ## get the densities for x
+    if (family == 1 || family == 6) {
+      if (link=="identity") mu <- eta
+      else if (link=="inverse") mu <- 1/eta
+      else if (link=="log") mu <- exp(eta)
+      else stop("Not a valid link function for the Gaussian distribution")
+
+      x <- rnorm(n, mu, sd=sqrt(phi))
+      qx <- pnorm(x, mu, sd=sqrt(phi))
+
+      if (family == 6) {
+        out <- exp(out)
+        qx <- qx/out
+      }
     }
-  }
-  else if (family == 2) {
-    if (link=="identity") mu <- eta
-    else if (link=="inverse") mu <- 1/eta
-    else if (link=="log") mu <- exp(eta)
-    else stop("Not a valid link function for the t-distribution")
+    else if (family == 2) {
+      if (link=="identity") mu <- eta
+      else if (link=="inverse") mu <- 1/eta
+      else if (link=="log") mu <- exp(eta)
+      else stop("Not a valid link function for the t-distribution")
 
-    x <- rt(n, df=par2)*sqrt(phi) + mu
-    qx <- pt((x - mu)/sqrt(phi), df=par2)
-  }
-  else if (family == 3) {
-    if (link=="log") mu <- exp(eta)
-    else if (link=="identity") mu <- eta
-    else if (link=="inverse") mu <- 1/eta
-    else stop("Not a valid link function for the gamma distribution")
+      x <- rt(n, df=par2)*sqrt(phi) + mu
+      qx <- pt((x - mu)/sqrt(phi), df=par2)
+    }
+    else if (family == 3) {
+      if (link=="log") mu <- exp(eta)
+      else if (link=="identity") mu <- eta
+      else if (link=="inverse") mu <- 1/eta
+      else stop("Not a valid link function for the gamma distribution")
 
-    x <- rgamma(n, shape=1/phi, scale=phi*mu)
-    qx <- pgamma(x, shape=1/phi, scale=phi*mu)
-  }
-  else if (family == 4) {
-    if (link=="logit") mu <- expit(eta)
-    else if (link=="probit") mu <- pnorm(eta)
-    else stop("Not a valid link function for the beta distribution")
+      x <- rgamma(n, shape=1/phi, scale=phi*mu)
+      qx <- pgamma(x, shape=1/phi, scale=phi*mu)
+    }
+    else if (family == 4) {
+      if (link=="logit") mu <- expit(eta)
+      else if (link=="probit") mu <- pnorm(eta)
+      else stop("Not a valid link function for the beta distribution")
 
-    th1 <- mu/phi
-    th2 <- (1-mu)/phi
+      th1 <- mu/phi
+      th2 <- (1-mu)/phi
 
-    x <- rbeta(n, th1, th2)
-    qx <- pbeta(x, th1, th2)
-  }
-  else if (family == 5) {
-    if (link=="logit") mu <- expit(eta)
-    else if (link=="probit") mu <- pnorm(eta)
-    else stop("Not a valid link function for the Bernoulli distribution")
+      x <- rbeta(n, th1, th2)
+      qx <- pbeta(x, th1, th2)
+    }
+    else if (family == 5) {
+      if (link=="logit") mu <- expit(eta)
+      else if (link=="probit") mu <- pnorm(eta)
+      else stop("Not a valid link function for the Bernoulli distribution")
 
-    x <- rbinom(n, size=1, prob=mu)
-    qx <- dbinom(x, size=1, prob=mu)
+      x <- rbinom(n, size=1, prob=mu)
+      qx <- dbinom(x, size=1, prob=mu)
+    }
+    else stop("Only Gaussian, t, beta, gamma, Bernoulli and log-normal distributions are allowed")
   }
-  else stop("Only Gaussian, t, beta, gamma, Bernoulli and log-normal distributions are allowed")
 
   ## return quantile
   attr(x, "quantile") <- qx

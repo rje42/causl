@@ -54,7 +54,7 @@ Useful for altering are \code{trace} (1 shows steps of optimization) and
 the proportion of correlation put into a Gaussian or t-Copula's starting
 values.
 
-**Warning** By default, none of the variables should be called \code{cop}, as
+\strong{Warning} By default, none of the variables should be called \code{cop}, as
 this is reserved for the copula.  The reserved word can be changed using
 the argument \code{cop} within control.
 }
