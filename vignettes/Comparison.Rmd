@@ -42,7 +42,7 @@ forms <- list(L ~ A0,
 ```
 
 We next select the parameters for our model, again following 
-Evans and Didelez (2021).
+Evans and Didelez (2024).
 
 ```{r params}
 pars <- list(A0 = list(beta = 0),
@@ -54,14 +54,11 @@ pars <- list(A0 = list(beta = 0),
 
 Now we sample $5,000$ observations from the model (you might like to edit this
 to increase the sample size to $10^6$, replicating the analysis in Evans and 
-Didelez, 2021):
+Didelez, 2024):
 ```{r simulate}
 set.seed(123)
-n <- 1e4
-# n <- 1e6
-# dat_max <- causalSamp(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
-dat_max <- rfrugalParam(n, formulas = forms, pars=pars, 
-                        family = list(3,c(5,5),1,1), careful=TRUE)
+n <- 5e3
+dat_max <- causalSamp(n, formulas = forms, pars=pars, family = list(3,c(5,5),1,1))
 ```
 
 ```{r echo=FALSE, eval=FALSE}
@@ -318,7 +315,7 @@ for (i in seq_len(N)) {
 ```
 
 
-The code below plots the empirical biases as boxplots.
+<!-- The code below plots the empirical biases as boxplots. -->
 ```{r boxplot, eval=FALSE, echo=FALSE}
 library(dplyr)
 library(tidyr)

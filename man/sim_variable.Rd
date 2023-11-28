@@ -11,9 +11,9 @@ sim_variable(n, formulas, family, pars, link, dat, quantiles)
 
 \item{formulas}{list consisting of a formula for the output variables and a list of formulae for the pair-copula}
 
-\item{family}{list containing family variables}
+\item{family}{list containing family variable}
 
-\item{pars}{list with two entries, first a list of parameters for response second a further list of parameters for pair-copula}
+\item{pars}{list with two entries, first a list of parameters for response, and second a further list of parameters for pair-copula}
 
 \item{link}{list of same form as \code{family}}
 

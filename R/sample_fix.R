@@ -21,10 +21,19 @@ get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, l
   full_form <- merge_formulas(forms_X)
 
   ## get states for discrete treatments
-  disX <- sum(fam_X == 5)
-  # disZ <- sum(fam_Z == 5)
-  combs <- expand.grid(rep(list(0:1), disX))
-  names(combs) <- names(LHS_X[fam_X == 5])
+  if (length(fam_X) > 0 && is(fam_X[[1]], "causl_fam")) {
+    famChr <- sapply(fam_X, function(x) x$name)
+    disX <- sum(famChr %in% "binomial")
+    # disZ <- sum(fam_Z == 5)
+    combs <- expand.grid(rep(list(0:1), disX))
+    names(combs) <- names(LHS_X[famChr %in% "binomial"])
+  }
+  else {
+    disX <- sum(fam_X == 5)
+    # disZ <- sum(fam_Z == 5)
+    combs <- expand.grid(rep(list(0:1), disX))
+    names(combs) <- names(LHS_X[fam_X == 5])
+  }
 
   ## build dummy data frame
   Zvars <- setdiff(unique(unlist(rhs_vars(forms_X))), LHS_X)

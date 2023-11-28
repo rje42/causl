@@ -60,11 +60,21 @@ sim_rejection <- function (out, proc_inputs, careful, control) {
   vars <- names(out)
 
   if (careful) {
+    if (length(famZ) == 0) stop("Should have at least one Z variable")
+
     ## get sample Z values
     Z0s <- gen_X_values(n, famX=famZ, pars=pars, LHS_X=LHS_Z, dX=dZ)$datX
-    unb2_cts <- famZ %in% c(1,2)
-    unb_cts <- famZ %in% c(3,6)
-    b01 <- famZ == 4
+    if (is(famZ[[1]], "causl_family")) {
+      famChr <- sapply(famZ, function(x) x$name)
+      unb2_cts <- famChr %in% c("gaussian","t")
+      unb_cts <- famChr %in% c("Gamma","lnormal")
+      b01 <- famChr == "beta"
+    }
+    else {
+      unb2_cts <- famZ %in% c(1,2)
+      unb_cts <- famZ %in% c(3,6)
+      b01 <- famZ == 4
+    }
     rg <- list()
 
     ## get range of bins for unbounded continuous variables
@@ -140,7 +150,7 @@ sim_rejection <- function (out, proc_inputs, careful, control) {
     for (i in seq_along(LHS_Z)) {
       mms[[1]][[i]] <- model.matrix(formulas[[1]][[i]], data=out[!OK,,drop=FALSE])
       out[[LHS_Z[i]]][!OK] <- rescaleVar(out[[LHS_Z[i]]][!OK], X=mms[[1]][[i]],
-                                         family=famZ[i], pars=pars[[LHS_Z[i]]],
+                                         family=famZ[[i]], pars=pars[[LHS_Z[i]]],
                                          link=link[[1]][i])
       if (careful) {
         tmpZ <- out[[LHS_Z[i]]][!OK]
@@ -151,7 +161,7 @@ sim_rejection <- function (out, proc_inputs, careful, control) {
     for (i in seq_along(LHS_Y)) {
       mms[[3]][[i]] <- model.matrix(formulas[[3]][[i]], data=out[!OK,,drop=FALSE])
       out[[LHS_Y[i]]][!OK] <- rescaleVar(out[[LHS_Y[i]]][!OK], X=mms[[3]][[i]],
-                                         family=famY[i], pars=pars[[LHS_Y[i]]],
+                                         family=famY[[i]], pars=pars[[LHS_Y[i]]],
                                          link=link[[3]][i])
     }
 

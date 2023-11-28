@@ -47,7 +47,7 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
   }
 
   ## check families are valid
-  if (!all(unlist(family[1:3]) %in% familyVals$val)) stop("Invalid family specification")
+  # if (!all(unlist(family[1:3]) %in% familyVals$val)) stop("Invalid family specification")
   if (!all(unlist(family[[4]]) %in% copulaVals$val)) stop("Invalid copula specification")
 
   ## check that supplied parameters are sufficient
@@ -60,6 +60,7 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
     plur <- sum(!bpres) > 1
     stop(paste(ifelse(plur, "Variables", "Variable"), paste(names(pars)[!bpres], collapse=", "), ifelse(plur, "lack", "lacks"), "a beta parameter vector"))
   }
+  ### change to use the names supplied by each family
 
   # if (all(unlist(family) == 0)) {
   #   message("Perhaps better to simulate this using the MLLPs package")
@@ -171,10 +172,30 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
   }
   else in_form <- numeric(0)
 
-  ## check that variables in families 1,2,3 have a dispersion parameter
-  for (i in seq_along(famZ))
-    if (famZ[i] <= 4 && is.null(pars[[LHS_Z[i]]]$phi))
-      stop(paste(LHS_Z[i], "needs a phi parameter"))
+  ## process family variable inputs
+  family <- process_family(family)
+
+  LHSs <- list(LHS_Z, LHS_X, LHS_Y)
+
+  ## check that variables in families 1,2,3,4 have a dispersion parameter
+  for (j in 1:3) {
+    if (is.numeric(family[[j]])) {
+      for (i in seq_along(family[[j]])) {
+        if (family[[j]][i] <= 4 && is.null(pars[[LHSs[[j]][i]]]$phi))
+          stop(paste(LHSs[[j]][i], "needs a phi parameter"))
+        if (family[[j]][i] == 2 && is.null(pars[[LHSs[[j]][i]]]$par2))
+          stop(paste(LHSs[[j]][i], "needs a par2 parameter for degrees of freedom"))
+      }
+    }
+    else if (length(family[[j]]) > 0 && is(family[[j]][1], "causl_family")) {
+      for (i in seq_along(family[[j]])) {
+        if (!all(family[[j]][i]$pars %in% names(pars[[LHSs[[j]][i]]]))) {
+          miss <- family[[j]][i]$pars[!family[[j]][i]$pars %in% names(pars[[LHSs[[j]][i]]])]
+          stop(paste0("Parameters ", paste(miss, collapse=", "), " missing for variable ", LHS[[j]][i]))
+        }
+      }
+    }
+  }
   for (i in seq_along(famX))
     if (famX[i] <= 4 && is.null(pars[[LHS_X[i]]]$phi))
       stop(paste(LHS_X[i], "needs a phi parameter"))
@@ -191,15 +212,53 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
     if (!is.list(formulas[[4]])) {
       formulas[[4]] <- rep(list(formulas[[4]]), dY)
     }
-    if (!is.list(formulas[[4]][[1]])) {
-      formulas[[4]] <- lapply(formulas[[4]], function(x) rep(list(x), dZ))
+    else if (length(formulas[[4]]) != dY) {
+      formulas[[4]] <- rep(formulas[[4]][], dY)
+    }
+    if (!all(sapply(formulas[[4]], is.list)) || any(lengths(formulas[[4]]) < dZ+seq_len(dY)-1)) {
+      for (i in seq_len(dY)) {
+        if (is.list(formulas[[4]][[i]])) {
+          formulas[[4]][[i]] <- rep(formulas[[4]][[i]], dZ+i-1)
+        }
+        else {
+          formulas[[4]][[i]] <- rep(list(formulas[[4]][[i]]), dZ+i-1)
+        }
+        lhs(formulas[[4]][[i]]) <- c(LHS_Z[rank(order[seq_len(dZ)])], LHS_Y[rank(order[dZ+dX+seq_len(i-1)])])
+        ## update to allow some Zs to come after Ys
+      }
+    }
+    names(formulas[[4]]) <- LHS_Y[rank(order[dZ+dX+seq_len(dY)])]
+
+    ## get families in right format
+    if (!is.list(family[[4]]) || length(family[[4]]) != dY) {
+      if (is.list(family[[4]])) {
+        family[[4]] <- rep(family[[4]], dY)
+      }
+      if (!is.list(family[[4]])) {
+          if (length(family[[4]]) == dY) {
+            family[[4]] <- as.list(family[[4]])
+          }
+          else  {
+            family[[4]] <- rep(as.list(family[[4]]), dY)
+          }
+      }
+    }
+    if (any(lengths(family[[4]]) != lengths(formulas[[4]]))) {
+      family[[4]] <- mapply(function(x, y) rep(x, y), family[[4]], dZ+seq_len(dY)-1)
     }
 
     ## get parameters in right format
     if (!setequal(names(pars[[kwd]]), LHS_Y)) {
       if ("beta" %in% names(pars[[kwd]])) {
-        pars[[kwd]] <- list(list(list(beta=pars[[kwd]]$beta)))
+        pars[[kwd]] <- rep(list(list(list(beta=pars[[kwd]]$beta))), length(LHS_Y))
         names(pars[[kwd]]) <- LHS_Y
+        if (dZ > 1 || dY > 1) {
+          for (i in seq_len(dY)) {
+            vnm <- vars[order[dZ+dX+i]]
+            pars[[kwd]][[vnm]] <- rep(pars[[kwd]][[vnm]], dZ+i-1)
+            names(pars[[kwd]][[vnm]]) <- c(LHS_Z, LHS_Y[rank(order[dZ+dX+seq_len(i-1)])])
+          }
+        }
       }
       else {
         nrep <- setdiff(LHS_Y, names(pars[[kwd]]))
@@ -226,7 +285,7 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
       else if (is.matrix(family[[4]]) && nrow(family[[4]] == dY)) {
         family[[4]] <- apply(family[[4]], 1, c, simplify = FALSE)
       }
-      else if (is.list(family[[4]]) && length(family[[4]] == dY)) {
+      else if (is.list(family[[4]]) && length(family[[4]]) == dY) {
         if (any(lengths(family[[4]]) != dZ + seq_len(dY) - 1)) stop("Incorrect format of family parameters for copula with inversion method")
       }
     }
@@ -262,21 +321,27 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
               order=order))
 }
 
+##' Process input for family variables
+##'
+##' @param family list of family parameters
+##'
 process_family <- function (family) {
   lens <- lengths(family)
 
   for (i in seq_along(lens)) {
     if (lens[i] > 0) {
       if (is.character(family[[i]][1])) {
-        famZ <- unlist(family[[i]])
-
+        fams <- unlist(family[[i]])
+        family[[i]] <- lapply(fams, function(x) get_family(x)())
       }
       else if (is.numeric(family[[i]][1])) {
-
+        next
       }
       else if (all(sapply(family[[i]], function(x) is(x, "causl_family")))) {
         next
       }
     }
   }
+
+  return(family)
 }
