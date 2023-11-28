@@ -39,12 +39,13 @@ sim_inversion <- function (out, proc_inputs) {
 
       ## code to use sim_variable
       forms <- list(formulas[[3]][[wh]], formulas[[4]][[wh]])
-      fams <- list(family[[3]][wh], family[[4]][[wh]])
+      fams <- list(family[[3]][[wh]], family[[4]][[wh]])
       prs <- list(pars[[vnm]], pars[[kwd]][[vnm]])
       lnk <- list(link[[3]][wh], list()) # link[[4]][[wh]])
 
       if (any(is.na(lhs(forms[[2]])))) {
-        forms[[2]] <- `lhs<-`(forms[[2]], c(vars[order[seq_len(dZ)]], vars[order[dZ+dX+seq_len(i-1 - dZ-dX)]]))
+        forms[[2]] <- `lhs<-`(forms[[2]], c(LHS_Z[rank(order[seq_len(dZ)])],
+                                            LHS_Y[rank(order[dZ+dX+seq_len(i-1 - dZ-dX)])]))
       }
 
       out <- sim_variable(n=nrow(out), formulas=forms, family=fams, pars=prs,
@@ -71,7 +72,7 @@ sim_inversion <- function (out, proc_inputs) {
       # }
       # ##
       # X <- model.matrix(formulas[[3]][[wh]], data=out)
-      # qY <- rescaleVar(qY, X=X, family=famY[wh], pars=pars[[LHS_Y[wh]]],
+      # qY <- rescaleVar(qY, X=X, family=famY[[wh]], pars=pars[[LHS_Y[wh]]],
       #                  link=link[[3]][wh])
       #
       # out[[vars[order[i]]]] <- qY
@@ -82,11 +83,11 @@ sim_inversion <- function (out, proc_inputs) {
 
       if (vnm %in% LHS_X) {
         curr_form <- formulas[[2]][[order[i]-dZ]]
-        curr_fam <- famX[order[i]-dZ]
+        curr_fam <- famX[[order[i]-dZ]]
       }
       else {
         curr_form <- formulas[[1]][[order[i]]]
-        curr_fam <- famZ[order[i]]
+        curr_fam <- famZ[[order[i]]]
       }
       trm <- terms(curr_form)
       # curr_form2 <- delete.response(terms(curr_form))

@@ -1,15 +1,35 @@
-## return the causl_family function given an integer index
+##' Return causl_fam function from integer index
+##'
+##' @param val integer corresponding to distributional family
+##'
+##' @details
+##' The functions `gaussian_causl_fam()` etc. represent the functions that are
+##' returned by `get_family()`.
+##'
+##'
+##' @seealso [familyVals]
+##'
 get_family <- function (val) {
-  fm <- match(val, familyVals$val)
-  if (is.na(fm)) stop("Invalid family value")
+  if (is.numeric(val)) {
+    fm <- match(val, familyVals$val)
+    if (is.na(fm)) stop("Invalid family value")
+  }
+  else if (is.character(val)) {
+    fm <- pmatch(val, familyVals$family)
+    if (is.na(fm)) stop("Family not recognized")
+  }
 
   fmly <- familyVals[fm,]$family
-  if (val > 2) stop("Only works for Gaussian and t variables")
+  if (is.numeric(val) && val > 5) stop("No function defined yet for this family")
 
   get(paste0(fmly, "_causl_fam"))
 }
 
-gaussian_causl_fam <- function () {
+##' @describeIn get_family Gaussian distribution family
+##' @param link link function
+gaussian_causl_fam <- function (link) {
+  if (missing(link)) link = "identity"
+
   ## write functions
   dens <- function (x, mu, phi, log=FALSE) dnorm(x, mean=mu, sd=sqrt(phi), log=log)
   quan <- function (p, mu, phi) qnorm(p, mean=mu, sd=sqrt(phi))
@@ -20,13 +40,16 @@ gaussian_causl_fam <- function () {
 
   ## define family
   out <- list(name="gaussian", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
-              pars=c("mu", "phi"), default=default)
+              pars=c("mu", "phi"), default=default, link=link)
   class(out) <- "causl_family"
 
   return(out)
 }
 
-t_causl_fam <- function () {
+##' @describeIn get_family Student's t distribution family
+t_causl_fam <- function (link) {
+  if (missing(link)) link = "identity"
+
   ## write functions
   dens <- function (x, mu, phi, par2, log=FALSE) {
     out <- dt((x-mu)/sqrt(phi), df=par2, log=log)
@@ -43,13 +66,16 @@ t_causl_fam <- function () {
 
   ## define family
   out <- list(name="t", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
-              pars=c("mu", "phi", "par2"), default=default)
+              pars=c("mu", "phi", "par2"), default=default, link=link)
   class(out) <- "causl_family"
 
   return(out)
 }
 
-gamma_causl_fam <- function () {
+##' @describeIn get_family Gamma distribution family
+Gamma_causl_fam <- function (link) {
+  if (missing(link)) link = "log"
+
   ## write functions
   dens <- function (x, mu, phi, log=FALSE) dgamma(x, rate=1/(mu*phi),
                                                   shape=1/phi, log=log)
@@ -61,20 +87,23 @@ gamma_causl_fam <- function () {
 
   ## define family
   out <- list(name="Gamma", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
-              pars=c("mu", "phi"), default=default)
+              pars=c("mu", "phi"), default=default, link=link)
   class(out) <- "causl_family"
 
   return(out)
 }
 
-binomial_causl_fam <- function () {
+##' @describeIn get_family binomial distribution family
+binomial_causl_fam <- function (link) {
+  if (missing(link)) link = "logit"
+
   ## write functions
   dens <- function (x, mu, log=FALSE) dbinom(x, size=1, prob=mu, log=log)
   quan <- function (p, mu) qbinom(p, size=1, prob=mu)
   sim <- function (n, mu) rbinom(n, size=1, prob=mu)
   probs <- function (x, mu) pbinom(x, size=1, prob=mu)
 
-  default <- function(theta) list(x=1, mu=1, p=0.5)
+  default <- function(theta) list(x=1, mu=0.5, p=0.5)
 
   ## define family
   out <- list(name="binomial", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
@@ -84,7 +113,10 @@ binomial_causl_fam <- function () {
   return(out)
 }
 
-beta_causl_fam <- function () {
+##' @describeIn get_family beta distribution family
+beta_causl_fam <- function (link) {
+  if (missing(link)) link = "logit"
+
   ## write functions
   dens <- function (x, mu, phi, log=FALSE) dbeta(x, shape1=1+phi*mu,
                                                  shape2=1+phi*(1-mu), log=log)
@@ -96,7 +128,7 @@ beta_causl_fam <- function () {
 
   ## define family
   out <- list(name="beta", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
-              pars=c("mu", "phi"), default=default)
+              pars=c("mu", "phi"), default=default, link=link)
   class(out) <- "causl_family"
 
   return(out)

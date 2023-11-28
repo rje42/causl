@@ -2,8 +2,8 @@
 ##'
 ##' @param n sample size
 ##' @param formulas list consisting of a formula for the output variables and a list of formulae for the pair-copula
-##' @param family list containing family variables
-##' @param pars list with two entries, first a list of parameters for response second a further list of parameters for pair-copula
+##' @param family list containing family variable
+##' @param pars list with two entries, first a list of parameters for response, and second a further list of parameters for pair-copula
 ##' @param link list of same form as \code{family}
 ##' @param dat data frame of current variables
 ##' @param quantiles data frame of quantiles

@@ -11,7 +11,8 @@ link_setup <- function(link, family, vars) {
 
   ## set up output
   link_out <- lapply(family, function(x) {
-    familyVals$family[match(x, familyVals$val)]
+    if (length(x) > 0 && is(x[[1]], "causl_family")) sapply(x, function(y) y$name)
+    else familyVals$family[match(x, familyVals$val)]
   })
   if (any(is.na(unlist(link_out)))) stop("Invalid family variable specified")
   link_out <- lapply(link_out, function(x) sapply(x, function(y) linksList[[y]][1]))
