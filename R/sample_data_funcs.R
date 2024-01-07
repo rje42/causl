@@ -603,7 +603,10 @@ glm_sim <- function (family, eta, phi, par2, link) {
   }
 
   if (is(family, "causl_family")) {
-    if (!(family$name %in% names(linksList))) stop(paste0("Family ", family$name, " is not a valid and registered family"))
+    if (!(family$name %in% names(linksList))) {
+      if (!(link %in% family$links_list)) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
+      stop(paste0("Family ", family$name, " is not a valid and registered family"))
+    }
     if (!(link %in% linksList[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
 
     if (link=="identity") mu <- eta

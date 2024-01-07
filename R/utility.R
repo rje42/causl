@@ -25,6 +25,7 @@ lhs <- function (formulas) {
 
 ##' @describeIn lhs Assign LHSs to list of formulas
 ##' @param value charachter vector to assign
+##' @export
 `lhs<-` <- function (formulas, value) {
   if (length(formulas) < length(value)) stop("Must be as many formulas as LHSs")
 

@@ -32,6 +32,10 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
     family <- lapply(lengths(formulas), rep.int, x=1)
   }
   else if (is.list(family)) {
+    if (any(sapply(family, class) == "causl_family")) {
+      wh <- which(sapply(family, class) == "causl_family")
+      for (i in wh) family[[i]] <- list(family[[i]])
+    }
     if (!all(lengths(family[1:3]) == lengths(formulas[1:3]))) stop("Mismatch in family and formulae specifications")
   }
   else if (length(family) == 4) {
@@ -43,7 +47,6 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
   add_args <- list(...)
   if (length(add_args) > 0) {
     nms <- names(add_args)
-
   }
 
   ## check families are valid
