@@ -5,12 +5,14 @@
 \alias{lhs<-}
 \title{Get LHSs of list of formulae}
 \usage{
-lhs(formulas)
+lhs(formulas, surv = FALSE)
 
 lhs(formulas) <- value
 }
 \arguments{
 \item{formulas}{list of formulae}
+
+\item{surv}{logical: should survival responses be returned as two elements?}
 
 \item{value}{charachter vector to assign}
 }
@@ -19,7 +21,8 @@ Get LHSs of list of formulae
 }
 \details{
 Returns character vector containing left-hand sides of a list of
-formulae.
+formulae.  If \code{surv=TRUE} then two responses are returned in the event of the
+left-hand side being a valid \code{Surv} object.
 }
 \section{Functions}{
 \itemize{

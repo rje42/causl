@@ -1,12 +1,16 @@
 ##' Get LHSs of list of formulae
 ##'
 ##' @param formulas list of formulae
+##' @param surv logical: should survival responses be returned as two elements?
 ##'
 ##' @details Returns character vector containing left-hand sides of a list of
-##' formulae.
-##'
+##' formulae.  If `surv=TRUE` then two responses are returned in the event of the
+##' left-hand side being a valid `Surv` object.
+##
+## To do: put in check for invalid name and then extract multiple variables if a Surv object
+##
 ##' @export
-lhs <- function (formulas) {
+lhs <- function (formulas, surv=FALSE) {
   if (!is.list(formulas)) formulas <- list(formulas)
   term <- lapply(formulas, terms)
 
@@ -15,12 +19,41 @@ lhs <- function (formulas) {
   resp <- rep(NA_character_, length(vars)) #character(length(vars))
   if (any(lengths(vars) >= 2)) {
     mis <- (sapply(term, attr, which="response") != 1)
-    if (!all(mis)) resp[!mis & lengths(vars) >= 2] <- sapply(vars[!mis& lengths(vars) >= 2], function(x) as.character(x[[2]]))
+    if (!all(mis)) {
+      wh <- !mis & lengths(vars) >= 2
+      new_vals <- lapply(vars[wh], function(x) as.character(x[[2]]))
+      resp[wh & lengths(new_vals) == 1] <- unlist(new_vals[lengths(new_vals) == 1])
+
+      if (any(lengths(new_vals) != 1 & lengths(new_vals) != 3)) stop("Not a valid left-hand side")
+
+      if (any(lengths(new_vals) == 3)) {
+        resp <- as.list(resp)
+        wh3 <- which(lengths(new_vals) == 3)
+        vals1 <- sapply(new_vals, function(x) x[[1]])
+        if (any(vals1 != "Surv")) stop("Non-standard syntax must be a 'Surv' object")
+        vals_out <- lapply(new_vals[wh3], function(x) x[2:3])
+        resp[wh3] <- vals_out
+      }
+    }
+
+    #
+    # if (any(na.omit(grepl("[$&+:;=?@|'<>^*%!-]", resp))) || (any(na.omit(grepl("[,()]", resp))) && !surv)) stop("Invalid variables in formula")
+    # if (surv && any(na.omit(grepl("[,()]", resp)))) {
+    #   wh <- which(grepl("[,()]", resp))
+    #   vals <- lapply(resp, function(x) strsplit(x, "[(,)]")[[1]])
+    #   lVs <- lengths(vals)
+    #   vals1 <- sapply(vals, function(x) x[[1]])
+    #   if (any(vals1 != "Surv")) stop("Non-standard syntax must be a 'Surv' object")
+    #   if (any(lVs != 3)) stop("'Surv' objects must have exactly two arguments")
+    #   resp <- as.list(resp)
+    #   vals_out <- mapply(c, vals[[2]], vals[[3]])
+    #   resp[wh] <- vals
+    # }
   }
   # mis <- (sapply(term, attr, which="response") != 1)
   # resp[mis] <- rep()
 
-  resp
+  return(resp)
 }
 
 ##' @describeIn lhs Assign LHSs to list of formulas

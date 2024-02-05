@@ -268,7 +268,7 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
         if (length(nrep) > 0) stop(paste0("Variable ", paste(nrep, collapse=", "),
                                           "not represented in the copula parameters list"))
         rep <- setdiff(names(pars[[kwd]]), LHS_Y)
-        if (length(rep) > 0) stop(paste0("Variable ", paste(nrep, collapse=", "),
+        if (length(rep) > 0) stop(paste0("Variable ", paste(rep, collapse=", "),
                                          "represented in copula parameters list but not a response variable"))
         stop("Shouldn't get here")
       }
