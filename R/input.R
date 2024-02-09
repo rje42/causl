@@ -6,9 +6,9 @@
 ##' @param link list of link functions
 ##' @param kwd keyword for copula
 ##' @param ordering logical: should an ordering of variables be computed?
-##' @param ... dots from rfrugalParam
+## @param ... dots from rfrugalParam
 ##'
-process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, ...) {
+process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
 
   # ## check list of formula
   # if (ordering && !is.numeric(family[[1]]) && ("formula" %in% class(formulas[[1]]))) {
@@ -44,16 +44,17 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
   }
   else stop("family should be a list, or vector of length 4")
 
-  add_args <- list(...)
-  if (length(add_args) > 0) {
-    nms <- names(add_args)
-  }
+
+  # add_args <- list(...)
+  # if (length(add_args) > 0) {
+  #   nms <- names(add_args)
+  # }
 
   ## check families are valid
   # if (!all(unlist(family[1:3]) %in% familyVals$val)) stop("Invalid family specification")
-  if (!all(unlist(family[[4]]) %in% copulaVals$val)) stop("Invalid copula specification")
+  if (!all(unlist(family[[4]]) %in% copula_vals$val)) stop("Invalid copula specification")
 
-  ## check that supplied parameters are sufficient
+  ## check that supplied regression parameters are sufficient
   nm_pars <- names(pars)
   wh_cop <- which(nm_pars == kwd)
   if (is.na(wh_cop)) stop("No parameters specified for copula")
@@ -95,18 +96,79 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
     ## put in code to check that copulae formulas and parameters have matching lengths
   }
 
+  ## useful variable summaries
+  output <- c(LHS_Z, LHS_Y)
+  vars <- c(LHS_Z, LHS_X, LHS_Y)
+  LHSs <- list(LHS_Z, LHS_X, LHS_Y)
+
+  ## produce dummy data.frame to check number of coefficients
+  dummy_dat <- as.data.frame(rep(list(NA), sum(dims)))
+  names(dummy_dat) <- vars
+
+  for (i in 1:3) for (j in seq_along(LHSs[[i]])) {
+    if (!is_categorical(family[[i]][j])) dummy_dat[[LHSs[[i]][j]]] <- 0
+    else dummy_dat[[LHSs[[i]][j]]] <- factor(x=1L, levels=seq_len(pars[[LHSs[[i]][j]]]$nlevel))
+  }
+
   for (i in seq_along(formulas[[1]])) {
-    npar <- length(attr(formsZ[[i]], "term.labels")) + attr(formsZ[[i]], "intercept")
+    mod_mat <- model.matrix(formulas[[1]][[i]], data=dummy_dat)
+    # npar <- length(attr(formsZ[[i]], "term.labels")) + attr(formsZ[[i]], "intercept")
+    npar <- ncol(mod_mat)
+    if (is_categorical(family[[1]][i])) {
+      npar <- npar*(pars[[LHS_Z[i]]]$nlevel - 1)
+      if (!is.matrix(pars[[LHS_Z[i]]]$beta)) pars[[LHS_Z[i]]]$beta <- matrix(pars[[LHS_Z[i]]]$beta, nrow=ncol(mod_mat))
+    }
+    if (isTRUE(is.na(npar)) || length(npar) != 1) stop(paste0("Categorical variable '", LHS_Z[i], "' requires an 'nlevel' parameter"))
     if (length(pars[[LHS_Z[i]]]$beta) != npar) stop(paste0("dimension of model matrix for ", LHS_Z[i], " does not match number of coefficients provided"))
   }
   for (i in seq_along(formulas[[2]])) {
-    npar <- length(attr(formsX[[i]], "term.labels")) + attr(formsX[[i]], "intercept")
-    if (length(pars[[LHS_X[i]]]$beta) != npar) stop(paste0("dimension of model matrix for ", LHS_X[i], " does not match number of coefficients provided"))
+    mod_mat <- model.matrix(formulas[[2]][[i]], data=dummy_dat)
+    # npar <- length(attr(formsX[[i]], "term.labels")) + attr(formsX[[i]], "intercept")
+    npar <- ncol(mod_mat)
+    if (is_categorical(family[[2]][i])) {
+      npar <- npar*(pars[[LHS_X[i]]]$nlevel - 1)
+      if (!is.matrix(pars[[LHS_X[i]]]$beta)) pars[[LHS_X[i]]]$beta <- matrix(pars[[LHS_X[i]]]$beta, nrow=ncol(mod_mat))
+    }
+    if (isTRUE(is.na(npar)) || length(npar) != 1) stop(paste0("Categorical variable '", LHS_X[i], "' requires an 'nlevel' parameter"))
+    if (length(pars[[LHS_X[i]]]$beta) != npar) stop(paste0("dimension of model matrix for '", LHS_X[i], "' does not match number of coefficients provided"))
   }
   for (i in seq_along(formulas[[3]])) {
-    npar <- length(attr(formsY[[i]], "term.labels")) + attr(formsY[[i]], "intercept")
+    mod_mat <- model.matrix(formulas[[3]][[i]], data=dummy_dat)
+    # npar <- length(attr(formsY[[i]], "term.labels")) + attr(formsY[[i]], "intercept")
+    npar <- ncol(mod_mat)
+    if (is_categorical(family[[3]][i])) {
+      npar <- npar*(pars[[LHS_Y[i]]]$nlevel - 1)
+      if (!is.matrix(pars[[LHS_Y[i]]]$beta)) pars[[LHS_Y[i]]]$beta <- matrix(pars[[LHS_Y[i]]]$beta, nrow=ncol(mod_mat))
+    }
+    if (isTRUE(is.na(npar)) || length(npar) != 1) stop(paste0("Categorical variable '", LHS_Y[i], "' requires an 'nlevel' parameter"))
     if (length(pars[[LHS_Y[i]]]$beta) != npar) stop(paste0("dimension of model matrix for ", LHS_Y[i], " does not match number of coefficients provided"))
   }
+
+  ## process family variable inputs
+  family <- process_family(family)
+
+  ## check that families have necessary parameters
+  for (j in 1:3) {
+    if (is.numeric(family[[j]])) {
+      for (i in seq_along(family[[j]])) {
+        if (family[[j]][i] <= 4 && is.null(pars[[LHSs[[j]][i]]]$phi))
+          stop(paste(LHSs[[j]][i], "needs a phi parameter"))
+        if (family[[j]][i] == 2 && is.null(pars[[LHSs[[j]][i]]]$par2))
+          stop(paste(LHSs[[j]][i], "needs a par2 parameter for degrees of freedom"))
+        if (family[[j]][i] %in% 10:11 && is.null(pars[[LHSs[[j]][i]]]$nlevel))
+          stop(paste(LHSs[[j]][i], "needs a parameter for number of categories"))
+      }
+    }
+    else if (length(family[[j]]) > 0 && is(family[[j]][1], "causl_family")) {
+      for (i in seq_along(family[[j]])) {
+        if (!all(family[[j]][i]$pars %in% names(pars[[LHSs[[j]][i]]]))) {
+          miss <- family[[j]][i]$pars[!family[[j]][i]$pars %in% names(pars[[LHSs[[j]][i]]])]
+          stop(paste0("Parameters ", paste(miss, collapse=", "), " missing for variable ", LHSs[[j]][i]))
+        }
+      }
+    }
+  }
+
 
   ## check which variables are already in the formula for another, and set
   ## corresponding copula correlation to zero
@@ -117,7 +179,6 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
     ord_mat <- matrix(0, nrow=sum(dims), ncol=sum(dims))
 
     ## get adjacency matrix of dependencies
-    vars <- c(LHS_Z, LHS_X, LHS_Y)
     ord_mat[seq_len(dZ), ] <- 1*t(sapply(formsZ, function(x) vars %in% attr(x, "term.labels")))
     ord_mat[dZ + seq_len(dX), ] <- 1*t(sapply(formsX, function(x) vars %in% attr(x, "term.labels")))
     ord_mat[dZ + dX + seq_len(dY), ] <- 1*t(sapply(formsY, function(x) vars %in% attr(x, "term.labels")))
@@ -140,14 +201,38 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
     if (any(is.na(order))) stop("Formulae contain cyclic dependencies")
   }
   else {
+    if (any(unlist(lapply(family, is_categorical)))) stop("Categorical variables must be simulated using 'method=\"inversion\"'")
+
+    ## more restrictive for the rejection sampling method
     if (any(unlist(lapply(rhs_vars(formulas[[3]]),
-                          function(x) any(x %in% LHS_Z))))) stop("Covariates cannot be direct predictors for outcomes")
+                          function(x) any(x %in% LHS_Z))))) stop("Covariates cannot be direct predictors for outcomes under rejection sampling")
     if (any(unlist(lapply(rhs_vars(formulas[[1]]),
-                          function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot be direct predictors for covariates")
+                          function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot be direct predictors for covariates under rejection sampling")
     if (any(unlist(lapply(rhs_vars(formulas[[3]]),  # could relax this
-                          function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot directly predict one another")
+                          function(x) any(x %in% LHS_Y))))) stop("Outcomes cannot directly predict one another under rejection sampling")
+
+    ## check if covariates predict each other
+    if (dZ > 1) {
+      idx <- lapply(rhs_vars(formulas[[1]]), function(x) na.omit(match(x,LHS_Z)))
+      # idx <- lapply(formsZ,
+      #               function(x) match(intersect(LHS_Z, attr(x, "term.labels")[attr(x, "order") == 1]), LHS_Z))
+      ignr <- do.call(cbind, mapply(function(x,y) {
+        if (length(x) > 0) rbind(x,y)
+        else matrix(NA, 2, 0)
+      }, idx, seq_along(LHS_Z)))
+      if (length(ignr) > 0) {
+        wh_swt <- ignr[1,] > ignr[2,]
+        ignr[,wh_swt] <- ignr[2:1, wh_swt]
+        in_form <- setmatch(apply(ignr, 2, c, simplify = FALSE),
+                            combn(length(LHS_Z), 2, simplify = FALSE))
+      }
+      else in_form <- numeric(0)
+    }
+    else in_form <- numeric(0)
+
     order <- NULL
   }
+
   #
   # if (any(sapply(formsZ,
   #        function(x) any(attr(x, "term.labels")[attr(x, "order") == 1] %in% LHS_Y)))) stop("Outcomes cannot be direct predictors for covariates")
@@ -155,56 +240,6 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
   #                function(x) any(attr(x, "term.labels")[attr(x, "order") == 1] %in% LHS_Z)))) stop("Covariates cannot be direct predictors for outcomes")
   # if (any(sapply(formsY,  # could weaken this?
   #                function(x) any(attr(x, "term.labels")[attr(x, "order") == 1] %in% LHS_Y)))) stop("Outcomes cannot directly predict one another")
-
-  ## check if covariates predict each other
-  if (length(formulas[[1]]) > 1) {
-    idx <- lapply(rhs_vars(formulas[[1]]), function(x) na.omit(match(x,LHS_Z)))
-    # idx <- lapply(formsZ,
-    #               function(x) match(intersect(LHS_Z, attr(x, "term.labels")[attr(x, "order") == 1]), LHS_Z))
-    ignr <- do.call(cbind, mapply(function(x,y) {
-      if (length(x) > 0) rbind(x,y)
-      else matrix(NA, 2, 0)
-    }, idx, seq_along(LHS_Z)))
-    if (length(ignr) > 0) {
-      wh_swt <- ignr[1,] > ignr[2,]
-      ignr[,wh_swt] <- ignr[2:1, wh_swt]
-      in_form <- setmatch(apply(ignr, 2, c, simplify = FALSE),
-                          combn(length(LHS_Z), 2, simplify = FALSE))
-    }
-    else in_form <- numeric(0)
-  }
-  else in_form <- numeric(0)
-
-  ## process family variable inputs
-  family <- process_family(family)
-
-  LHSs <- list(LHS_Z, LHS_X, LHS_Y)
-
-  ## check that variables in families 1,2,3,4 have a dispersion parameter
-  for (j in 1:3) {
-    if (is.numeric(family[[j]])) {
-      for (i in seq_along(family[[j]])) {
-        if (family[[j]][i] <= 4 && is.null(pars[[LHSs[[j]][i]]]$phi))
-          stop(paste(LHSs[[j]][i], "needs a phi parameter"))
-        if (family[[j]][i] == 2 && is.null(pars[[LHSs[[j]][i]]]$par2))
-          stop(paste(LHSs[[j]][i], "needs a par2 parameter for degrees of freedom"))
-      }
-    }
-    else if (length(family[[j]]) > 0 && is(family[[j]][1], "causl_family")) {
-      for (i in seq_along(family[[j]])) {
-        if (!all(family[[j]][i]$pars %in% names(pars[[LHSs[[j]][i]]]))) {
-          miss <- family[[j]][i]$pars[!family[[j]][i]$pars %in% names(pars[[LHSs[[j]][i]]])]
-          stop(paste0("Parameters ", paste(miss, collapse=", "), " missing for variable ", LHS[[j]][i]))
-        }
-      }
-    }
-  }
-  for (i in seq_along(famX))
-    if (famX[i] <= 4 && is.null(pars[[LHS_X[i]]]$phi))
-      stop(paste(LHS_X[i], "needs a phi parameter"))
-  for (i in seq_along(famY))
-    if (famY[i] <= 4 && is.null(pars[[LHS_Y[i]]]$phi))
-      stop(paste(LHS_Y[i], "needs a phi parameter"))
 
 
   if (ordering) {
@@ -308,20 +343,15 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE, .
     }
 
     ## code to check if Y or Z is included in copula formula
-    if (any(c(LHS_Z,LHS_Y) %in% rhs_vars(formulas[[4]])[[1]])) stop("copula cannot depend upon Z or Y variables")
+    if (any(output %in% rhs_vars(formulas[[4]])[[1]])) stop("copula cannot depend upon Z or Y variables")
   }
 
   ## set up link functions
   link <- link_setup(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
 
-  ## other useful variables
-  output <- c(LHS_Z, LHS_Y)
-  vars <- c(LHS_Z, LHS_X, LHS_Y)
-
-  return(list(formulas=formulas, pars=pars, family=family, link=link,
+    return(list(formulas=formulas, pars=pars, family=family, link=link,
               LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y), kwd=kwd,
-              dim=dims, in_form=in_form, vars=vars, output=output,
-              order=order))
+              dim=dims, vars=vars, output=output, order=order))
 }
 
 ##' Process input for family variables

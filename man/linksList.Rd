@@ -5,7 +5,7 @@
 \alias{linksList}
 \title{List of links available for each parametric family}
 \format{
-An object of class \code{list} of length 6.
+An object of class \code{list} of length 8.
 }
 \usage{
 linksList

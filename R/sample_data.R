@@ -228,15 +228,15 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
     if (nrow(unique(copMM)) > 25) warning("using vine copulas with continuous covariates may be very slow")
   }
   ## get copula data and then modify distributions of Y and Z
-  out[,output] <- sim_CopVal(out[,output], family=famCop,
+  out[,output] <- sim_copula(out[,output], family=famCop,
                              par = pars$cop, par2=pars$cop$par2, model_matrix=copMM)
   for (i in seq_along(LHS_Z)) {
     mms[[1]][[i]] <- model.matrix(formulas[[1]][[i]], data=out)
-    out[[LHS_Z[i]]] <- rescaleVar(out[[LHS_Z[i]]], X=mms[[1]][[i]],
+    out[[LHS_Z[i]]] <- rescale_var(out[[LHS_Z[i]]], X=mms[[1]][[i]],
                                                             family=famZ[[i]], pars=pars[[LHS_Z[i]]],
                                                             link=link[[1]][i])
   }
-  for (i in seq_along(LHS_Y)) out[[LHS_Y[i]]] <- rescaleVar(out[[LHS_Y[i]]], X=mms[[3]][[i]],
+  for (i in seq_along(LHS_Y)) out[[LHS_Y[i]]] <- rescale_var(out[[LHS_Y[i]]], X=mms[[3]][[i]],
                                                             family=famY[[i]], pars=pars[[LHS_Y[i]]],
                                                             link=link[[3]][i])
 

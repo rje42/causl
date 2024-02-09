@@ -5,7 +5,8 @@ Methods for Specifying, Simulating from and Fitting Causal Models
 
 This package enables one to simulate from a _frugal parameterization_, that is
 one where we have a specific marginal causal quantity of interest and use something 
-like a copula to model its dependence structure. 
+like a copula to model its dependence structure.  More details can be found in
+Evans and Didelez (2024).
 
 ### Example: Marginal structural model
 
@@ -46,3 +47,9 @@ pars <- list(Z = list(beta=1, phi=1),
 # now simulate 100 observations
 rfrugalParam(n=100, formulas=forms, pars=pars, family=fam)
 ```
+
+### Reference
+
+Evans, R.J. and Didelez, V.  Parameterizing and simulating from causal models
+(with discussion). _Journal of the Royal Statistical Society, Series B_ (to 
+appear), 2024.

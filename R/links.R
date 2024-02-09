@@ -17,10 +17,11 @@ link_setup <- function(link, family, vars) {
   if (any(is.na(unlist(link_out)))) stop("Invalid family variable specified")
   link_out <- lapply(link_out, function(x) sapply(x, function(y) linksList[[y]][1]))
 
+  if (any(is.null(unlist(link_out)))) stop("Error in family specification for link functions")
+
   if (!missing(vars)) {
     ## set names to match vars
-    nms_list <- relist(unlist(vars), family)
-    for (i in seq_along(link_out)) names(link_out[[i]]) <- nms_list[[i]]
+    for (i in seq_along(link_out)) names(link_out[[i]]) <- vars[[i]]
   }
 
   ## if no link argument supplied, then just return this list
@@ -98,5 +99,7 @@ linksList <- list(
   Gamma = c("log", "inverse", "identity"),
   beta = c("logit", "probit"),
   binomial = c("logit", "probit", "log"),
-  lognormal = c("exp", "identity")
+  lognormal = c("exp", "identity"),
+  categorical = c("logit"),
+  ordinal = c("logit")
 )

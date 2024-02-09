@@ -4,7 +4,7 @@
 ##' @param proc_inputs output of \code{process_inputs()}
 ##' @param control list of control parameters
 ##'
-##' @details \code{sim_inversion} and \code{sim_rejection} correspond to
+##' @details `sim_inversion` and `sim_rejection` correspond to
 ##' performing the sampling by inversion or using rejection sampling.
 ##'
 ##' @export
@@ -68,11 +68,11 @@ sim_inversion <- function (out, proc_inputs) {
       #   curr_fam <- family[[4]][wh,j]
       #   curr_par <- pars[[kwd]]$beta[[wh]][[j]]
       #   # eta <- X %*% curr_par
-      #   qY <- rescaleCop(cbind(curr_qZ,qY), X=X, pars=curr_par, family=curr_fam) #, link=link[[4]][i,j])
+      #   qY <- rescale_cop(cbind(curr_qZ,qY), X=X, pars=curr_par, family=curr_fam) #, link=link[[4]][i,j])
       # }
       # ##
       # X <- model.matrix(formulas[[3]][[wh]], data=out)
-      # qY <- rescaleVar(qY, X=X, family=famY[[wh]], pars=pars[[LHS_Y[wh]]],
+      # qY <- rescale_var(qY, X=X, family=famY[[wh]], pars=pars[[LHS_Y[wh]]],
       #                  link=link[[3]][wh])
       #
       # out[[vars[order[i]]]] <- qY
@@ -100,9 +100,9 @@ sim_inversion <- function (out, proc_inputs) {
         else warning(paste0("Missing entries for ", vnm))
       }
       eta <- MM %*% pars[[vnm]]$beta
+      oth_pars <- pars[[vnm]]
       curr_phi <- pars[[vnm]]$phi
-      tmp <- glm_sim(family=curr_fam, eta=eta, phi=curr_phi, link=curr_link,
-                     par2=pars[[vnm]]$par2)
+      tmp <- glm_sim(family=curr_fam, eta=eta, phi=curr_phi, other_pars=pars[[vnm]], link=curr_link)
       out[[vnm]] <- tmp
       if (vnm %in% LHS_Z) quantiles[[vnm]] <- attr(tmp, "quantile")
     }
@@ -125,7 +125,7 @@ sim_inversion <- function (out, proc_inputs) {
 # ##' @param linkY link function for response variable
 # ##' @param qZ quantiles of covariate distribution
 # ##' @param vars character vector of variable names
-# ##' @param dat data frame containing variables in \code{formulas} and \code{formY}
+# ##' @param dat data frame containing variables in `formulas` and `formY`
 # ##'
 # sim_Y <- function(n, formulas, family, pars, formY, famY, parsY, linkY, qZ, vars, dat) {
 #
@@ -138,12 +138,12 @@ sim_inversion <- function (out, proc_inputs) {
 #     # curr_fam <- family[j]
 #     # curr_par <- pars[[j]]
 #     # eta <- X %*% curr_par
-#     qY <- rescaleCop(cbind(quZ,qY), X=X, beta=pars[[j]]$beta, family=family[j],
+#     qY <- rescale_cop(cbind(quZ,qY), X=X, beta=pars[[j]]$beta, family=family[j],
 #                      par2=pars[[j]]$par2) #, link=link[j])
 #   }
 #   ##
 #   X <- model.matrix(formY, data=dat)
-#   qY <- rescaleVar(qY, X=X, family=famY, pars=parsY, link=linkY)
+#   qY <- rescale_var(qY, X=X, family=famY, pars=parsY, link=linkY)
 #
 #   qY
 # }

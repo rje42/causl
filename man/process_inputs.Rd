@@ -4,7 +4,7 @@
 \alias{process_inputs}
 \title{Process formulas, families and parameters}
 \usage{
-process_inputs(formulas, pars, family, link, kwd, ordering = FALSE, ...)
+process_inputs(formulas, pars, family, link, kwd, ordering = FALSE)
 }
 \arguments{
 \item{formulas}{list of lists of formulas}
@@ -18,8 +18,6 @@ process_inputs(formulas, pars, family, link, kwd, ordering = FALSE, ...)
 \item{kwd}{keyword for copula}
 
 \item{ordering}{logical: should an ordering of variables be computed?}
-
-\item{...}{dots from rfrugalParam}
 }
 \description{
 Process formulas, families and parameters

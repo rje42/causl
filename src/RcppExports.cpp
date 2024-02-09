@@ -11,6 +11,17 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// cumsum_mat
+Rcpp::NumericMatrix cumsum_mat(Rcpp::NumericMatrix x);
+RcppExport SEXP _causl_cumsum_mat(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(cumsum_mat(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 // g
 int g(int n);
 RcppExport SEXP _causl_g(SEXP nSEXP) {
@@ -108,6 +119,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_causl_cumsum_mat", (DL_FUNC) &_causl_cumsum_mat, 1},
     {"_causl_g", (DL_FUNC) &_causl_g, 1},
     {"_causl_dGcop", (DL_FUNC) &_causl_dGcop, 3},
     {"_causl_dGcop_sig", (DL_FUNC) &_causl_dGcop_sig, 3},

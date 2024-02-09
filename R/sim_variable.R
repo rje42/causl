@@ -4,14 +4,14 @@
 ##' @param formulas list consisting of a formula for the output variables and a list of formulae for the pair-copula
 ##' @param family list containing family variable
 ##' @param pars list with two entries, first a list of parameters for response, and second a further list of parameters for pair-copula
-##' @param link list of same form as \code{family}
+##' @param link list of same form as `family`
 ##' @param dat data frame of current variables
 ##' @param quantiles data frame of quantiles
 ##'
-##' @return The data frame \code{dat} with an additional column given by the left-hand side of \code{formula[[1]]}.
+##' @return The data frame `dat` with an additional column given by the left-hand side of `formula[[1]]`.
 ##'
 ##' @description
-##' Each entry \code{formulas}, \code{family}, \code{pars}, \code{link} is a list
+##' Each entry `formulas`, `family`, `pars`, `link` is a list
 ##' with two entries, the first referring to the variable being simulated and the
 ##' second to the pair-copulas being used.
 ##'
@@ -33,13 +33,13 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles) {
 
     ## rescale quantiles for pair-copula
     qs <- cbind(quantiles[[LHS_cop[[i]]]], qY)
-    qY <- rescaleCop(qs, X=X, beta=pars[[2]][[i]]$beta, family=family[[2]][i],
+    qY <- rescale_cop(qs, X=X, beta=pars[[2]][[i]]$beta, family=family[[2]][i],
                      par2=pars[[2]][[i]]$par2) #, link=link[[2]][j])
   }
 
   ## now rescale to correct margin
   X <- model.matrix(delete.response(terms(formulas[[1]])), data=dat)
-  Y <- rescaleVar(qY, X=X, family=family[[1]], pars=pars[[1]], link=link[[1]])
+  Y <- rescale_var(qY, X=X, family=family[[1]], pars=pars[[1]], link=link[[1]])
 
   dat[[vnm]] <- Y
   # quantiles[[vnm]] <- qY

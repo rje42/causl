@@ -1,17 +1,17 @@
 ##' Sample from a causal model
 ##'
 ##' Obtain samples from a causal model using the rejection sampling approach of
-##' Evans and Didelez (2021).
+##' Evans and Didelez (2024).
 ##'
 ##' @param n number of samples required
 ##' @param formulas list of lists of formulas
-##' @param family families for Z,X,Y and copula
+##' @param family families for variables and copula
 ##' @param pars list of lists of parameters
 ##' @param link list of link functions
 ##' @param dat optional data frame of covariates
 ##' @param careful logical: should full rejection sampling method be used with
 ##' correctly computed weight?
-##' @param method either \code{"rejection"} (the default) or \code{"inversion"}
+##' @param method either `"inversion"` (the default) or `"rejection"`
 ##' @param control list of options for the algorithm
 ##' @param ... other arguments, such as custom families
 ##' @param seed random seed used for replication
@@ -19,18 +19,18 @@
 ##' @details Samples from a given causal model using rejection sampling (or,
 ##' if everything is discrete, direct sampling).
 ##'
-##' The logical \code{careful} enables one to implement the full rejection
+##' The logical `careful` enables one to implement the full rejection
 ##' sampling method, which means we do get exact samples.  However, this method
-##' may be slow, and in particular if we have an outlying value it may run very
-##' slowly indeed.
+##' is generally very slow, and in particular if we have an outlying value it
+##' may be interminably so.
 ##'
-##' The entries for  \code{formula} and \code{family} should each be a
+##' The entries for  `formula` and `family` should each be a
 ##' list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and
-##' the copula.  \code{formula} determines the model, so it is crucial that
+##' the copula.  `formula` determines the model, so it is crucial that
 ##' every variable to be simulated is represented there exactly once.  Each
 ##' entry of that list can either be a single formula, or a list of formulae.
-##' Each corresponding entry in \code{family} should be the same length as the
-##' list in \code{formula} or of length 1 (in which case it will be repeated
+##' Each corresponding entry in `family` should be the same length as the
+##' list in `formula` or of length 1 (in which case it will be repeated
 ##' for all the variables therein).
 ##'
 ##' We use the following codes for different families of distributions:
@@ -42,16 +42,16 @@
 ##' 6 = log-normal.
 ##'
 ##' The family variables for the copula are also numeric and taken from
-##' \code{VineCopula}.
+##' `VineCopula`.
 ##' Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton, 4 for Gumbel,
 ##' 5 for Frank, 6 for Joe and 11 for FGM copulas.
 ##'
-##' \code{pars} should be a named list containing variable names that correspond
+##' `pars` should be a named list containing variable names that correspond
 ##' to the LHS of
-##' formulae in \code{formulas}.  Each of these should themselves be a list
-##' containing \code{beta} (a vector of regression parameters) and (possibly)
-##' \code{phi}, a dispersion parameter.  For any discrete variable that is a
-##' treatment, you can also specify \code{p}, an initial proportion to simulate
+##' formulae in `formulas`.  Each of these should themselves be a list
+##' containing `beta` (a vector of regression parameters) and (possibly)
+##' `phi`, a dispersion parameter.  For any discrete variable that is a
+##' treatment, you can also specify `p`, an initial proportion to simulate
 ##' from (otherwise this defaults to 0.5).
 ##'
 ##' Link functions for the Gaussian, t and Gamma distributions can be the
@@ -59,16 +59,16 @@
 ##' the identity, and Gamma to the log link.  For the Bernoulli the logit and
 ##' probit links are available.
 ##'
-##' Control parameters are \code{trace} (default value 0, increasing to 1
-##' increases verbosity of output), \code{warn} (which currently does nothing),
-##' \code{max_wt} which is set to 1, and increases each time the function
+##' Control parameters are `trace` (default value 0, increasing to 1
+##' increases verbosity of output), `warn` (which currently does nothing),
+##' `max_wt` which is set to 1, and increases each time the function
 ##' is recalled.
 ## (if weights empirically appear not to have an upper bound, this warns if set
 ## to 1 (the default) and stops if set to 2), ...
-##' Control parameters also include \code{cop}, which gives a keyword for the
-##' copula that defaults to \code{"cop"}.
+##' Control parameters also include `cop`, which gives a keyword for the
+##' copula that defaults to `"cop"`.
 ##'
-##' The logical \code{careful} enables one to implement the full rejection
+##' The logical `careful` enables one to implement the full rejection
 ##' sampling method, which means we do get exact samples.  However, this method
 ##' may be slow, and in particular if we have an outlying value it may run very
 ##' slowly indeed.
@@ -87,7 +87,7 @@
 ##' @export
 rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x), list( ~ 1)),
                        family = c(1,1,1,1), pars, link=NULL, dat=NULL, careful=FALSE,
-                       method="rejection", control=list(), ..., seed) {
+                       method="inversion", control=list(), ..., seed) {
 
   # get control parameters or use defaults
   con = list(max_wt = 1, warn = 1, cop="cop", trace=0)

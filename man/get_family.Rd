@@ -7,6 +7,8 @@
 \alias{Gamma_causl_fam}
 \alias{binomial_causl_fam}
 \alias{beta_causl_fam}
+\alias{categorical_causl_fam}
+\alias{ordinal_causl_fam}
 \title{Return causl_fam function from integer index}
 \usage{
 get_family(val)
@@ -20,6 +22,10 @@ Gamma_causl_fam(link)
 binomial_causl_fam(link)
 
 beta_causl_fam(link)
+
+categorical_causl_fam(link)
+
+ordinal_causl_fam(link)
 }
 \arguments{
 \item{val}{integer corresponding to distributional family}
@@ -44,6 +50,10 @@ returned by \code{get_family()}.
 \item \code{binomial_causl_fam()}: binomial distribution family
 
 \item \code{beta_causl_fam()}: beta distribution family
+
+\item \code{categorical_causl_fam()}: multinomial/categorical distribution family
+
+\item \code{ordinal_causl_fam()}: ordinal categorical distribution family
 
 }}
 \seealso{

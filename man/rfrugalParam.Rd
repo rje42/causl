@@ -12,7 +12,7 @@ rfrugalParam(
   link = NULL,
   dat = NULL,
   careful = FALSE,
-  method = "rejection",
+  method = "inversion",
   control = list(),
   ...,
   seed
@@ -23,7 +23,7 @@ rfrugalParam(
 
 \item{formulas}{list of lists of formulas}
 
-\item{family}{families for Z,X,Y and copula}
+\item{family}{families for variables and copula}
 
 \item{pars}{list of lists of parameters}
 
@@ -34,7 +34,7 @@ rfrugalParam(
 \item{careful}{logical: should full rejection sampling method be used with
 correctly computed weight?}
 
-\item{method}{either \code{"rejection"} (the default) or \code{"inversion"}}
+\item{method}{either \code{"inversion"} (the default) or \code{"rejection"}}
 
 \item{control}{list of options for the algorithm}
 
@@ -47,7 +47,7 @@ A data frame containing the simulated data.
 }
 \description{
 Obtain samples from a causal model using the rejection sampling approach of
-Evans and Didelez (2021).
+Evans and Didelez (2024).
 }
 \details{
 Samples from a given causal model using rejection sampling (or,
@@ -55,8 +55,8 @@ if everything is discrete, direct sampling).
 
 The logical \code{careful} enables one to implement the full rejection
 sampling method, which means we do get exact samples.  However, this method
-may be slow, and in particular if we have an outlying value it may run very
-slowly indeed.
+is generally very slow, and in particular if we have an outlying value it
+may be interminably so.
 
 The entries for  \code{formula} and \code{family} should each be a
 list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and

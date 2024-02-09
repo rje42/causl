@@ -9,8 +9,11 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(digits=3)
+library(causl)
+library(survey)
 ```
 
 ## Incorporating discrete variables
@@ -34,9 +37,95 @@ pars <- list(Z1 = list(beta=0, phi=1),
              Y = list(beta=c(-0.25, 0.5), phi=0.5),
              cop = list(beta=matrix(c(0.5,0.3,0.4), nrow=1)))
 ```
-
+Now call `rfrugalParam` as usual.  
 ```{r simulate}
-set.seed(123)
+set.seed(1234)
 n <- 1e4
 dat <- rfrugalParam(n, formulas = forms, family = fams, pars = pars)
+```
+Then we can check that the distributions follow the specification that we 
+asked for.
+```{r check_disc}
+ks.test(dat$Z1, pnorm)
+binom.test(sum(dat$Z2), n=n, p = 0.5)
+glmX <- glm(X ~ Z1*Z2, family=binomial, data=dat)
+summary(glmX)$coefficients
+```
+These are all consistent with the values we provided.  We can finally check the
+outcome model.
+```{r check_Y}
+ps <- predict(glmX, type="response")
+wt <- dat$X/ps + (1-dat$X)/(1-ps)
+glmY <- svyglm(Y ~ X, design = svydesign(~1, weights=wt, data=dat))
+summary(glmY)$coefficients
+```
+
+## Categorical and Ordinal Variables
+
+We can also extend this to variables that are categorical or ordered 
+categorical.  These options correspond to the family indicators 11 and 10 
+respectively, or they can be accessed by passing the strings `"categorical"` 
+and `"ordinal"` to the `family` argument.  Both types of variable are stored as
+a factor, with labels for the objects `1`, `2`, up to $\ell$, where $\ell$ is
+the number of levels.  
+
+These methods respectively use a 
+contrast with the baseline level, or a contrast with the category immediately 
+below the current one in the ordering.  For example, if we have a three variable
+categorical variable using the formula `Z ~ A` then the parameters are of the 
+form:
+\begin{align*}
+\log \frac{P(Z=i)}{P(Z=1)} &= \beta_{0i} + \beta_{ai} a, & & i = 2,\ldots,\ell.
+\end{align*}
+For a categorical variable the contrasts become $\log \{P(Z=i)/P(Z=i-1)\}$ 
+for the same range of $i$. 
+ 
+The regression parameters can be passed either as a vector or a matrix, but in
+either case they must be ordered so that all the coefficients for one contrast
+precede all those for another.  For example, if we want we could put
+`Z = list(beta = c(0.5,0.1,-0.5,0.4), nlevel = 3)` in the `pars` argument to 
+require that 
+\begin{align*}
+\log \frac{P(Z=2)}{P(Z=1)} &= 0.5 + 0.1 a & \log \frac{P(Z=3)}{P(Z=1)} &= -0.5 + 0.4 a
+\end{align*}
+for an unordered categorical variable, and the same for an ordinal variable but 
+replacing the second quantity with $\log \{P(Z=3)/P(Z=2)\}$.  Equivalently, we 
+could put `Z = list(beta = matrix(c(0.5,0.1,-0.5,0.4), nrow=2), nlevel = 3)`, 
+and the same model would be fitted.
+
+```{r}
+forms <- list(list(Z0 ~ A0, Z1 ~ A0),
+              list(A0 ~ 1, A1 ~ A0*Z0),
+              Y ~ A0*A1,
+              ~ A0)
+fams <- list(c("categorical","categorical"),c(5,5),1,1)
+pars <- list(A0 = list(beta = 0),
+             Z0 = list(beta = c(0.3,-0.2,0.4,0.1), nlevel=3),
+             Z1 = list(beta = c(0.3,-0.2,0.4,0.1), nlevel=3),
+             A1 = list(beta = 2*c(-0.3,0.4,0.3,0.5,0.3,0.5)),
+             Y = list(beta = c(-0.5,0.2,0.3,0), phi=1),
+             cop = list(beta=c(2,0.5)))
+```
+In this case we set both covariate variables to be categorical. 
+```{r}
+set.seed(123)
+n <- 5e4
+dat <- rfrugalParam(n, formulas = forms, pars=pars, family = fams)
+```
+Now we can check that the parameters being simulated match those input.
+```{r check_cat}
+glm(I(Z0==2) ~ A0, family=binomial, data=dat[dat$Z0 != 3,])$coefficients
+glm(I(Z0==3) ~ A0, family=binomial, data=dat[dat$Z0 != 2,])$coefficients
+glm(I(Z1==2) ~ A0, family=binomial, data=dat[dat$Z1 != 3,])$coefficients
+glm(I(Z1==3) ~ A0, family=binomial, data=dat[dat$Z1 != 2,])$coefficients 
+```
+Finally, we can check that the outcome model works as it should.
+```{r check_Yc}
+ps <- predict(glm(A1 ~ A0*Z0, family=binomial, data=dat), type="response")
+wt <- dat$A1/ps + (1-dat$A1)/(1-ps)
+summary(svyglm(Y ~ A0*A1, design = svydesign(~1,data=dat,weights=wt)))$coef
+```
+Comparing with a naïve (unweighted) estimate.
+```{r naive_c}
+summary(svyglm(Y ~ A0*A1, design = svydesign(~1,data=dat,weights=~1)))$coef
 ```

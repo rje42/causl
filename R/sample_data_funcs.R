@@ -1,151 +1,3 @@
-gen_X_values <- function (n, famX, pars, LHS_X, dX, sim=TRUE) {
-  ## list for densities used to simulate X's
-  if (missing(dX)) dX <- length(LHS_X)
-  qden <- vector(mode="list", length=dX)
-  out <- data.frame(matrix(0, ncol=dX, nrow=n))
-  names(out) <- LHS_X
-
-  if (is.numeric(famX)) {
-    ## use old style approach
-    for (i in seq_len(dX)) {
-      ## get parameters for X
-      if (famX[i] == 0 || famX[i] == 5) {
-        if (!is.null(pars[[LHS_X[i]]][["p"]])) theta <- pars[[LHS_X[i]]]$p
-        else theta <- 0.5
-        famX[i] <- 5
-      }
-      else if (famX[i] == 1 || famX[i] == 2) {
-        theta <- 2*pars[[LHS_X[i]]]$phi
-      }
-      else if (famX[i] == 6) {
-        theta <- 1.5*pars[[LHS_X[i]]]$phi
-      }
-      else if (famX[i] == 3) {
-        theta <- 2*pars[[LHS_X[i]]]$phi
-      }
-      else if (famX[i] == 4) {
-        theta = c(1,1)
-      }
-
-      ## obtain data for X's
-      tmp <- sim_X(n, fam_x = famX[i], theta=theta, sim=sim)
-      out[LHS_X[[i]]] <- tmp$x
-      qden[[i]] <- tmp$qden
-    }
-  }
-  else if (is.list(famX) && length(famX) > 0 && is(famX[[1]], "causl_family")) {
-    for (i in seq_len(dX)) {
-      fam <- famX[[i]]$name
-      ## get parameters for X
-      if (fam == "binomial") {
-        if (!is.null(pars[[LHS_X[i]]][["p"]])) theta <- pars[[LHS_X[i]]]$p
-        else theta <- 0.5
-      }
-      else if (fam == "gaussian" || fam == "t") {
-        theta <- 2*pars[[LHS_X[i]]]$phi
-      }
-      else if (fam == "lognormal") {
-        theta <- 1.5*pars[[LHS_X[i]]]$phi
-      }
-      else if (fam == "Gamma") {
-        theta <- 2*pars[[LHS_X[i]]]$phi
-      }
-      else if (fam == "beta") {
-        theta = c(1,1)
-      }
-      else stop(paste0("Family for entry ", i, " not recognized"))
-
-      ## obtain data for X's
-      tmp <- sim_X(n, fam_x = famX[[i]], theta=theta, sim=sim)
-      out[LHS_X[[i]]] <- tmp$x
-      qden[[i]] <- tmp$qden
-    }
-  }
-  else stop("famX should be a causl_family list or integer vector")
-
-  return(list(datX = out, qden = qden))
-}
-
-##' Simulate initial X values
-##'
-##' @param n number of observations
-##' @param fam_x number for distribution family
-##' @param theta parameters for model
-##' @param offset optional mean correction
-##' @param sim should variables be simulated?
-##'
-##' @details Returns a list that includes a data frame containing a column
-##' \code{x}, as well as the density that was used to generate it.  Possible
-##' families are Gaussian (=1), t (=2), Exponential (=3), beta (=4)
-##' Bernoulli/categorical (=5) and log-normal (=6).
-##'
-##' For the exponential distribution, \code{theta} is the mean.
-##' Beta can take one or two parameters, and if there is only
-##' one it is just repeated.
-##'
-##' The \code{offset} parameter alters the median for the normal and t-distributions,
-##' or the median of the logarithm in the case of a log-normal.
-##'
-##' @return A list with two entries: \code{x} a vector of the simulated
-##' values, and \code{qden}, which contains a function that evaluates to the
-##' density of the distribution used to generate those values.
-##'
-##' @export
-sim_X <- function(n, fam_x, theta, offset, sim=TRUE) {
-
-  if (missing(offset)) offset <- 0
-
-  if (is.numeric(fam_x)) {
-    if (fam_x == 1) {
-      if (sim) X <- rnorm(n, mean=offset, sd=sqrt(theta))
-      qden <- function(x) dnorm(x, mean=offset, sd=sqrt(theta))
-    }
-    else if (fam_x == 6) {
-      if (sim) X <- exp(rnorm(n, mean=offset, sd=sqrt(theta)))
-      qden <- function(x) dnorm(log(x), mean=offset, sd=sqrt(theta))/x
-    }
-    else if (fam_x == 2) {
-      if (sim) X <- sqrt(theta[1])*(rt(n, df=theta[2]) + offset)
-      qden <- function(x) dt((x-offset)/sqrt(theta[1]), df=theta[2])/sqrt(theta[1])
-    }
-    else if (fam_x == 3) {
-      if (sim) X <- rgamma(n, shape=1, rate=1/theta)
-      qden <- function(x) dgamma(x, shape=1, rate=1/theta)
-    }
-    else if (fam_x == 4) {
-      if (length(theta) == 1) theta <- c(theta, theta)
-      if (sim) X <- rbeta(n, theta[1], theta[2])
-      qden <- function(x) dbeta(x, theta[1], theta[2])
-    }
-    else if (fam_x == 5) {
-      if (sum(theta) > 1) stop("Probabilities must be < 1")
-      if (length(theta) == 1) theta <- c(theta, 1-theta)
-      if (any(theta < 0)) stop("Negative parameters not allowed")
-      if (!isTRUE(all.equal(sum(theta), 1))) {
-        warning("Parameters do not sum to 1, rescaling")
-        theta <- theta/sum(theta)
-      }
-      if (sim) X <- sample(length(theta), size=n, replace=TRUE, prob=theta)-1
-      qden <- function(x) theta[x+1]
-    }
-    else stop("X distribution must be normal (1), t (2), Gamma (3), Beta (4) or categorical (5)")
-  }
-  else if (is(fam_x, "causl_family")) {
-
-    pars <- fam_x$default(theta)[fam_x$pars]
-
-    if (sim) {
-      X <- do.call(fam_x$rdist, c(list(n=n), pars))
-    }
-    qden <- function (x) do.call(fam_x$ddist, c(list(x=x), pars))
-  }
-
-  if (sim) out <- list(x=X, qden=qden)
-  else out <- list(qden=qden)
-
-  return(out)
-}
-
 ##' Rescale quantiles to arbitrary random variable.
 ##'
 ##' @param U vector of quantiles
@@ -154,25 +6,27 @@ sim_X <- function(n, fam_x, theta, offset, sim=TRUE) {
 ##' @param family family of distributions to use
 ##' @param link link function
 ##'
-##' @details \code{family} can be 1, 2, 3, 4 or 5 for Gaussian, t-distributed,
-##' Gamma distributed, beta distributed or discrete respectively.
-##' \code{pars} should be a list with entries \code{beta} and
-##' \code{phi}, as well as possibly \code{par2} and \code{trunc} if the family
+##' @details `family` can be 1, 2, 3, 4 or 5 for Gaussian, t-distributed,
+##' Gamma distributed, beta distributed or discrete respectively, and 11 for
+##' ordinal variables.
+##' `pars` should be a list with entries `beta` and
+##' `phi`, as well as possibly `par2`, `trunc` and `nlevel` if the family
 ##' is set to 2 or 5.
-##' \code{U} should have the same length as \code{X} has rows, and
-##' \code{X} should have the same number of columns as the length of
+##' `U` should have the same length as `X` has rows, and
+##' `X` should have the same number of columns as the length of
 ##' \code{pars$beta}.
 ##'
 ##' @return vector of rescaled variables
 ##'
 ##' @export
-rescaleVar <- function(U, X, pars, family=1, link) {
+rescale_var <- function(U, X, pars, family=1, link) {
 
   # cat("fam=", family, ", link=", link, "\n", sep="")
 
   ## get linear component
   eta <- X %*% pars$beta
   phi <- pars$phi
+
   if (is.numeric(family)) {
     if (is.null(phi) && family %in% 1:3) stop("Variance parameter should be specified")
 
@@ -212,7 +66,7 @@ rescaleVar <- function(U, X, pars, family=1, link) {
       else if (link == "probit") mu <- pnorm(eta)
       else stop("invalid link function for beta distribution")
 
-      Y <- qbeta(U, shape1=1+phi[i]*mu, shape2=1+phi[i]*(1-mu))
+      Y <- qbeta(U, shape1=1+phi*mu, shape2=1+phi*(1-mu))
     }
     else if (family == 0 || family == 5) {
       if (link == "probit") Y <- 1*(eta + qnorm(U) > 0)
@@ -229,10 +83,22 @@ rescaleVar <- function(U, X, pars, family=1, link) {
       # }
       # Y <- rowSums(mat)
     }
+    else if (family == 10) {
+      if (link == "logit") mu <- theta_to_p_cat(eta)
+      else stop("invalid link function for ordinal distribution")
+
+      Y <- factor(1 + colSums(apply(mu, 1, cumsum) < rep(U, each=ncol(mu))), levels=seq_len(ncol(mu)))
+    }
+    else if (family == 11) {
+      if (link == "logit") mu <- theta_to_p_ord(eta)
+      else stop("invalid link function for ordinal distribution")
+
+      Y <- factor(1 + colSums(apply(mu, 1, cumsum) < rep(U, each=ncol(mu))), levels=seq_len(ncol(mu)))
+    }
     else stop("family must be between 0 and 5")
   }
   else if (is(family, "causl_family")) {
-    mu <- link_hack(eta, link)
+    mu <- link_apply(eta, link, family$name)
 
     if (family$name %in% c("binomial")) {
       if (link == "probit") mu <- 1*(eta + qnorm(U) > 0)
@@ -252,13 +118,31 @@ rescaleVar <- function(U, X, pars, family=1, link) {
   return(Y)
 }
 
-link_hack <- function(eta, link, family_nm) {
-  if (link == "identity") mu <- eta
-  else if (link == "log") mu <- exp(eta)
-  else if (link == "inverse") mu <- 1/eta
-  else if (link == "logit") mu <- plogis(eta)
-  else if (link == "probit") mu <- pnorm(eta)
-  else stop("Not a valid link function")
+##' @importFrom lifecycle deprecate_warn deprecate_soft
+##' @describeIn rescale_var Old name, now deprecated
+##' @export
+rescaleVar <- function(U, X, pars, family=1, link) {
+  deprecate_soft("0.8.0", "rescaleVar", "rescale_var")
+  rescale_var(U, X, pars, family=family, link)
+}
+
+link_apply <- function(eta, link, family_nm) {
+  if (family_nm == "categorical") {
+    if (link == "logit") mu <- theta_to_p_cat(eta)
+    else stop("Not a valid link function for categorical variable")
+  }
+  else if (family_nm == "ordinal") {
+    if (link == "logit") mu <- theta_to_p_ord(eta)
+    else stop("Not a valid link function for ordinal variable")
+  }
+  else {
+    if (link == "identity") mu <- eta
+    else if (link == "log") mu <- exp(eta)
+    else if (link == "inverse") mu <- 1/eta
+    else if (link == "logit") mu <- plogis(eta)
+    else if (link == "probit") mu <- pnorm(eta)
+    else stop("Not a valid link function")
+  }
 
   return(mu)
 }
@@ -270,26 +154,27 @@ link_hack <- function(eta, link, family_nm) {
 ##' @param X model matrix of covariates
 ##' @param beta list of parameters (see details)
 ##' @param family variety of copula to use
+##' @param par2 additional parameter for some copulas
 ## @param link link function
 ##'
 ##' @details The variable to be transformed must be in the final column of
-##' \code{U}, with variables being conditioned upon in the earlier columns.
+##' `U`, with variables being conditioned upon in the earlier columns.
 ##'
-##' \code{family} can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
+##' `family` can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
 ##' Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. Gamma distributed,
-##' beta distributed or discrete respectively. \code{pars} should be a list
-##' with entries \code{beta} and \code{phi}, as well as possibly \code{par2} if
+##' beta distributed or discrete respectively. `pars` should be a list
+##' with entries `beta` and `phi`, as well as possibly `par2` if
 ##' \code{family=2}.
-##' \code{U} should have the same length as \code{X} has rows, and \code{X}
+##' `U` should have the same length as `X` has rows, and `X`
 ##' should have the same number of columns as the length of \code{pars$beta}.
 ##'
 ##' @return vector of rescaled quantiles
 ##'
 ##' @importFrom copula normalCopula tCopula
-##' @inherit sim_glm
+## @inherit glm_sim
 ##'
 ##' @export
-rescaleCop <- function(U, X, beta, family=1, par2) {
+rescale_cop <- function(U, X, beta, family=1, par2) {
 
   if (!is.matrix(U)) stop("'U' should be a matrix")
   if (!is.matrix(X)) stop("'X' should be a matrix")
@@ -334,6 +219,12 @@ rescaleCop <- function(U, X, beta, family=1, par2) {
   return(Y[,ncol(Y)])
 }
 
+##' @describeIn rescale_cop Old name, now deprecated
+##' @export
+rescaleCop <- function(U, X, beta, family=1, par2) {
+  deprecate_soft("0.8.0", "rescaleCop", "rescale_cop")
+  rescale_cop(U, X, beta, family=family, par2)
+}
 
 ##' Simulate copula values
 ##'
@@ -343,18 +234,18 @@ rescaleCop <- function(U, X, beta, family=1, par2) {
 ##' @param par2 optional parameters
 ##' @param model_matrix design matrix for covariates
 ##'
-##' @details Returns data frame containing columns \code{y}
+##' @details Returns data frame containing columns `y`
 ##' and \code{z1, ..., zk}.
 ##'
-##' The family variables are numeric and taken from \code{VineCopula}.
+##' The family variables are numeric and taken from `VineCopula`.
 ##' Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton, 4 for Gumbel,
 ##' 5 for Frank, 6 for Joe and 11 for FGM copulas.
 ##'
-##' @return A data frame of the same dimension as \code{dat} containing the
+##' @return A data frame of the same dimension as `dat` containing the
 ##' simulated values.
 ##'
 ##' @export
-sim_CopVal <- function(dat, family, par, par2, model_matrix) {
+sim_copula <- function(dat, family, par, par2, model_matrix) {
 
   ## if more than one family given, must be a vine copula
   if (length(family) > 1) {
@@ -458,133 +349,19 @@ sim_CopVal <- function(dat, family, par, par2, model_matrix) {
   return(dat)
 }
 
-##' Get density of treatments
-##'
-##' @inherit rejectionWeights
-##' @param eta list (or matrix) of linear forms
-##' @param phi vector of dispersion coefficients
-##' @param par2 vector of degrees of freedom
-##' @param log logical: should log-density be returned?
-##'
-get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
-
-  wts <- rep(1, nrow(dat))
-
-  if (is.matrix(eta)) eta <- apply(eta, 2, function(x) x, simplify = FALSE)
-
-  if (length(family) > 0 && is(family[[1]], "causl_family")) {
-    for (i in seq_len(ncol(dat))) {
-      mu <- link_hack(eta[[i]], link[i], family_nm = family[[i]]$name)
-
-      pars <- list()
-      if ("phi" %in% family[[i]]$pars) pars <- c(pars, list(phi=phi))
-      if ("par2" %in% family[[i]]$pars) pars <- c(pars, list(par2=par2))
-
-      wts <- wts*do.call(family[[i]]$ddist, c(list(x=dat[,i], mu=mu), pars))
-      if (is.numeric(qden[[i]])) wts <- wts/qden[[i]]
-      else wts <- wts/qden[[i]](dat[,i])
-    }
-  }
-  else if (is.numeric(family)) {
-    ## take the old-style approach
-    for (i in seq_len(ncol(dat))) {
-      if (family[i] == 1) {
-        if (link[i] == "identity") mu <- eta[[i]]
-        else if (link[i] == "log") mu <- exp(eta[[i]])
-        else if (link[i] == "inverse") mu <- 1/eta[[i]]
-        else stop("not a valid link function for Gaussian distribution")
-
-        fam <- get_family(i)
-        dens <- fam()$ddist
-
-        if (is.numeric(qden[[i]])) wts <- wts*dens(dat[,i], mu=mu, phi=phi[i])/qden[[i]]
-        else wts <- wts*dens(dat[,i], mu=mu, phi=phi[i])/qden[[i]](dat[,i])
-
-        # if (is.numeric(qden[[i]])) wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi[i]))/qden[[i]]
-        # else wts <- wts*dnorm(dat[,i], mean=mu, sd=sqrt(phi[i]))/qden[[i]](dat[,i])
-      }
-      else if (family[i] == 2) {
-        if (link[i] == "identity") mu <- eta[[i]]
-        else if (link[i] == "log") mu <- exp(eta[[i]])
-        else if (link[i] == "inverse") mu <- 1/eta[[i]]
-        else stop("not a valid link function for t-distribution")
-
-        fam <- get_family(i)
-        dens <- fam()$ddist
-
-        if (is.numeric(qden[[i]])) wts <- wts*dens(dat[,i], mu=mu, phi=phi[i], par2=pars[[i]]$par2)/qden[[i]]
-        else wts <- wts*dens(dat[,i], mu=mu, phi=phi[i], par2=pars[[i]]$par2)/qden[[i]](dat[,i])
-
-        # if (is.numeric(qden[[i]])) wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]])
-        # else wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]](dat[,i]))
-      }
-      else if (family[i] == 3) {
-        if (link[i] == "identity") mu <- eta[[i]]
-        else if (link[i] == "log") mu <- exp(eta[[i]])
-        else if (link[i] == "inverse") mu <- 1/eta[[i]]
-        else stop("not a valid link function for t-distribution")
-
-        fam <- get_family(i)
-        dens <- fam()$ddist
-
-        if (is.numeric(qden[[i]])) wts <- wts*dens(dat[,i], mu=mu, phi=phi[i])/qden[[i]]
-        else wts <- wts*dens(dat[,i], mu=mu, phi=phi[i])/qden[[i]](dat[,i])
-        # if (is.numeric(qden[[i]])) wts <- wts*dgamma(dat[,i], rate=1/(mu*phi[i]), shape=1/phi[i])/qden[[i]]
-        # else wts <- wts*dgamma(dat[,i], rate=1/(mu*phi[i]), shape=1/phi[i])/qden[[i]](dat[,i])
-      }
-      else if (family[i] == 4) {
-        mu <- expit(eta[[i]])
-        if (is.numeric(qden[[i]])) wts <- wts*dbeta(dat[,i], shape1=1+phi[i]*mu, shape2=1+phi[i]*(1-mu))/qden[[i]]
-        else wts <- wts*dbeta(dat[,i], shape1=1+phi[i]*mu, shape2=1+phi[i]*(1-mu))/qden[[i]](dat[,i])
-      }
-      else if (family[i] == 5) {
-        if (link[i] == "probit") mu <- qnorm(eta[[i]])
-        else if (link[i] == "logit") mu <- expit(eta[[i]])
-        else stop("invalid link function for binomial distribution")
-
-        if (is.numeric(qden[[i]])) wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]]
-        else wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]](dat[,i])
-      }
-      else if (family[i] == 6) {
-        if (link[i] == "identity") lmu <- eta[[i]]
-        else if (link[i] == "identity") lmu <- log(eta[[i]] - phi/2)
-        else stop("invalid link function for log-normal distribution")
-        if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=lmu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]])
-        else wts <- wts*dnorm(log(dat[,i]), mean=lmu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]](dat[,i]))
-      }
-      else stop("family[[2]] must be in the range 1 to 6")
-    }
-  }
-
-  if (log) wts <- log(wts)
-
-  wts
+##' @describeIn sim_copula Old name, now deprecated
+##' @export
+sim_CopVal <- function(dat, family, par, par2, model_matrix) {
+  deprecate_soft("0.8.0", "sim_CopVal", "sim_copula")
+  sim_copula(dat, family, par, par2, model_matrix)
 }
 
 
-##' Numbers for parametric families
-##'
-##' Each function returns a data frame containing
-##' \itemize{
-##' \item \code{val}: an integer
-##' \item \code{family}: a vector giving the associated parametric family for that integer.
-##' }
-##'
-##' @export
-familyVals <- data.frame(val=0:6,
-                         family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal"))
-
-##' @describeIn familyVals Values for copula families
-##' @export
-copulaVals <- data.frame(val=c(1:6,11),
-                         family=c("gaussian", "t", "Clayton", "Gumbel", "Frank", "Joe", "FGM"))
-
-
-#' @describeIn glm_sim Old name
-#' @inherit glm_sim
-sim_glm <- function (family, eta, phi, par2, link) {
-  glm_sim(family, eta, phi, par2, link)
-}
+# #' @describeIn glm_sim Old name
+# #' @inherit glm_sim
+# sim_glm <- function (family, eta, phi, par2, link) {
+#   glm_sim(family, eta, phi, other_pars=list(par2=par2), link=link)
+# }
 
 ##' Simulate from a GLM
 ##'
@@ -592,11 +369,13 @@ sim_glm <- function (family, eta, phi, par2, link) {
 ##'
 ##' @inherit rejectionWeights
 ##' @inherit get_X_density
+##' @param other_pars list of other parameters for specified family
 ##'
 ##' @export
-glm_sim <- function (family, eta, phi, par2, link) {
+glm_sim <- function (family, eta, phi, other_pars, link) {
 
-  n <- length(eta)
+  if (is.matrix(eta)) n <- nrow(eta)
+  else n <- length(eta)
   if (missing(link)) {
     ## get the default link for this family
     link <- familyVals[familyVals$val==family,2]
@@ -609,21 +388,36 @@ glm_sim <- function (family, eta, phi, par2, link) {
     }
     if (!(link %in% linksList[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
 
-    if (link=="identity") mu <- eta
-    else if (link=="inverse") mu <- 1/eta
-    else if (link=="log") mu <- exp(eta)
-    else if (link=="logit") mu <- expit(eta)
-    else if (link=="probit") mu <- pnorm(eta)
-    else stop("We shouldn't get here")
+    if (family$name %in% c("categorical","ordinal")) {
+      if (ncol(eta) != other_pars$nlevel - 1) stop("Invalid 'eta' input to glm_sim")
+      if (link == "logit") {
+        if (family$name == "categorical") {
+          mu <- theta_to_p_cat(eta)
+        }
+        else if (family$name == "ordinal") {
+          mu <- theta_to_p_ord(eta)
+        }
+      }
+      else stop("We shouldn't get here")
+    }
+    else {
+      if (link=="identity") mu <- eta
+      else if (link=="inverse") mu <- 1/eta
+      else if (link=="log") mu <- exp(eta)
+      else if (link=="logit") mu <- expit(eta)
+      else if (link=="probit") mu <- pnorm(eta)
+      else stop("We shouldn't get here")
+    }
 
     pars <- list(mu=mu)
     if ("phi" %in% family$pars) pars <- c(pars, list(phi=phi))
-    if ("par2" %in% family$pars) pars <- c(pars, list(par2=par2))
+    if ("par2" %in% family$pars) pars <- c(pars, list(par2=other_pars$par2))
 
     x <- do.call(family$rdist, c(list(n=n), pars))
-    qx <- do.call(family$pdist, c(list(x=x), pars))
+    if (!(family$name %in% c("categorical","ordinal"))) qx <- do.call(family$pdist, c(list(x=x), pars))
   }
   else if (is.numeric(family)) {
+
     ## old style approach
     ## get the densities for x
     if (family == 1 || family == 6) {
@@ -641,6 +435,8 @@ glm_sim <- function (family, eta, phi, par2, link) {
       }
     }
     else if (family == 2) {
+      par2 <- other_pars$par2
+
       if (link=="identity") mu <- eta
       else if (link=="inverse") mu <- 1/eta
       else if (link=="log") mu <- exp(eta)
@@ -677,12 +473,33 @@ glm_sim <- function (family, eta, phi, par2, link) {
       x <- rbinom(n, size=1, prob=mu)
       qx <- dbinom(x, size=1, prob=mu)
     }
+    else if (family == 10) {
+      if (link == "logit") mu <- theta_to_p_cat(eta)
+      else stop("Not a valid link function for a categorical distribution")
+
+      qx <- runif(n)
+      qsum <- cumsum_mat(mu)
+
+      x <- rowSums(qsum < qx) + 1
+      x <- factor(x, levels=seq_len(ncol(mu)))
+    }
+    else if (family == 11) {
+      if (link == "logit") mu <- theta_to_p_ord(eta)
+      else stop("Not a valid link function for an ordinal distribution")
+
+      qx <- runif(n)
+      qsum <- cumsum_mat(mu)
+
+      x <- rowSums(qsum < qx) + 1
+      x <- factor(x, levels=seq_len(ncol(mu)))
+    }
     else stop("Only Gaussian, t, beta, gamma, Bernoulli and log-normal distributions are allowed")
   }
   else stop("family input should be an integer or 'causl_family' function")
 
   ## return quantile
-  attr(x, "quantile") <- qx
+  if (is.numeric(family) || !(family$name %in% c("categorical","ordinal"))) attr(x, "quantile") <- qx
 
   return(x)
 }
+
