@@ -17,12 +17,21 @@ sim_inversion <- function (out, proc_inputs) {
   dZ <- proc_inputs$dim[1]; dX <- proc_inputs$dim[2]; dY <- proc_inputs$dim[3]
   LHS_Z <- proc_inputs$LHSs$LHS_Z; LHS_X <- proc_inputs$LHSs$LHS_X; LHS_Y <- proc_inputs$LHSs$LHS_Y; kwd <- proc_inputs$kwd
   famZ <- proc_inputs$family[[1]]; famX <- proc_inputs$family[[2]]; famY <- proc_inputs$family[[3]]; famCop <- proc_inputs$family[[4]]
+  # dC <-
 
   vars <- proc_inputs$vars
 
+  ## get quantiles, if any available
+  if (is.null(proc_inputs$quantiles)) {
+    quantiles <- out
+  }
+  else {
+    quantiles <- cbind(proc_inputs$quantiles, out[vars])
+  }
+
+
   ## code to get causal order
   order <- proc_inputs$order
-  quantiles <- out
 
   ## sample size
   n <- nrow(out)

@@ -4,16 +4,18 @@
 \alias{process_inputs}
 \title{Process formulas, families and parameters}
 \usage{
-process_inputs(formulas, pars, family, link, kwd, ordering = FALSE)
+process_inputs(formulas, pars, family, link, dat, kwd, ordering = FALSE)
 }
 \arguments{
 \item{formulas}{list of lists of formulas}
 
 \item{pars}{list of lists of parameters}
 
-\item{family}{families for Z,X,Y and copula}
+\item{family}{families for variables and copula}
 
 \item{link}{list of link functions}
+
+\item{dat}{optional data frame of covariates}
 
 \item{kwd}{keyword for copula}
 

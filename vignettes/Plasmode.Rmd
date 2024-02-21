@@ -1,0 +1,86 @@
+---
+title: "Plasmode Simulation"
+author: "Robin Evans"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(digits=3)
+```
+
+## Introduction
+
+This document describes how to use the `causl` package to perform plasmode 
+simulation; that is, producing datasets that combining real covariates (and 
+possibly treatments) with synthetic outcomes.  This enables us to have realistic
+datasets, but also to have knowledge of the underlying causal effect, making 
+them very useful for testing the relative effectiveness of different inference
+methods.
+
+Start by loading the `causl` and `dplyr` packages.
+
+```{r cars, message=FALSE}
+library(dplyr)
+library(causl)
+```
+
+## Dataset
+
+We will use the dataset from a competition held at the Atlantic Causal Inference 
+Conference in 2016.  To obtain this, first run the following commands:
+```{r install_dorie, eval=FALSE}
+install.packages("remotes")
+remotes::install_github("vdorie/aciccomp/2016")
+```
+Then load the `aciccomp2016` package.
+```{r load_dorie}
+library(aciccomp2016)
+(dat <- as_tibble(input_2016)) # show 10 rows of first few variables
+```
+
+## Model
+
+Let us consider a model for the causal effect of smoking on birthweight.  We will
+start with a binary variable $A$ to indicate whether the mother smoked during the
+pregnancy, and later extend this to a zero-inflated continuous variable.  We
+start by setting up the model inputs:
+
+```{r setup1}
+forms <- list(list(),
+              list(A ~ x_1 + x_3 + x_4),
+              list(Y ~ A),
+              list(~ 1))
+fams <- list(integer(0), 5, 1, 1)
+pars <- list(A = list(beta=c(-1.5,0.03,0.02,0.05)),
+             Y = list(beta=c(3200, -500), phi=400^2),
+             cop = list(beta=-1))
+```
+Then call `rfrugalParam` to simulate $A$ and $Y$.
+```{r simdat1}
+datAY <- rfrugalParam(formulas=forms, family=fams, pars=pars, dat=dat)
+```
+We can now check that this basic simulation was performed correctly.  First we
+fit the treatment variable using the correct model.
+```{r chkA1}
+glmA <- glm(A ~ x_1 + x_3 + x_4, family=binomial, data=datAY)
+summary(glmA)$coefficients
+```
+Indeed, the parameters appear correct.  Then we can use inverse weighting to
+estimate the parameters for the outcome model.  We will need to load the 
+`survey` package to get robust standard errors after the weighting.
+```{r chkY1, message=FALSE, warning=FALSE}
+library(survey)
+ps <- predict(glmA, type="response")
+wt <- datAY$A/ps + (1-datAY$A)/(1-ps)
+glmY <- svyglm(Y ~ A, design = svydesign(~1, weights = wt, data=datAY))
+summary(glmY)$coef
+```
+
+We can also compare with a naïve method that ignores reweighting.
+
+```{r chkY1n, message=FALSE, warning=FALSE}
+glmYn <- glm(Y ~ A, data=datAY)
+summary(glmYn)$coef
+```

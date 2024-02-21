@@ -110,7 +110,7 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
 
   ## process the four main arguments
   proc_inputs <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
-                        kwd=kwd, ordering = (method == "inversion"))
+                        dat=dat, kwd=kwd, ordering = (method == "inversion"))
 
   # if (method == "particle") {
   #   forms <- tidy_formulas(unlist(formulas), kwd)
@@ -156,7 +156,7 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
 
   if (!datNULL) {
     out <- cbind(dat, out)
-    proc_inputs$vars <- c(names(dat), proc_inputs$vars)
+    # proc_inputs$vars <- c(names(dat), proc_inputs$vars)
   }
   if (anyDuplicated(na.omit(proc_inputs$vars))) stop("duplicated variable names")
 
