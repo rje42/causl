@@ -1,19 +1,17 @@
 ##' Process formulas, families and parameters
 ##'
-##' @param formulas list of lists of formulas
-##' @param pars list of lists of parameters
-##' @param family families for Z,X,Y and copula
-##' @param link list of link functions
+##' @inheritParams rfrugalParam
 ##' @param kwd keyword for copula
 ##' @param ordering logical: should an ordering of variables be computed?
 ## @param ... dots from rfrugalParam
 ##'
-process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
+process_inputs <- function (formulas, pars, family, link, dat, kwd, ordering=FALSE) {
 
   # ## check list of formula
   # if (ordering && !is.numeric(family[[1]]) && ("formula" %in% class(formulas[[1]]))) {
   #   process_inputs2(formulas, pars, family, link, kwd)
   # }
+
 
   ## check we have four groups of formulas
   if (length(formulas) != 4) stop("Formulas must have length 4")
@@ -104,6 +102,9 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
   ## produce dummy data.frame to check number of coefficients
   dummy_dat <- as.data.frame(rep(list(NA), sum(dims)))
   names(dummy_dat) <- vars
+  if (!is.null(dat)) {
+    dummy_dat <- cbind(dat[1,], dummy_dat)
+  }
 
   for (i in 1:3) for (j in seq_along(LHSs[[i]])) {
     if (!is_categorical(family[[i]][j])) dummy_dat[[LHSs[[i]][j]]] <- 0
@@ -179,9 +180,9 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
     ord_mat <- matrix(0, nrow=sum(dims), ncol=sum(dims))
 
     ## get adjacency matrix of dependencies
-    ord_mat[seq_len(dZ), ] <- 1*t(sapply(formsZ, function(x) vars %in% attr(x, "term.labels")))
-    ord_mat[dZ + seq_len(dX), ] <- 1*t(sapply(formsX, function(x) vars %in% attr(x, "term.labels")))
-    ord_mat[dZ + dX + seq_len(dY), ] <- 1*t(sapply(formsY, function(x) vars %in% attr(x, "term.labels")))
+    if (dZ > 0) ord_mat[seq_len(dZ), ] <- 1*t(sapply(formsZ, function(x) vars %in% attr(x, "term.labels")))
+    if (dX > 0) ord_mat[dZ + seq_len(dX), ] <- 1*t(sapply(formsX, function(x) vars %in% attr(x, "term.labels")))
+    if (dY > 0) ord_mat[dZ + dX + seq_len(dY), ] <- 1*t(sapply(formsY, function(x) vars %in% attr(x, "term.labels")))
 
     if (!is.null(formulas[[4]][LHS_Y])) {
       ## look for possible loops in copula formulae
@@ -244,6 +245,32 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
 
   if (ordering) {
 
+    ## obtain empirical quantiles from plasmode variables that will appear in copula
+    if (!is.null(dat)) {
+      n <- nrow(dat)
+
+      wh_q <- setdiff(unlist(rhs_vars(formulas[[2]])),
+                      c(unlist(rhs_vars(formulas[[3]])), vars))
+      quantiles <- dat[wh_q]
+
+      for (i in seq_along(wh_q)) {
+        var_nm <- wh_q[i]
+        quan <- (rank(dat[[var_nm]])-1/2)/nrow(dat)
+        if (any(duplicated(quan))) {
+          cts <- table(quan)
+          vals <- as.numeric(names(cts))
+          for (j in which(cts > 1)) {
+            wh_j <- which(quan == vals[j])
+            quan[wh_j] <- quan[wh_j] + (runif(cts[j])-1/2)/n
+          }
+        }
+        quantiles[wh_q] <- quan
+      }
+    }
+    else wh_q <- character(0)
+
+    nC <- length(wh_q)
+
     ## put some validation code in here for inversion method
 
     ## get formulas in right format
@@ -256,12 +283,12 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
     if (!all(sapply(formulas[[4]], is.list)) || any(lengths(formulas[[4]]) < dZ+seq_len(dY)-1)) {
       for (i in seq_len(dY)) {
         if (is.list(formulas[[4]][[i]])) {
-          formulas[[4]][[i]] <- rep(formulas[[4]][[i]], dZ+i-1)
+          formulas[[4]][[i]] <- rep(formulas[[4]][[i]], nC+dZ+i-1)
         }
         else {
-          formulas[[4]][[i]] <- rep(list(formulas[[4]][[i]]), dZ+i-1)
+          formulas[[4]][[i]] <- rep(list(formulas[[4]][[i]]), nC+dZ+i-1)
         }
-        lhs(formulas[[4]][[i]]) <- c(LHS_Z[rank(order[seq_len(dZ)])], LHS_Y[rank(order[dZ+dX+seq_len(i-1)])])
+        lhs(formulas[[4]][[i]]) <- c(wh_q, LHS_Z[rank(order[seq_len(dZ)])], LHS_Y[rank(order[dZ+dX+seq_len(i-1)])])
         ## update to allow some Zs to come after Ys
       }
     }
@@ -282,7 +309,7 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
       }
     }
     if (any(lengths(family[[4]]) != lengths(formulas[[4]]))) {
-      family[[4]] <- mapply(function(x, y) rep(x, y), family[[4]], dZ+seq_len(dY)-1)
+      family[[4]] <- mapply(function(x, y) rep(x, y), family[[4]], nC+dZ+seq_len(dY)-1)
     }
 
     ## get parameters in right format
@@ -290,11 +317,11 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
       if ("beta" %in% names(pars[[kwd]])) {
         pars[[kwd]] <- rep(list(list(list(beta=pars[[kwd]]$beta))), length(LHS_Y))
         names(pars[[kwd]]) <- LHS_Y
-        if (dZ > 1 || dY > 1) {
+        if (nC+dZ > 1 || dY > 1) {
           for (i in seq_len(dY)) {
             vnm <- vars[order[dZ+dX+i]]
-            pars[[kwd]][[vnm]] <- rep(pars[[kwd]][[vnm]], dZ+i-1)
-            names(pars[[kwd]][[vnm]]) <- c(LHS_Z, LHS_Y[rank(order[dZ+dX+seq_len(i-1)])])
+            pars[[kwd]][[vnm]] <- rep(pars[[kwd]][[vnm]], nC+dZ+i-1)
+            names(pars[[kwd]][[vnm]]) <- c(wh_q, LHS_Z, LHS_Y[rank(order[dZ+dX+seq_len(i-1)])])
           }
         }
       }
@@ -346,12 +373,15 @@ process_inputs <- function (formulas, pars, family, link, kwd, ordering=FALSE) {
     if (any(output %in% rhs_vars(formulas[[4]])[[1]])) stop("copula cannot depend upon Z or Y variables")
   }
 
+  if (!exists("quantiles")) quantiles <- NULL
+
   ## set up link functions
   link <- link_setup(link, family[1:3], vars=list(LHS_Z,LHS_X,LHS_Y))
 
     return(list(formulas=formulas, pars=pars, family=family, link=link,
-              LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y), kwd=kwd,
-              dim=dims, vars=vars, output=output, order=order))
+              LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y),
+              quantiles=quantiles, kwd=kwd, dim=dims, vars=vars, output=output,
+              order=order))
 }
 
 ##' Process input for family variables

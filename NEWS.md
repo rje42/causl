@@ -1,3 +1,16 @@
+causl 0.8.1.9000
+-------------------------------------------------------------------------------
+
+NEW FEATURES
+
+ * `rfrugalParam()` now allows for 'plasmode' simulation.  That is, one can add
+ a `data.frame` of variables `dat` that acts as a collection of pre-generated
+ covariates.
+ 
+ * New vignette 'Plasmode' gives instructions on how to use this feature.
+ 
+ 
+
 causl 0.8.0.9000
 -------------------------------------------------------------------------------
 

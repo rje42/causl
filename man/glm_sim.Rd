@@ -4,7 +4,7 @@
 \alias{glm_sim}
 \title{Simulate from a GLM}
 \usage{
-glm_sim(family, eta, phi, other_pars, link)
+glm_sim(family, eta, phi, other_pars, link, quantiles = TRUE)
 }
 \arguments{
 \item{family}{vector of distribution families}
@@ -16,6 +16,8 @@ glm_sim(family, eta, phi, other_pars, link)
 \item{other_pars}{list of other parameters for specified family}
 
 \item{link}{link functions for GLMs}
+
+\item{quantiles}{logical indicating whether to return quantiles}
 }
 \value{
 a numeric vector of weights

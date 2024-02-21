@@ -369,10 +369,11 @@ sim_CopVal <- function(dat, family, par, par2, model_matrix) {
 ##'
 ##' @inherit rejectionWeights
 ##' @inherit get_X_density
+##' @param quantiles logical indicating whether to return quantiles
 ##' @param other_pars list of other parameters for specified family
 ##'
 ##' @export
-glm_sim <- function (family, eta, phi, other_pars, link) {
+glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
 
   if (is.matrix(eta)) n <- nrow(eta)
   else n <- length(eta)
@@ -414,7 +415,7 @@ glm_sim <- function (family, eta, phi, other_pars, link) {
     if ("par2" %in% family$pars) pars <- c(pars, list(par2=other_pars$par2))
 
     x <- do.call(family$rdist, c(list(n=n), pars))
-    if (!(family$name %in% c("categorical","ordinal"))) qx <- do.call(family$pdist, c(list(x=x), pars))
+    if (quantiles && !(family$name %in% c("categorical","ordinal"))) qx <- do.call(family$pdist, c(list(x=x), pars))
   }
   else if (is.numeric(family)) {
 
@@ -493,12 +494,14 @@ glm_sim <- function (family, eta, phi, other_pars, link) {
       x <- rowSums(qsum < qx) + 1
       x <- factor(x, levels=seq_len(ncol(mu)))
     }
-    else stop("Only Gaussian, t, beta, gamma, Bernoulli and log-normal distributions are allowed")
+    else stop("Only Gaussian, t, beta, gamma, log-normal and categorical distributions are allowed")
   }
   else stop("family input should be an integer or 'causl_family' function")
 
   ## return quantile
-  if (is.numeric(family) || !(family$name %in% c("categorical","ordinal"))) attr(x, "quantile") <- qx
+  if (is.numeric(family) || !(family$name %in% c("categorical","ordinal"))) {
+    if (quantiles) attr(x, "quantile") <- qx
+  }
 
   return(x)
 }
