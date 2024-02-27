@@ -3,6 +3,7 @@
 S3method(print,causl_family)
 S3method(print,cop_fit)
 export("lhs<-")
+export(adj_vars)
 export(causalSamp)
 export(copula_vals)
 export(dGaussCop)

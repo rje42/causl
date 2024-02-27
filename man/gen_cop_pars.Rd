@@ -4,7 +4,7 @@
 \alias{gen_cop_pars}
 \title{Function to generate random copula parameters for simulation}
 \usage{
-gen_cop_pars(formulas, data, range = c(-1, 1))
+gen_cop_pars(formulas, data, range = c(-1, 1), ...)
 }
 \arguments{
 \item{formulas}{formulas as specified in \code{rfrugalParam}}
@@ -12,6 +12,8 @@ gen_cop_pars(formulas, data, range = c(-1, 1))
 \item{data}{dataset to obtain parameterization for}
 
 \item{range}{range of parameters to target}
+
+\item{...}{other parameters to be included in each copula}
 }
 \value{
 A list suitable for the \code{cop} entry of the \code{pars} argument of

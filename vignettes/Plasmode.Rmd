@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 options(digits=3)
 ```
 
@@ -150,3 +150,58 @@ causal effect of `r round(est3[2,1],1)` (`r round(est3[2,2],1)`).  In this case
 the copula parameter is a vector of six entries; for example for the $Y$-$X_1$ 
 effect this is `r round(pars3$cop$Y$x_1$beta, 2)`.
 
+## Other copula families
+
+Until now we have only used Gaussian copulas, but we can easily specify a 
+different family.  For example, suppose we wish to consider Student t-copulas.
+In this case we need to choose a degrees of freedom parameter, though this is 
+easily managed with `gen_cop_pars()` which allows additional arguments as `...`.  
+
+```{r gen_pars4}
+pars4 <- pars3
+(pars4$cop <- gen_cop_pars(forms3, data=dat, range=c(-0.5,0), par2=4))
+fams4 <- fams
+fams4[[4]] <- 2
+datAY4 <- rfrugalParam(formulas=forms3, family=fams4, pars=pars4, dat=dat)
+```
+```{r chkAY4, echo=FALSE}
+glmA <- glm(A ~ x_1 + x_3 + x_4, family=binomial, data=datAY4)
+# summary(glmA)$coefficients
+ps <- predict(glmA, type="response")
+wt <- datAY4$A/ps + (1-datAY4$A)/(1-ps)
+glmY <- svyglm(Y ~ A, design = svydesign(~1, weights = wt, data=datAY4))
+# summary(glmY)$coef
+est4 <- summary(glmY)$coef[1:2,1:2]
+```
+Now the estimates are `r round(est4[1,1])` (`r round(est4[1,2],1)`) and a 
+causal effect of `r round(est4[2,1],1)` (`r round(est4[2,2],1)`).  
+
+
+## Strength of relationships
+
+We also introduce the function `adj_vars()`, which allows users to modify the 
+strength of the partial correlations (or other parameters) by scaling the 
+parameters of the linear predictor.  The argument `factor` can be modified to
+control the strength of the `strong` and `weak` variables respectively; the 
+defauly values are 5 and 0.2.  Returning to the example above, suppose 
+that we want `x_4` to be much more closely related than `x_1` or `x_3`.  Then
+we can apply:
+```{r gen_pars5}
+pars5 <- pars3
+pars_tmp <- gen_cop_pars(forms3, data=dat, range=c(-0.25,0))
+(pars5$cop <- causl:::adj_vars(pars_tmp, strong="x_4", weak=c("x_1","x_3"), factor=c(2,0.25)))
+fams5 <- fams
+fams5[[4]] <- 5  # use Frank copula
+datAY5 <- rfrugalParam(formulas=forms3, family=fams5, pars=pars5, dat=dat)
+```
+```{r chkAY5, echo=FALSE}
+glmA <- glm(A ~ x_1 + x_3 + x_4, family=binomial, data=datAY5)
+# summary(glmA)$coefficients
+ps <- predict(glmA, type="response")
+wt <- datAY5$A/ps + (1-datAY5$A)/(1-ps)
+glmY <- svyglm(Y ~ A, design = svydesign(~1, weights = wt, data=datAY5))
+# summary(glmY)$coef
+est5 <- summary(glmY)$coef[1:2,1:2]
+```
+This time the estimates are `r round(est5[1,1])` (`r round(est5[1,2],1)`) and a 
+causal effect of `r round(est5[2,1],1)` (`r round(est5[2,2],1)`).  

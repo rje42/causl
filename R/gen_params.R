@@ -3,6 +3,7 @@
 ##' @param formulas formulas as specified in `rfrugalParam`
 ##' @param data dataset to obtain parameterization for
 ##' @param range range of parameters to target
+##' @param ... other parameters to be included in each copula
 ##'
 ##' @return A list suitable for the `cop` entry of the `pars` argument of
 ##' `rfrugalParam`
@@ -14,7 +15,7 @@
 ##' the Gaussian and other copula.
 ##'
 ##' @export
-gen_cop_pars <- function (formulas, data, range=c(-1,1)) {
+gen_cop_pars <- function (formulas, data, range=c(-1,1), ...) {
   if (missing(data)) {
     stop("Data set should be supplied")
   }
@@ -57,7 +58,7 @@ gen_cop_pars <- function (formulas, data, range=c(-1,1)) {
   beta_m <- matrix(rnorm(np*nv, mean=par_mns, sd=par_sds), np, nv)
   # which(samp %*% beta_m
   beta_pars <- apply(beta_m, 2, c, simplify = FALSE)
-  beta_pars <- lapply(beta_pars, function(x) list(beta=x))
+  beta_pars <- lapply(beta_pars, function(x) list(beta=x, ...))
   names(beta_pars) <- wh_q
 
   ## now add
@@ -66,6 +67,41 @@ gen_cop_pars <- function (formulas, data, range=c(-1,1)) {
   return(beta_pars)
 }
 
+##' Adjust values of copula parameters individually
+##'
+##' @param cop_pars list of copula parameters, as output by `gen_cop_pars()`
+##' @param strong,weak character vectors of variables to make strong or weak
+##' @param factor vector of two real values, to multiply coefficients by
+##'
+##'
+##'
+##' @export
+adj_vars <- function (cop_pars, strong=character(0), weak=character(0), factor=c(5,0.2)) {
 
+  if (length(cop_pars) == 1) cop_pars <- cop_pars[[1]]
+  else stop("Input should be a list of length 1")
 
+  if (!all(c(weak, strong) %in% names(cop_pars))) {
+    wh_sng <- setdiff(strong, names(cop_pars))
+    wh_wng <- setdiff(weak, names(cop_pars))
+    warning(paste0("Variables ", paste(c(wh_sng, wh_wng), collapse=", "), " not found, removing"))
+    strong <- setdiff(strong, wh_sng)
+    weak <- setdiff(weak, wh_wng)
+    if (length(strong) == 0 && length(weak) == 0) return(list(Y=cop_pars))
+  }
+
+  ## make the strong variables stronger
+  wh_s <- match(strong, names(cop_pars))
+  for (i in wh_s) {
+    cop_pars[[i]]$beta <- cop_pars[[i]]$beta*factor[1]
+  }
+
+  ## make the weak variables weaker
+  wh_w <- match(weak, names(cop_pars))
+  for (i in wh_w) {
+    cop_pars[[i]]$beta <- cop_pars[[i]]$beta*factor[2]
+  }
+
+  return(list(Y=cop_pars))
+}
 
