@@ -392,7 +392,7 @@ cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
   if (missing(par2)) {
     cops <- lapply(param, copula)
   } else {
-    cops <- lapply(param, function(x) copula(x,par2=par2))
+    cops <- lapply(param, function(x) copula(x, df=par2))
   }
 
   splU <- apply(U, 1, FUN = function(x) x, simplify = FALSE)

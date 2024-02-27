@@ -193,7 +193,7 @@ rescale_cop <- function(U, X, beta, family=1, par2) {
   else if (family == 2) {
     # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
     param <- 2*expit(eta) - 1
-    Y <- cVCopula(U, copula = tCopula, par2=par2, param = param, inverse=TRUE)
+    Y <- cVCopula(U, copula = tCopula, param = param, par2=par2, inverse=TRUE)
   }
   else if (family == 3) {
     param <- exp(eta) - 1
