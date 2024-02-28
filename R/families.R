@@ -341,7 +341,8 @@ ordinal_causl_fam <- function (link) {
 is_categorical <- function (x) {
   if (is.numeric(x)) return(x %in% 10:11)
   else if (is.character(x)) return(x %in% c("categorical", "ordinal"))
-  else if (is(x, "causl_family")) return(sapply(x, function(y) y$name) %in% c("categorical", "ordinal"))
+  else if (is(x[[1]], "causl_family")) return(sapply(x, function(y) y$name) %in% c("categorical", "ordinal"))
+  else if (is(x, "causl_family")) return(x$name %in% c("categorical", "ordinal"))
   else return(NA)
 }
 
