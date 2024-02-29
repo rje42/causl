@@ -1,3 +1,18 @@
+causl 0.8.2.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * `process_inputs()` function now substantially reorganized.  Uses various 
+ subsidiary functions to carry out its work.
+
+
+BUG FIXES
+
+ * Fixed minor bug in `is_categorical()`
+
+
+
 causl 0.8.1.9000
 -------------------------------------------------------------------------------
 
