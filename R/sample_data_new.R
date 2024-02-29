@@ -110,7 +110,7 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
 
   ## process the four main arguments
   proc_inputs <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
-                        dat=dat, kwd=kwd, ordering = (method == "inversion"))
+                        dat=dat, kwd=kwd, method=method)
 
   # if (method == "particle") {
   #   forms <- tidy_formulas(unlist(formulas), kwd)

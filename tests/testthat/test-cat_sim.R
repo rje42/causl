@@ -1,4 +1,4 @@
-library(survey)
+suppressMessages(library(survey))
 
 forms <- list(list(L0 ~ A0, L1 ~ A0),
               list(A0 ~ 1, A1 ~ A0*L0),
@@ -19,7 +19,7 @@ dat <- rfrugalParam(n, formulas = forms, pars=pars,
 
 ps <- predict(glm(A1 ~ A0*L0, family=binomial, data=dat), type="response")
 wt <- dat$A1/ps + (1-dat$A1)/(1-ps)
-hist(wt, breaks=25)
+# hist(wt, breaks=25)
 
 cor_tab <- summary(svyglm(Y ~ A0*A1, design = svydesign(~1,data=dat,weights=wt)))$coef
 wrg_tab <- summary(svyglm(Y ~ A0*A1, design = svydesign(~1,data=dat,weights=~1)))$coef
