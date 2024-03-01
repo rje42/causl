@@ -2,9 +2,15 @@
 % Please edit documentation in R/input.R
 \name{process_inputs}
 \alias{process_inputs}
+\alias{process_formulas}
+\alias{process_family}
 \title{Process formulas, families and parameters}
 \usage{
-process_inputs(formulas, pars, family, link, dat, kwd, ordering = FALSE)
+process_inputs(formulas, pars, family, link, dat, kwd, method = "inversion")
+
+process_formulas(formulas)
+
+process_family(family, dims)
 }
 \arguments{
 \item{formulas}{list of lists of formulas}
@@ -19,8 +25,17 @@ process_inputs(formulas, pars, family, link, dat, kwd, ordering = FALSE)
 
 \item{kwd}{keyword for copula}
 
-\item{ordering}{logical: should an ordering of variables be computed?}
+\item{method}{either \code{"inversion"} (the default) or \code{"rejection"}}
+
+\item{dims}{number of variables in each class}
 }
 \description{
 Process formulas, families and parameters
 }
+\section{Functions}{
+\itemize{
+\item \code{process_formulas()}: Process input for family variables
+
+\item \code{process_family()}: Process input for family variables
+
+}}
