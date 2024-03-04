@@ -1,14 +1,22 @@
-##' Get LHSs of list of formulae
+##' Tools for manipulating formulas
 ##'
 ##' @param formulas list of formulae
-##' @param surv logical: should survival responses be returned as two elements?
 ##'
-##' @details Returns character vector containing left-hand sides of a list of
-##' formulae.  If `surv=TRUE` then two responses are returned in the event of the
-##' left-hand side being a valid `Surv` object.
-##
+##' @details `lhs` returns a character vector containing left-hand sides of a
+##' list of formulae.  If `surv=TRUE` then two responses are returned in the
+##' event of the left-hand side being a valid `Surv` object.  `lhs<-` allows
+##' one to assign the left-hand sides of variables in the obvious way.
+##'
+##' `rhs_vars` extracts all the variables used on the right-hand sides of a list
+##' of formulas.
+##'
+##' @name formula_tools
+NULL
+
 ## To do: put in check for invalid name and then extract multiple variables if a Surv object
 ##
+
+##' @describeIn formula_tools Obtain left-hand sides from list of formulas
 ##' @export
 lhs <- function (formulas, surv=FALSE) {
   if (!is.list(formulas)) formulas <- list(formulas)
@@ -56,8 +64,8 @@ lhs <- function (formulas, surv=FALSE) {
   return(resp)
 }
 
-##' @describeIn lhs Assign LHSs to list of formulas
-##' @param value charachter vector to assign
+##' @describeIn formula_tools Assign left-hand sides to list of formulas
+##' @param value character vector to assign
 ##' @export
 `lhs<-` <- function (formulas, value) {
   if (length(formulas) < length(value)) stop("Must be as many formulas as LHSs")
@@ -68,7 +76,8 @@ lhs <- function (formulas, surv=FALSE) {
   return(formulas)
 }
 
-
+##' @describeIn formula_tools Extract variables from right-hand sides
+##' @export
 rhs_vars <- function (formulas) {
   if (!is.list(formulas)) formulas <- list(formulas)
   term <- lapply(formulas, terms)

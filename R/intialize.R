@@ -228,7 +228,15 @@ pars2mask <- function(pars, masks) {
   return(out)
 }
 
-## Tidy up formulae, ensure they have LHSs etc.
+##' Tidy up formulae
+##'
+##' This function ensures that all formulae have a left hand side, by giving
+##' them names of the form `Vn` where `n` is some positive integer.
+##'
+##' @inheritParams fitCausal
+##' @param kwd string used to denote copula
+##'
+##' @export
 tidy_formulas <- function(formulas, kwd) {
   forms <- formulas
   nf <- length(forms)

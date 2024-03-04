@@ -10,7 +10,7 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
   ## process univariate formulas and obtain dimensions of model
   formulas <- process_formulas(formulas)
   ## check ordering is sound
-  ord <- variable_order(formulas)
+  ord <- var_order(formulas)
   dims <- lengths(formulas)
 
   ## obtain variable names

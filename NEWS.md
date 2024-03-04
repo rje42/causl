@@ -1,3 +1,22 @@
+causl 0.8.4.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * Further reorganization, mostly to export additional functions.
+
+ 
+
+causl 0.8.3.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * `process_inputs` and its derivatives further edited for compatibility with 
+ `survivl` package.
+
+
+
 causl 0.8.2.9000
 -------------------------------------------------------------------------------
 
