@@ -17,6 +17,7 @@ NULL
 ##
 
 ##' @describeIn formula_tools Obtain left-hand sides from list of formulas
+##' @param surv logical indicating whether to treat as survey data
 ##' @export
 lhs <- function (formulas, surv=FALSE) {
   if (!is.list(formulas)) formulas <- list(formulas)

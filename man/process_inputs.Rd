@@ -8,9 +8,9 @@
 \usage{
 process_inputs(formulas, pars, family, link, dat, kwd, method = "inversion")
 
-process_formulas(formulas)
+process_formulas(formulas, len = 4)
 
-process_family(family, dims)
+process_family(family, dims, func_return = get_family)
 }
 \arguments{
 \item{formulas}{list of lists of formulas}
@@ -28,9 +28,19 @@ process_family(family, dims)
 \item{method}{either \code{"inversion"} (the default) or \code{"rejection"}}
 
 \item{dims}{number of variables in each class}
+
+\item{func_return}{function to use to process character arguments}
 }
 \description{
 Process formulas, families and parameters
+}
+\details{
+Function that processes and checks the validity of the main arguments
+used for simulating data.
+
+For \code{causl} we use the \code{get_family()} function to process character based
+arguments, but we allow for other functions to be used in packages that
+build on this one.
 }
 \section{Functions}{
 \itemize{

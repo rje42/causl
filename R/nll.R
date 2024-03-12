@@ -15,7 +15,7 @@
 ##'
 univarDens <- function (x, eta, phi, df, family=1, link) {
 
-  if (missing(link)) link <- linksList[[familyVals[familyVals$val==family,"family"]]][1]
+  if (missing(link)) link <- links_list[[family_vals[family_vals$val==family,"family"]]][1]
 
   ## get the densities for x
   if (family == 1) {
@@ -101,8 +101,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   if (missing(inCop)) inCop <- seq_along(dat)
 
   if (missing(link)) {
-    fams <- familyVals[match(family, familyVals$val),2]
-    link <- sapply(fams, function(x) linksList[[x]][1])
+    fams <- family_vals[match(family, family_vals$val),2]
+    link <- sapply(fams, function(x) links_list[[x]][1])
   }
 
   if (any(phi < 0)) return(-Inf)

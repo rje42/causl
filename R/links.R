@@ -1,21 +1,28 @@
 ##' Set up link functions
 ##'
-##' @param link the input given to causalSamp()
-##' @param family the list of families for Z,X and Y variables
-##' @param vars a list of vectors of variable names with the same structure as \code{family}
+##' @param link input given to `msm_samp()` or `causalSamp()`
+##' @param family the list of families for `Z`,`X` and `Y` variables
+##' @param vars a list of vectors of variable names with the same structure as `family`
+##' @param sources list of links for parametric families
+##' @param fam_list list of data frames in the same format as `family_vals`
 ##'
 ##' @export
-link_setup <- function(link, family, vars) {
+link_setup <- function(link, family, vars, sources=links_list,
+                       fam_list=list(family_vals)) {
 
   if (!missing(vars) && !all(lengths(vars) == lengths(family))) stop("length of variable names vector does not match number of families provided")
+
+  ## concatenate list of courses
+  lk_lsts <- sources # do.call(c, sources)
+  fm_lsts <- do.call(c, fam_list)
 
   ## set up output
   link_out <- lapply(family, function(x) {
     if (length(x) > 0 && is(x[[1]], "causl_family")) sapply(x, function(y) y$name)
-    else familyVals$family[match(x, familyVals$val)]
+    else fm_lsts$family[match(x, fm_lsts$val)]
   })
   if (any(is.na(unlist(link_out)))) stop("Invalid family variable specified")
-  link_out <- lapply(link_out, function(x) sapply(x, function(y) linksList[[y]][1]))
+  link_out <- lapply(link_out, function(x) sapply(x, function(y) lk_lsts[[y]][1]))
 
   if (any(is.null(unlist(link_out)))) stop("Error in family specification for link functions")
 
@@ -27,7 +34,7 @@ link_setup <- function(link, family, vars) {
   ## if no link argument supplied, then just return this list
   if (missing(link) || is.null(link)) return(link_out)
 
-  tmp <- unlist(linksList)
+  tmp <- unlist(lk_lsts)
 
   ## now add in any modifications made in 'link'
   if (is.list(link)) {
@@ -62,10 +69,10 @@ link_setup <- function(link, family, vars) {
     # for (j in seq_along(vars)) {
     #   mask <- wh_set == j
     #
-    #   for (i in seq_along(linksList)) {
+    #   for (i in seq_along(lk_lsts)) {
     #     lki <- link[mask && fam_nm == nms[i]]
-    #     linknm <- pmatch(lki, linksList[[i]])
-    #     lki2 <- linksList[[i]][linknm]
+    #     linknm <- pmatch(lki, lk_lsts[[i]])
+    #     lki2 <- lk_lsts[[i]][linknm]
     #     if (any(is.na(lki2))) stop("link ", paste(lki[which(is.na(lki2))], sep=", "), " not supported")
     #     lki[]
     #   }
@@ -75,12 +82,12 @@ link_setup <- function(link, family, vars) {
   else stop("variable names must be provided to match using them")
 
   # ## matching
-  # fam_nm <- familyVals$family[familyVals$val==fams]
-  # nms <- names(linksList)
-  # for (i in seq_along(linksList)) {
+  # fam_nm <- fm_lsts$family[fm_lsts$val==fams]
+  # nms <- names(lk_lsts)
+  # for (i in seq_along(lk_lsts)) {
   #   lki <- link[fam_nm == nms[i]]
-  #   linknm <- pmatch(lki, linksList[[i]])
-  #   lki2 <- linksList[[i]][linknm]
+  #   linknm <- pmatch(lki, lk_lsts[[i]])
+  #   lki2 <- lk_lsts[[i]][linknm]
   #   if (any(is.na(lki2))) stop("link ", paste(lki[which(is.na(lki2))], sep=", "), " not supported")
   #
 
@@ -93,7 +100,7 @@ link_setup <- function(link, family, vars) {
 ##' functions.
 ##'
 ##' @export
-linksList <- list(
+links_list <- list(
   gaussian = c("identity", "inverse", "log"),
   t = c("identity", "inverse", "log"),
   Gamma = c("log", "inverse", "identity"),
@@ -103,3 +110,7 @@ linksList <- list(
   categorical = c("logit"),
   ordinal = c("logit")
 )
+
+##' @describeIn links_list Old name
+##' @format `linksList` is the old name for `links_list`
+linksList <- links_list

@@ -4,14 +4,24 @@
 \alias{link_setup}
 \title{Set up link functions}
 \usage{
-link_setup(link, family, vars)
+link_setup(
+  link,
+  family,
+  vars,
+  sources = links_list,
+  fam_list = list(family_vals)
+)
 }
 \arguments{
-\item{link}{the input given to causalSamp()}
+\item{link}{input given to \code{msm_samp()} or \code{causalSamp()}}
 
-\item{family}{the list of families for Z,X and Y variables}
+\item{family}{the list of families for \code{Z},\code{X} and \code{Y} variables}
 
 \item{vars}{a list of vectors of variable names with the same structure as \code{family}}
+
+\item{sources}{list of links for parametric families}
+
+\item{fam_list}{list of data frames in the same format as \code{family_vals}}
 }
 \description{
 Set up link functions

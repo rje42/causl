@@ -16,6 +16,8 @@ rhs_vars(formulas)
 \arguments{
 \item{formulas}{list of formulae}
 
+\item{surv}{logical indicating whether to treat as survey data}
+
 \item{value}{character vector to assign}
 }
 \description{

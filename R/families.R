@@ -3,17 +3,27 @@ NULL
 
 ##' Numbers for parametric families
 ##'
-##' Each function returns a data frame containing
+##' Data frames containing
 ##' \itemize{
 ##' \item `val`: an integer
 ##' \item `family`: a vector giving the associated parametric family for that integer.
 ##' }
+##' The integer `val` may be used in place of the name of the parametric family
+##' when specifying the `family` object.
+##'
+##' @format `family_vals` is a `data.frame` with 9 rows and 2 columns
 ##'
 ##' @export
-familyVals <- data.frame(val=c(0:6,11,10),
+family_vals <- data.frame(val=c(0:6,11,10),
                          family=c("binomial", "gaussian", "t", "Gamma", "beta", "binomial", "lognormal","ordinal","categorical"))
 
-##' @describeIn familyVals Values for copula families
+##' @describeIn family_vals Old name
+##' @format `familyVals` is the same object as `family_vals`
+##' @export
+familyVals <- family_vals
+
+##' @describeIn family_vals Values for copula families
+##' @format `copula_vals` is a `data.frame` with 7 rows and 2 columns
 ##' @export
 copula_vals <- data.frame(val=c(1:6,11),
                           family=c("gaussian", "t", "Clayton", "Gumbel", "Frank", "Joe", "FGM"))
@@ -27,19 +37,19 @@ copula_vals <- data.frame(val=c(1:6,11),
 ##' returned by `get_family()`.
 ##'
 ##'
-##' @seealso [familyVals]
+##' @seealso [family_vals]
 ##'
 get_family <- function (val) {
   if (is.numeric(val)) {
-    fm <- match(val, familyVals$val)
+    fm <- match(val, family_vals$val)
     if (is.na(fm)) stop("Invalid family value")
   }
   else if (is.character(val)) {
-    fm <- pmatch(val, familyVals$family)
+    fm <- pmatch(val, family_vals$family)
     if (is.na(fm)) stop("Family not recognized")
   }
 
-  fmly <- familyVals[fm,]$family
+  fmly <- family_vals[fm,]$family
   if (is.numeric(val) && val > 5) stop("No function defined yet for this family")
 
   get(paste0(fmly, "_causl_fam"))
@@ -47,6 +57,7 @@ get_family <- function (val) {
 
 ##' @describeIn get_family Gaussian distribution family
 ##' @param link link function
+##' @export
 gaussian_causl_fam <- function (link) {
   if (missing(link)) link = "identity"
 
@@ -67,6 +78,7 @@ gaussian_causl_fam <- function (link) {
 }
 
 ##' @describeIn get_family Student's t distribution family
+##' @export
 t_causl_fam <- function (link) {
   if (missing(link)) link = "identity"
 
@@ -93,6 +105,7 @@ t_causl_fam <- function (link) {
 }
 
 ##' @describeIn get_family Gamma distribution family
+##' @export
 Gamma_causl_fam <- function (link) {
   if (missing(link)) link = "log"
 
@@ -114,6 +127,7 @@ Gamma_causl_fam <- function (link) {
 }
 
 ##' @describeIn get_family binomial distribution family
+##' @export
 binomial_causl_fam <- function (link) {
   if (missing(link)) link = "logit"
 
@@ -134,6 +148,7 @@ binomial_causl_fam <- function (link) {
 }
 
 ##' @describeIn get_family beta distribution family
+##' @export
 beta_causl_fam <- function (link) {
   if (missing(link)) link = "logit"
 
@@ -179,6 +194,7 @@ beta_causl_fam <- function (link) {
 # }
 
 ##' @describeIn get_family multinomial/categorical distribution family
+##' @export
 categorical_causl_fam <- function (link) {
   if (missing(link)) link = "logit"
 
@@ -252,6 +268,7 @@ categorical_causl_fam <- function (link) {
 }
 
 ##' @describeIn get_family ordinal categorical distribution family
+##' @export
 ordinal_causl_fam <- function (link) {
   if (missing(link)) link = "logit"
 
@@ -338,6 +355,7 @@ ordinal_causl_fam <- function (link) {
 ##' represents a categorical or ordinal variable.  If it cannot represent a
 ##' family then `NA` is returned.
 ##'
+##' @export
 is_categorical <- function (x) {
   if (is.numeric(x)) return(x %in% 10:11)
   else if (is.character(x)) return(x %in% c("categorical", "ordinal"))

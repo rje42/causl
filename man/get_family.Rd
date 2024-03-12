@@ -57,5 +57,5 @@ returned by \code{get_family()}.
 
 }}
 \seealso{
-\link{familyVals}
+\link{family_vals}
 }
