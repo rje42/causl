@@ -156,7 +156,7 @@ process_family <- function (family, dims, func_return=get_family) {
         if (all(rapply(family[[i]], is.character))) {
           family[[i]] <- unlist(family[[i]])
           if (length(family[[i]]) != lens[i]) stop("Incorrect number of families specified")
-          family[[i]] <- lapply(fams, function(x) func_return(x)())
+          family[[i]] <- lapply(family[[i]], function(x) func_return(x)())
         }
         else if (all(rapply(family[[i]], is.numeric))) {
           family[[i]] <- unlist(family[[i]])

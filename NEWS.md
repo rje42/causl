@@ -1,3 +1,24 @@
+causl 0.8.6.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * Minor fix to `process_family`
+
+ * New test for plasmode simulation with one pregenerated variable.
+
+
+
+causl 0.8.5.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * Fixed bug in plasmode dataset generation that caused failure if only one 
+ variable was used.
+
+
+
 causl 0.8.4.9000
 -------------------------------------------------------------------------------
 
