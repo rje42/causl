@@ -29,6 +29,9 @@ Data frames containing
 The integer \code{val} may be used in place of the name of the parametric family
 when specifying the \code{family} object.
 }
+\details{
+\code{familyVals} will be removed in version 1.0.0.
+}
 \section{Functions}{
 \itemize{
 \item \code{familyVals}: Old name

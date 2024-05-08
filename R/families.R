@@ -19,6 +19,9 @@ family_vals <- data.frame(val=c(0:6,11,10),
 
 ##' @describeIn family_vals Old name
 ##' @format `familyVals` is the same object as `family_vals`
+##' @details
+##' `familyVals` will be removed in version 1.0.0.
+##'
 ##' @export
 familyVals <- family_vals
 
@@ -391,5 +394,33 @@ theta_to_p_cat <- function (theta) {
   p <- p/rowSums(p)
 
   return(p)
+}
+
+##' Obtain list of family functions
+##'
+##' Obtain list of family functions from numeric or character representation
+##'
+##' @param family numeric or character vector of families
+##'
+##' @examples
+##' family_list(c(1,3,5))
+##' family_list(c("t","binomial"))
+##'
+##'
+##' @export
+family_list <- function (family, func_return=get_family) {
+  if (is.numeric(family) || is.character(family)) {
+    out <- lapply(family, func_return)
+    names(out) <- names(family)
+  }
+  else if (all(sapply(family, is, "function"))) {
+    for (i in seq_along(family)) {
+      if (!is(family[[i]](), "causl_family")) stop("'family' should be a numeric or character vector, or a list of 'causl_family' objects")
+    }
+    out <- family
+  }
+  else stop("'family' should be a numeric or character vector, or a list of 'causl_family' objects")
+
+  return(out)
 }
 

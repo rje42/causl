@@ -15,20 +15,20 @@
 ##' @param family families for Z,X,Y and copula
 ##' @param link list of link functions
 ##' @param dat data frame of covariates
-##' @param method only \code{"rejection"} is valid
+##' @param method only `"rejection"` is valid
 ##' @param control list of options for the algorithm
 ##' @param seed random seed used for replication
 ##'
 ##' @details Samples from a given causal model using rejection sampling (or,
 ##' if everything is discrete, direct sampling).
 ##'
-##' The entries for  \code{formula} and \code{family} should each be a
+##' The entries for  `formula` and `family` should each be a
 ##' list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and
-##' the copula.  \code{formula} determines the model, so it is crucial that
+##' the copula.  `formula` determines the model, so it is crucial that
 ##' every variable to be simulated is represented there exactly once.  Each
 ##' entry of that list can either be a single formula, or a list of formulae.
-##' Each corresponding entry in \code{family} should be the same length as the
-##' list in \code{formula} or of length 1 (in which case it will be repeated
+##' Each corresponding entry in `family` should be the same length as the
+##' list in `formula` or of length 1 (in which case it will be repeated
 ##' for all the variables therein).
 ##'
 ##' We use the following codes for different families of distributions:
@@ -40,16 +40,16 @@
 ##' 6 = log-normal.
 ##'
 ##' The family variables for the copula are also numeric and taken from
-##' \code{VineCopula}.
+##' `VineCopula`.
 ##' Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton, 4 for Gumbel,
 ##' 5 for Frank, 6 for Joe and 11 for FGM copulas.
 ##'
-##' \code{pars} should be a named list containing: either entries \code{z},
-##' \code{x}, \code{y} and \code{cop}, or variable names that correspond to the
-##' LHS of formulae in \code{formulas}.  Each of these should themselves be a list
-##' containing \code{beta} (a vector of regression parameters) and (possibly)
-##' \code{phi}, a dispersion parameter.  For any discrete variable that is a
-##' treatment, you can also specify \code{p}, an initial proportion to simulate
+##' `pars` should be a named list containing: either entries `z`,
+##' `x`, `y` and `cop`, or variable names that correspond to the
+##' LHS of formulae in `formulas`.  Each of these should themselves be a list
+##' containing `beta` (a vector of regression parameters) and (possibly)
+##' `phi`, a dispersion parameter.  For any discrete variable that is a
+##' treatment, you can also specify `p`, an initial proportion to simulate
 ##' from (otherwise this defaults to 0.5).
 ##'
 ##' Link functions for the Gaussian, t and Gamma distributions can be the
@@ -57,15 +57,15 @@
 ##' the identity, and Gamma to the log link.  For the Bernoulli the logit and
 ##' probit links are available.
 ##'
-##' Control parameters are \code{oversamp} (default value 10), \code{trace} (default
+##' Control parameters are `oversamp` (default value 10), `trace` (default
 ##' value 0, increasing to 1 increases verbosity of output),
-##' \code{max_oversamp} (default value 1000), \code{warn} (which currently does
-##' nothing), \code{max_wt} which is set to 1, and increases each time the function
+##' `max_oversamp` (default value 1000), `warn` (which currently does
+##' nothing), `max_wt` which is set to 1, and increases each time the function
 ##' is recalled.
 ## (if weights empirically appear not to have an upper bound, this warns if set
 ## to 1 (the default) and stops if set to 2), ...
-##' Control parameters also include \code{cop}, which gives a keyword for the
-##' copula that defaults to \code{"cop"}.
+##' Control parameters also include `cop`, which gives a keyword for the
+##' copula that defaults to `"cop"`.
 ##'
 ##' This function is kept largely for the replication of simulations from
 ##' Evans and Didelez (2024).

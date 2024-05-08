@@ -6,11 +6,11 @@
 ##' @param family numeric indicator of family
 ##' @param link link function
 ##'
-##' @details \code{fam} follows the usual numeric pattern: 1=normal,
+##' @details `fam` follows the usual numeric pattern: 1=normal,
 ##' 2=t-distribution and 3=Gamma with a log-link.
 ##'
-##' @return A list with entries being the numeric vectors \code{u} (the
-##' quantiles of the input values) and \code{ld} (the log density of each
+##' @return A list with entries being the numeric vectors `u` (the
+##' quantiles of the input values) and `ld` (the log density of each
 ##' observation).
 ##'
 univarDens <- function (x, eta, phi, df, family=1, link) {
@@ -62,23 +62,23 @@ univarDens <- function (x, eta, phi, df, family=1, link) {
 
 ##' Negative log-likelihood
 ##'
-##' @param theta concatenated vector of parameters (\code{beta} followed by \code{phi})
+##' @param theta concatenated vector of parameters (`beta` followed by `phi`)
 ##' @param dat matrix of data
-##' @param mm model matrix for use with \code{beta}
+##' @param mm model matrix for use with `beta`
 ##' @param beta (sparse) matrix of regression parameters for each variable and copula
 ##' @param phi vector of dispersion parameters
-##' @param inCop vector of integers giving variables in \code{dat} to be included in copula
+##' @param inCop vector of integers giving variables in `dat` to be included in copula
 ##' @param fam_cop,family integer and integer vector for copula and distribution families respectively
 ##' @param link vector of link functions
 ##' @param par2 degrees of freedom for t-distribution
 ##' @param useC logical: should Rcpp functions be used?
 ##'
-##' @details The number of columns of \code{beta} should be the number of columns
-##' in \code{dat} plus the number required to parameterize the copula.  The first
-##' few columns and the entries in \code{phi} are assumed to be in the order of
-##' those in \code{dat}.  If the \eqn{i}th
+##' @details The number of columns of `beta` should be the number of columns
+##' in `dat` plus the number required to parameterize the copula.  The first
+##' few columns and the entries in `phi` are assumed to be in the order of
+##' those in `dat`.  If the \eqn{i}th
 ##' family for a variable does not require a dispersion parameter then the value of
-##' \code{phi[i]} is ignored.
+##' `phi[i]` is ignored.
 ##'
 ## @importFrom Matrix Matrix
 ##'
@@ -224,8 +224,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
 ##' Extract parameter estimates and standard errors
 ##'
-##' @param fit output of \code{optim}
-##' @param beta output of \code{initializeParams2}
+##' @param fit output of `optim`
+##' @param beta output of `initializeParams2`
 ##' @param merged_formula formula with all variables on RHS
 ##' @param kwd keyword for copula variable
 ##'
