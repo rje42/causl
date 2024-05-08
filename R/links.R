@@ -32,7 +32,7 @@ link_setup <- function(link, family, vars, sources=links_list,
   }
 
   ## if no link argument supplied, then just return this list
-  if (missing(link) || is.null(link)) return(link_out)
+  if (missing(link) || is.null(link) || is.null(link[[1]])) return(link_out)
 
   tmp <- unlist(lk_lsts)
 
