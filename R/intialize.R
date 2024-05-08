@@ -180,6 +180,51 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
   return(out)
 }
 
+##' Get parameter masks for regression parameters
+##'
+##' @param formulas formulas to create mask for
+##' @param family vector or list of families
+##' @param full_form (optionally) merged list of `formulas`
+##
+par_masks <- function(formulas, family=rep(1,nv), full_form) { #, kwd, only_masks=FALSE) {
+
+  # d <- ncol(dat)
+  # fam_y <- family[1]
+  # fam_z <- family[1+seq_len(d)]
+  # fam_cop <- last(family)
+  nv <- length(formulas)
+  fam <- family_list(family, func_return = get_family)
+
+  if (length(fam) != nv) stop("Must have family parameter for every variable")
+
+  ## get terms and outcome labels
+  if (missing(full_form)) full_form <- merge_formulas(formulas)
+  trms <- terms(full_form$formula)
+  labs <- if (attr(trms, "intercept") == 1) c("(intercept)")
+  else character(0)
+  labs <- c(labs, attr(trms, "term.labels"))
+  LHSs <- lhs(formulas)
+
+  wh <- full_form$wh
+  beta_m <- matrix(0, nrow=max(unlist(wh)), ncol=nv, dimnames = list(labs, LHSs))
+  phi_m <- rep(0, nv)
+  names(phi_m) <- LHSs
+
+  ## define output matrix/vector for beta,phi
+  LHS <- lhs(formulas)
+
+  ## add in indicators for each variable
+  for (i in seq_len(nv)) {
+    beta_m[wh[[i]],i] <- 1
+    phi_m[i] <- match("phi", names(formals(fam[[i]]()$ddist)), nomatch = 0L) > 0
+  }
+
+  out <- list(beta_m=beta_m, phi_m=phi_m)
+
+  return(out)
+}
+
+
 masks <- function(formulas, family=rep(1,nc+1), wh, LHS, cp) {
 
   if (is.list(family)) family <- unlist(family[1:3])
@@ -235,9 +280,10 @@ pars2mask <- function(pars, masks) {
 ##'
 ##' @inheritParams fitCausal
 ##' @param kwd string used to denote copula
+##' @param prefix string to begin each new variable name
 ##'
 ##' @export
-tidy_formulas <- function(formulas, kwd) {
+tidy_formulas <- function(formulas, kwd, prefix="V") {
   forms <- formulas
   nf <- length(forms)
 
@@ -248,7 +294,7 @@ tidy_formulas <- function(formulas, kwd) {
     if (last(wh) == nf) wh2 <- wh[-length(wh)]
     else wh2 <- wh
     for (i in seq_along(wh2)) {
-      tmp_form <- formula(paste("V", i, " ~ .", sep=""))
+      tmp_form <- formula(paste(prefix, i, " ~ .", sep=""))
       forms[[wh[i]]] <- update.formula(forms[[wh[i]]], tmp_form)
     }
   }
