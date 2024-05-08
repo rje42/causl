@@ -48,21 +48,7 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
 
       wh_q <- setdiff(unlist(rhs_vars(formulas[[2]])),
                       c(unlist(rhs_vars(formulas[[3]])), vars))
-      quantiles <- dat[wh_q]
-
-      for (i in seq_along(wh_q)) {
-        var_nm <- wh_q[i]
-        quan <- (rank(dat[[var_nm]])-1/2)/nrow(dat)
-        if (any(duplicated(quan))) {
-          cts <- table(quan)
-          vals <- as.numeric(names(cts))
-          for (j in which(cts > 1)) {
-            wh_j <- which(quan == vals[j])
-            quan[wh_j] <- quan[wh_j] + (runif(cts[j])-1/2)/n
-          }
-        }
-        quantiles[wh_q] <- quan
-      }
+      quantiles <- process_prespecified(dat, prespec = wh_q)
     }
     else wh_q <- character(0)
 
@@ -307,11 +293,13 @@ gen_dummy_dat <- function (family, pars, dat, LHSs, dims) {
   ## produce dummy data.frame to check number of coefficients
   nv <- sum(dims[seq_len(nU)])
   if (!is.null(attr(LHSs, "T"))) {
-    T <- attr(LHSs, "T")
+    T <- attr(LHSs, "T")[1]
+    strt <- attr(LHSs, "T")[2]
+    if (is.na(strt)) strt <- 0
     nv <- nv + (T-1)*sum(dims[2:4])
     nms <- LHSs[[1]]
     nms_t <- unlist(LHSs[2:4])
-    nms <- c(nms, paste0(nms_t, rep(seq_len(T), each=length(nms_t))))
+    nms <- c(nms, paste0(nms_t, "_", rep(seq_len(T)+strt-1, each=length(nms_t))))
   }
   else {
     nms <- unlist(LHSs)
@@ -326,8 +314,8 @@ gen_dummy_dat <- function (family, pars, dat, LHSs, dims) {
 
   ## generate dummy data for each variable to simulate
   for (i in seq_along(LHSs)) for (j in seq_len(dims[[i]])) {
-    if (i > 1 && exists("T")) {
-      vnms <- paste0(LHSs[[i]][j], seq_len(T))
+    if (i > 1 && exists("strt")) {
+      vnms <- paste0(LHSs[[i]][j], "_", seq_len(T)-1-strt)
       if (!is_categorical(family[[i]][j])) out[vnms] <- 0
       else out[vnms] <- factor(x=1L, levels=seq_len(pars[[LHSs[[i]][j]]]$nlevel))
     }
@@ -560,3 +548,36 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
 
   return(list(formulas=formulas, family=family, pars=pars))
 }
+
+##' Obtain quantiles for prespecified variables
+##'
+##' @param dat data frame containing variables
+##' @param prespec character vector of prespecified variables in `dat`
+##'
+##' @details Currently takes the rank of each entry, and subtracts 1/2.  If
+##' there are \eqn{k} ties they are randomly sorted with a uniform random variable
+##' in the symmetric interval around the rank of width \eqn{k/n}.
+##'
+##' @export
+process_prespecified <- function (dat, prespec) {
+  quantiles <- dat[prespec]
+  n <- nrow(dat)
+
+  ## go through each variable and put into [0,1] in approx uniform manner
+  for (i in seq_along(prespec)) {
+    var_nm <- prespec[i]
+    quan <- (rank(dat[[var_nm]])-1/2)/n
+    if (any(duplicated(quan))) {
+      cts <- table(quan)
+      vals <- as.numeric(names(cts))
+      for (j in which(cts > 1)) {
+        wh_j <- which(quan == vals[j])
+        quan[wh_j] <- quan[wh_j] + (runif(cts[j])-1/2)*cts[j]/n
+      }
+    }
+    quantiles[prespec] <- quan
+  }
+
+  return(quantiles)
+}
+

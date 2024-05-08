@@ -108,6 +108,10 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
     n <- nrow(dat)
   }
 
+  ## inform user of parameterization being used
+  if (method == "inversion") message("Inversion method selected: using pair-copula parameterization")
+  else if (method == "rejection") message("Rejection method selected: using multivariate copula parameterization")
+
   ## process the four main arguments
   proc_inputs <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
                         dat=dat, kwd=kwd, method=method)
