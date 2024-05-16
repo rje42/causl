@@ -36,3 +36,20 @@ test_that("plasmode simulation generates correct data", {
   expect_lt(max(abs(coefA[,1] - pars$A$beta)/coefA[,2]), 2.5)
   expect_lt(max(abs(coefY[,1] - pars$Y$beta)/coefY[,2]), 2.5)
 })
+<<<<<<< HEAD
+=======
+
+
+## check that works with 1 prespecified variable
+forms <- list(list(),
+              list(A ~ U),
+              list(Y ~ A),
+              list(~ 1))
+fams <- list(integer(0), 5, 1, 1)
+pars <- list(A = list(beta=c(0,1)),
+             Y = list(beta=c(1, 1), phi=1),
+             cop = list(beta=-1))
+
+dat <- data.frame(U = rep(1,100))
+dat <- rfrugalParam(formulas=forms, family=fams, pars=pars, dat=dat)
+>>>>>>> main

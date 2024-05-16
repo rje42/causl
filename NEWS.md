@@ -1,3 +1,67 @@
+causl 0.8.7
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * Added `process_prespecified`
+
+
+
+causl 0.8.6.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * Minor fix to `process_family`
+
+ * New test for plasmode simulation with one pregenerated variable.
+
+
+
+causl 0.8.5.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * Fixed bug in plasmode dataset generation that caused failure if only one 
+ variable was used.
+
+
+
+causl 0.8.4.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * Further reorganization, mostly to export additional functions.
+
+ 
+
+causl 0.8.3.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * `process_inputs` and its derivatives further edited for compatibility with 
+ `survivl` package.
+
+
+
+causl 0.8.2.9000
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * `process_inputs()` function now substantially reorganized.  Uses various 
+ subsidiary functions to carry out its work.
+
+
+BUG FIXES
+
+ * Fixed minor bug in `is_categorical()`
+
+
+
 causl 0.8.1.9000
 -------------------------------------------------------------------------------
 

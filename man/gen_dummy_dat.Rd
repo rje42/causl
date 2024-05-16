@@ -7,6 +7,12 @@
 gen_dummy_dat(family, pars, dat, LHSs, dims)
 }
 \arguments{
+\item{family}{families for variables and copula}
+
+\item{pars}{list of lists of parameters}
+
+\item{dat}{optional data frame of covariates}
+
 \item{LHSs}{left-hand sides from \code{formulas}}
 
 \item{dims}{number of variables in each class}

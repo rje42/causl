@@ -106,9 +106,9 @@ rescale_var <- function(U, X, pars, family=1, link) {
       else stop("invalid link function for binomial distribution")
     }
 
-    pars2 <- pars[names(pars) != "beta"]
+    pars2 <- c(list(p=U, mu=mu), pars[names(pars) != "beta"])
 
-    Y <- do.call(family$qdist, c(list(p=U, mu=mu), pars2))
+    Y <- do.call(family$qdist, pars2)
   }
   else stop("'family' should be an integer or 'causl_family' object")
 
@@ -127,7 +127,10 @@ rescaleVar <- function(U, X, pars, family=1, link) {
 }
 
 link_apply <- function(eta, link, family_nm) {
-  if (family_nm == "categorical") {
+  if (is.function(link)) {
+    mu <- link(eta)
+  }
+  else if (family_nm == "categorical") {
     if (link == "logit") mu <- theta_to_p_cat(eta)
     else stop("Not a valid link function for categorical variable")
   }
@@ -379,15 +382,15 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
   else n <- length(eta)
   if (missing(link)) {
     ## get the default link for this family
-    link <- familyVals[familyVals$val==family,2]
+    link <- family_vals[family_vals$val==family,2]
   }
 
   if (is(family, "causl_family")) {
-    if (!(family$name %in% names(linksList))) {
+    if (!(family$name %in% names(links_list))) {
       if (!(link %in% family$links_list)) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
       stop(paste0("Family ", family$name, " is not a valid and registered family"))
     }
-    if (!(link %in% linksList[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
+    if (!(link %in% links_list[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
 
     if (family$name %in% c("categorical","ordinal")) {
       if (ncol(eta) != other_pars$nlevel - 1) stop("Invalid 'eta' input to glm_sim")

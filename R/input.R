@@ -5,12 +5,16 @@
 ## @param ordering logical: should an ordering of variables be computed?
 ## @param ... dots from rfrugalParam
 ##'
+##' @details Function that processes and checks the validity of the main arguments
+##' used for simulating data.
+##'
 process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inversion") {
 
   ## process univariate formulas and obtain dimensions of model
   formulas <- process_formulas(formulas)
   ## check ordering is sound
-  ord <- variable_order(formulas)
+
+  ord <- var_order(formulas)
   dims <- lengths(formulas)
 
   ## obtain variable names
@@ -45,21 +49,7 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
 
       wh_q <- setdiff(unlist(rhs_vars(formulas[[2]])),
                       c(unlist(rhs_vars(formulas[[3]])), vars))
-      quantiles <- dat[wh_q]
-
-      for (i in seq_along(wh_q)) {
-        var_nm <- wh_q[i]
-        quan <- (rank(dat[[var_nm]])-1/2)/nrow(dat)
-        if (any(duplicated(quan))) {
-          cts <- table(quan)
-          vals <- as.numeric(names(cts))
-          for (j in which(cts > 1)) {
-            wh_j <- which(quan == vals[j])
-            quan[wh_j] <- quan[wh_j] + (runif(cts[j])-1/2)/n
-          }
-        }
-        quantiles[wh_q] <- quan
-      }
+      quantiles <- process_prespecified(dat, prespec = wh_q)
     }
     else wh_q <- character(0)
 
@@ -88,9 +78,9 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
 
 ##' @inheritParams process_inputs
 ##' @describeIn process_inputs Process input for family variables
-process_formulas <- function (formulas) {
+process_formulas <- function (formulas, len=4) {
   ## check we have four groups of formulas
-  if (length(formulas) != 4) stop("Formulas must have length 4")
+  if (length(formulas) != len) stop(paste0("Formulas must have length ", len))
 
   ## ensure all formulas are given as lists
   if (any(sapply(formulas, class) == "formula")) {
@@ -103,49 +93,74 @@ process_formulas <- function (formulas) {
 
 ##' @inheritParams gen_dummy_dat
 ##' @describeIn process_inputs Process input for family variables
+##' @param func_return function to use to process character arguments
 ##'
-process_family <- function (family, dims) {
+##' @details
+##' For `causl` we use the `get_family()` function to process character based
+##' arguments, but we allow for other functions to be used in packages that
+##' build on this one.
+##'
+##'
+##' @export
+process_family <- function (family, dims, func_return=get_family) {
 
   if (missing(family)) {
     ## assume everything is Gaussian
     family <- lapply(dims, rep.int, x=1)
     return(family)
   }
-  else if (is.list(family)) {
+
+  nU <- length(family) - 1
+
+  if (is.list(family)) {
     lens <- lengths(family)
 
     if (any(sapply(family, class) == "causl_family")) {
       wh <- which(sapply(family, class) == "causl_family")
       for (i in wh) family[[i]] <- list(family[[i]])
     }
-    if (!all(lens[1:3] == dims[1:3])) stop("Mismatch in family and formulae specifications")
+    if (!all(lens[seq_len(nU)] == dims[seq_len(nU)])) stop("Mismatch in family and formulae specifications")
   }
-  else if (length(family) == 4) {
-    if (sum(dims[1:3]) > 3) stop("Mismatch in family and formulae specification")
+  else if (length(family) == nU+1) {
+    if (sum(dims[seq_len(nU)]) > nU) stop("Mismatch in family and formulae specification")
     family <- as.list(family)
-    lens <- c(1,1,1,1)
+    lens <- rep(1, nU+1)
   }
-  else stop("family should be a list, or vector of length 4")
+  else stop(paste0("'family' should be a list, or vector of length ", nU+1))
 
   ## deal with family names and causl_fam functions
-  for (i in seq_along(lens)) {
+  for (i in seq_len(nU)) {
     if (lens[i] > 0) {
-      if (is.character(family[[i]][1])) {
+      if (is.character(family[[i]])) {
         fams <- unlist(family[[i]])
-        family[[i]] <- lapply(fams, function(x) get_family(x)())
+        family[[i]] <- lapply(fams, function(x) func_return(x)())
+        # family[[i]] <- lapply(fams, function(x) get_family(x)())
       }
-      else if (is.numeric(family[[i]][1])) {
+      else if (is.numeric(family[[i]])) {
         next
       }
-      else if (all(sapply(family[[i]], function(x) is(x, "causl_family")))) {
-        next
+      else if (is.list(family[[i]])) {
+        if (all(rapply(family[[i]], is.character))) {
+          family[[i]] <- unlist(family[[i]])
+          if (length(family[[i]]) != lens[i]) stop("Incorrect number of families specified")
+          family[[i]] <- lapply(family[[i]], function(x) func_return(x)())
+        }
+        else if (all(rapply(family[[i]], is.numeric))) {
+          family[[i]] <- unlist(family[[i]])
+          if (length(family[[i]]) != lens[i]) stop("Incorrect number of families specified")
+        }
+        else if (all(sapply(family[[i]], function(x) is(x, "causl_family")))) {
+          next
+        }
+        else stop("Not a valid family specification")
       }
+      else stop("Not a valid family specification")
     }
   }
 
   ## check copula families are valid
-  # if (!all(unlist(family[1:3]) %in% familyVals$val)) stop("Invalid family specification")
-  if (!all(unlist(family[[4]]) %in% copula_vals$val)) stop("Invalid copula specification")
+  # if (!all(unlist(family[1:3]) %in% family_vals$val)) stop("Invalid family specification")
+  if (!all(unlist(family[[nU+1]]) %in% copula_vals$val)) stop("Invalid copula specification")
 
   return(family)
 }
@@ -266,6 +281,7 @@ check_rej <- function(formulas, family, pars, dims, kwd) {
 ##' Create a dummy dataset for the purpose of checking coefficient numbers
 ##'
 ##' @inheritParams process_inputs
+##' @inheritParams rfrugalParam
 ##' @param LHSs left-hand sides from `formulas`
 ##' @param dims number of variables in each class
 ##'
@@ -278,11 +294,13 @@ gen_dummy_dat <- function (family, pars, dat, LHSs, dims) {
   ## produce dummy data.frame to check number of coefficients
   nv <- sum(dims[seq_len(nU)])
   if (!is.null(attr(LHSs, "T"))) {
-    T <- attr(LHSs, "T")
+    T <- attr(LHSs, "T")[1]
+    strt <- attr(LHSs, "T")[2]
+    if (is.na(strt)) strt <- 0
     nv <- nv + (T-1)*sum(dims[2:4])
     nms <- LHSs[[1]]
     nms_t <- unlist(LHSs[2:4])
-    nms <- c(nms, paste0(nms_t, rep(seq_len(T), each=length(nms_t))))
+    nms <- c(nms, paste0(nms_t, "_", rep(seq_len(T)+strt-1, each=length(nms_t))))
   }
   else {
     nms <- unlist(LHSs)
@@ -292,13 +310,13 @@ gen_dummy_dat <- function (family, pars, dat, LHSs, dims) {
   names(out) <- nms
 
   if (!is.null(dat)) {
-    out <- cbind(dat[1,], out)
+    out <- cbind(dat[1,,drop=FALSE], out)
   }
 
   ## generate dummy data for each variable to simulate
   for (i in seq_along(LHSs)) for (j in seq_len(dims[[i]])) {
-    if (i > 1 && exists("T")) {
-      vnms <- paste0(LHSs[[i]][j], seq_len(T))
+    if (i > 1 && exists("strt")) {
+      vnms <- paste0(LHSs[[i]][j], "_", seq_len(T)-1-strt)
       if (!is_categorical(family[[i]][j])) out[vnms] <- 0
       else out[vnms] <- factor(x=1L, levels=seq_len(pars[[LHSs[[i]][j]]]$nlevel))
     }
@@ -432,10 +450,13 @@ check_pars <- function (formulas, family, pars, dummy_dat, LHSs, kwd, dims) {
 
 ##' Sets up copula quantities only
 ##'
-##' @inheritParams process_inputs
+## @inheritParams process_inputs
 ##' @param formulas list of formulas for copula only
 ##' @param family list of families for copula only
 ##' @param pars list of copula parameters
+##' @param LHSs left-hand sides for all variables
+##' @param quans character vector of already existing variables to include
+##' @param ord topological ordering
 ##'
 ##' @export
 pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
@@ -464,7 +485,7 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
   if (!all(sapply(formulas, is.list)) || any(lengths(formulas) < dZ+seq_len(dY)-1)) {
     for (i in seq_len(dY)) {
       if (is.list(formulas[[i]])) {
-        formulas[[i]] <- rep(formulas[[i]], nC+dZ+i-1)
+        formulas[[i]] <- rep(formulas[[i]], nQ+dZ+i-1)
       }
       else {
         formulas[[i]] <- rep(list(formulas[[i]]), nQ+dZ+i-1)
@@ -521,7 +542,43 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
       stop("Shouldn't get here")
     }
   }
+  else if (!all(sapply(pars, is.list))) {
+    ## put some code in here to correct fact that some pairs aren't represented
+  }
+  else stop("'method' should be \"inversion\" or \"rejection\"")
 
 
   return(list(formulas=formulas, family=family, pars=pars))
+}
+
+##' Obtain quantiles for prespecified variables
+##'
+##' @param dat data frame containing variables
+##' @param prespec character vector of prespecified variables in `dat`
+##'
+##' @details Currently takes the rank of each entry, and subtracts 1/2.  If
+##' there are \eqn{k} ties they are randomly sorted with a uniform random variable
+##' in the symmetric interval around the rank of width \eqn{k/n}.
+##'
+##' @export
+process_prespecified <- function (dat, prespec) {
+  quantiles <- dat[prespec]
+  n <- nrow(dat)
+
+  ## go through each variable and put into [0,1] in approx uniform manner
+  for (i in seq_along(prespec)) {
+    var_nm <- prespec[i]
+    quan <- (rank(dat[[var_nm]])-1/2)/n
+    if (any(duplicated(quan))) {
+      cts <- table(quan)
+      vals <- as.numeric(names(cts))
+      for (j in which(cts > 1)) {
+        wh_j <- which(quan == vals[j])
+        quan[wh_j] <- quan[wh_j] + (runif(cts[j])-1/2)*cts[j]/n
+      }
+    }
+    quantiles[prespec] <- quan
+  }
+
+  return(quantiles)
 }

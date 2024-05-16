@@ -12,6 +12,12 @@ pair_copula_setup(formulas, family, pars, LHSs, quans, ord)
 \item{family}{list of families for copula only}
 
 \item{pars}{list of copula parameters}
+
+\item{LHSs}{left-hand sides for all variables}
+
+\item{quans}{character vector of already existing variables to include}
+
+\item{ord}{topological ordering}
 }
 \description{
 Sets up copula quantities only
