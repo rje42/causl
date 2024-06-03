@@ -28,7 +28,7 @@ last model, or a conditional odds ratio if $Y$ and $Z$ are both discrete.
 One example would consist of setting
 $Z \sim \text{Exp}(1)$, with $X \mid Z=z \sim N(z/2, 1)$
 and $Y \mid do(X=x) \sim N((x-1)/2, 1)$,
-with a Gaussian copula between $Z$ and $Y$ with correlation $\rho = 2\text{expit}(1)$.
+with a Gaussian copula between $Z$ and $Y$ with correlation $\rho = 2\text{expit}(1) -1$.
 
 ## Sample Code
 

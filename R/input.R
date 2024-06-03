@@ -40,7 +40,7 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
 
   ## different approaches based on method selected
   if (method == "rejection") pars <- check_rej(formulas=formulas, family=family, pars=pars, dims=dims, kwd=kwd)$pars
-  else if (method == "inversion") {
+  else if (method == "inversion" || method == "multi_copula") {
 
     ## obtain empirical quantiles from any plasmode variables that will appear in copula
     if (!is.null(dat)) {

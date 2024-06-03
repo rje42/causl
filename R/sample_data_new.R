@@ -113,6 +113,7 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
   else if (method == "rejection") message("Rejection method selected: using multivariate copula parameterization")
 
   ## process the four main arguments
+
   proc_inputs <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
                         dat=dat, kwd=kwd, method=method)
 
@@ -170,6 +171,9 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
   }
   else if (method == "rejection") { ## rejection sampling method
     out <- sim_rejection(out, proc_inputs, careful, control)
+  }
+  else if (method == "multi_copula"){ # multivariate copula
+    out <- sim_multi(out, proc_inputs)
   }
   else stop("Not a recognised method")
 
