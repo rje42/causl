@@ -44,9 +44,9 @@ sim_multi <- function (out, proc_inputs) {
   # infer dimension
   cop <- normalCopula(beta_vector, dim = 2, dispstr = 'un')
   
-  # simulate 
+  # simulate from Copula 
   us <- rCopula(n,cop)
-
+  browser()
   
   for (i in seq_along(order)) {
     vnm <- vars[order[i]]
