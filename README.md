@@ -28,7 +28,11 @@ last model, or a conditional odds ratio if $Y$ and $Z$ are both discrete.
 One example would consist of setting
 $Z \sim \text{Exp}(1)$, with $X \mid Z=z \sim N(z/2, 1)$
 and $Y \mid do(X=x) \sim N((x-1)/2, 1)$,
+<<<<<<< HEAD
 with a Gaussian copula between $Z$ and $Y$ with correlation $\rho = 2\text{expit}(1) -1$.
+=======
+with a Gaussian copula between $Z$ and $Y$ with correlation $\rho = 2\text{expit}(1) - 1$. 
+>>>>>>> 82cb36d25606d586c9ec14550f9c9ff9d72e412b
 
 ## Sample Code
 
@@ -39,7 +43,7 @@ forms <- list(Z ~ 1, X ~ Z, Y ~ X, ~ 1)
 # vector of model families (3=gamma/exponential, 1=normal/Gaussian)
 fam <- c(3, 1, 1, 1)
 # list of parameters, including 'beta' (regression params) and 'phi' dispersion
-pars <- list(Z = list(beta=1, phi=1),
+pars <- list(Z = list(beta=log(1), phi=1),   # note log-link
              X = list(beta=c(0,0.5), phi=1),
              Y = list(beta=c(-0.5,0.5), phi=1),
              cop = list(beta=1))
@@ -47,6 +51,7 @@ pars <- list(Z = list(beta=1, phi=1),
 # now simulate 100 observations
 rfrugalParam(n=100, formulas=forms, pars=pars, family=fam)
 ```
+Note that, by default, we use the log link for the Gamma distribution.
 
 ### Reference
 
