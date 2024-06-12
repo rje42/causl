@@ -42,7 +42,13 @@ sim_multi <- function (out, proc_inputs) {
   
   beta_vector <- pars$cop$Y[[1]]$beta
   beta_vector <- 2 * expit(beta_vector) - 1
+  #   # infer dimension
+  # d <- (sqrt(1+8*length(beta_vector))+1)/2
+  # cop <- normalCopula(c(beta_vector), dim = d, dispstr = 'un')
   
+  # # simulate from Copula 
+  # us <- rCopula(n,cop)
+  # # browser()
   # infer dimension (only do marginal uncoditional on X) for now
   SIGMA <- diag(dZ + 1)
   SIGMA[upper.tri(SIGMA)] <- beta_vector
