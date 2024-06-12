@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # causl
 
 Methods for Specifying, Simulating from and Fitting Causal Models

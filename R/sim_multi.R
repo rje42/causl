@@ -5,7 +5,8 @@
 ##' @param control list of control parameters
 ##'
 ##' @details `sim_inversion` and `sim_rejection` correspond to
-##' performing the sampling by inversion or using rejection sampling.
+##' performing the sampling by inversion or using rejection sampling.`sim_multi` first 
+##' simulates from the copula then transforms to the correct margins in the correct causal ordering
 ##'
 ##' @export
 sim_multi <- function (out, proc_inputs) {
@@ -37,16 +38,51 @@ sim_multi <- function (out, proc_inputs) {
   n <- nrow(out)
   
   ## Simulate Copula
-  #TODO: fix for more than just normal copula
+  #TODO: add in the other COPULA types, besides normal, T, FGM
   
   beta_vector <- pars$cop$Y[[1]]$beta
   beta_vector <- 2 * expit(beta_vector) - 1
-  # infer dimension
-  cop <- normalCopula(beta_vector, dim = 2, dispstr = 'un')
   
-  # simulate from Copula 
-  us <- rCopula(n,cop)
-  browser()
+  # infer dimension (only do marginal uncoditional on X) for now
+  SIGMA <- diag(dZ + 1)
+  SIGMA[upper.tri(SIGMA)] <- beta_vector
+  SIGMA[lower.tri(SIGMA)] <- t(SIGMA[upper.tri(SIGMA)])
+ 
+
+  copulafams <- family[[4]]
+  # TODO: allow for more than one copula fam only do one copula fam for now
+  if(length(unique(copulafams)) != 1) stop()
+  # TODO: allow for different copula's for Y, Z_i
+  # 
+  # us <- matrix(nrow = n)
+  # for(copulafam in unlist(copulafams)){
+  #   if(copulafam == 1){
+  #     us_i <- rGaussCop(n, SIGMA)
+  #   }
+  #   else if(copulafam == 2){
+  #     df <- pars$cop$Y[[1]]$df
+  #     us_i <- rtCop(n, SIGMA, df)
+  #   }
+  #   else if(copulafam == 11){
+  #     alpha <- pars$cop$Y[[1]]$alpha
+  #     us_i <- rfgmCopula(n, alpha)
+  #   }
+  #   us <- cbind(us, us_i)
+  # }
+  
+  copulafam <- unlist(copulafams)[1]
+  if(copulafam == 1){
+    us <- rGaussCop(n, SIGMA)
+  }
+  else if(copulafam == 2){
+    df <- pars$cop$Y[[1]]$df
+    us <- rtCop(n, SIGMA, df)
+  }
+  else if(copulafam == 11){
+    alpha <- pars$cop$Y[[1]]$alpha
+    us <- rfgmCopula(n, alpha)
+  }
+  
   
   for (i in seq_along(order)) {
     vnm <- vars[order[i]]
@@ -72,35 +108,15 @@ sim_multi <- function (out, proc_inputs) {
       
       
       # now rescale to correct margin
+
       X <- model.matrix(delete.response(terms(forms[[1]])), data=out)
       Y <- rescale_var(us[,wh_u], X=X, family=fams[[1]], pars=prs[[1]], link=lnk[[1]])
       out[[vnm]] <- Y
+    
+      
       quantiles <- attr(out, "quantiles")
       attr(out, "quantiles") <- NULL
       
-      # out[[vars[order[i]]]] <- sim_Y(n, formulas=formulas[[4]][[wh]],
-      #                                family=family[[4]][[wh]],
-      #                                pars=pars[[kwd]][[wh]],
-      #                                formY = formulas[[3]][[wh]],
-      #                                famY=family[[3]][wh],
-      #                                parsY=pars[[LHS_Y[wh]]],
-      #                                linkY=link[[3]][wh], qZ=quantiles, vars=vars,
-      #                                dat=out)
-      
-      # for (j in seq_len(dZ)) {
-      #   curr_qZ <- qZs[[vars[j]]]
-      #   X <- model.matrix(formulas[[4]][[wh]][[j]], data=out)
-      #   curr_fam <- family[[4]][wh,j]
-      #   curr_par <- pars[[kwd]]$beta[[wh]][[j]]
-      #   # eta <- X %*% curr_par
-      #   qY <- rescale_cop(cbind(curr_qZ,qY), X=X, pars=curr_par, family=curr_fam) #, link=link[[4]][i,j])
-      # }
-      # ##
-      # X <- model.matrix(formulas[[3]][[wh]], data=out)
-      # qY <- rescale_var(qY, X=X, family=famY[[wh]], pars=pars[[LHS_Y[wh]]],
-      #                  link=link[[3]][wh])
-      #
-      # out[[vars[order[i]]]] <- qY
     }
     else {
 
@@ -126,7 +142,7 @@ sim_multi <- function (out, proc_inputs) {
         }
         else warning(paste0("Missing entries for ", vnm))
       }
-      if(order[i] > dZ){
+      if(vnm %in% LHS_X){
         out[[vnm]] <- rescale_var(runif(n), X=MM, family=curr_fam, pars=pars[[vnm]], 
                                   link=curr_link)
       }
@@ -139,54 +155,7 @@ sim_multi <- function (out, proc_inputs) {
     }
   }
   
-  
-  # Z1 <- qnorm(us[,1], mean = 0, sd = 1)
-  # Z2 <- qnorm(us[,2], mean = 0, sd = 1)  # changed to be standard normal
-  # 
-  # X <- rbinom(n = n, size = 1, prob = expit(Z1 + Z2))
-  # # X | Z_1, Z_2 ~ bernoulli(p = expit(Z1 + Z2))
-  # 
-  # Y <- qnorm(us[,3], mean = 1 + 2*X , sd = 1)
-  # # Y | do(X) ~ N(1 + 2*X, 1)
-  # # combine XYZ into a new dataset
-  # dat1 <- data.frame(Z1=Z1,Z2=Z2,X=X,Y=Y)
-  
   attr(out, "qZ") <- quantiles
   
   return(out)
 }
-
-# ##' Generate outcome data by inversion
-# ##'
-# ##' @param n number of samples
-# ##' @param formulas list of formulae for copula parameters
-# ##' @param family vector of integers for distributions of variables
-# ##' @param pars vector of parameters for copula
-# ##' @param formY formulae for response variable
-# ##' @param famY family for response variable
-# ##' @param parsY regression parameters for response variable
-# ##' @param linkY link function for response variable
-# ##' @param qZ quantiles of covariate distribution
-# ##' @param vars character vector of variable names
-# ##' @param dat data frame containing variables in `formulas` and `formY`
-# ##'
-# sim_Y <- function(n, formulas, family, pars, formY, famY, parsY, linkY, qZ, vars, dat) {
-#
-#   qY <- runif(nrow(qZ))  # uniform quantiles
-#
-#   for (j in seq_along(formulas)) {
-#     ## for each Z variable
-#     quZ <- qZ[[vars[j]]]
-#     X <- model.matrix(delete.response(terms(formulas[[j]])), data=dat)  ## covariates matrix
-#     # curr_fam <- family[j]
-#     # curr_par <- pars[[j]]
-#     # eta <- X %*% curr_par
-#     qY <- rescale_cop(cbind(quZ,qY), X=X, beta=pars[[j]]$beta, family=family[j],
-#                      par2=pars[[j]]$par2) #, link=link[j])
-#   }
-#   ##
-#   X <- model.matrix(formY, data=dat)
-#   qY <- rescale_var(qY, X=X, family=famY, pars=parsY, link=linkY)
-#
-#   qY
-# }
