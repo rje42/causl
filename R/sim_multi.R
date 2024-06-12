@@ -42,11 +42,12 @@ sim_multi <- function (out, proc_inputs) {
   beta_vector <- pars$cop$Y[[1]]$beta
   beta_vector <- 2 * expit(beta_vector) - 1
   # infer dimension
-  cop <- normalCopula(beta_vector, dim = 2, dispstr = 'un')
+  d <- (sqrt(1+8*length(beta_vector))+1)/2
+  cop <- normalCopula(c(beta_vector), dim = d, dispstr = 'un')
   
   # simulate from Copula 
   us <- rCopula(n,cop)
-  browser()
+  # browser()
   
   for (i in seq_along(order)) {
     vnm <- vars[order[i]]
