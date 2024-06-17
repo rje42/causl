@@ -41,7 +41,7 @@ sim_multi <- function (out, proc_inputs) {
   #TODO: add in the other COPULA types, besides normal, T, FGM
   
   beta_vector <- pars$cop$Y[[1]]$beta
-  beta_vector <- 2 * expit(beta_vector) - 1
+  beta_vector_expit <- 2 * expit(beta_vector) - 1
   #   # infer dimension
   # d <- (sqrt(1+8*length(beta_vector))+1)/2
   # cop <- normalCopula(c(beta_vector), dim = d, dispstr = 'un')
@@ -51,7 +51,7 @@ sim_multi <- function (out, proc_inputs) {
   # # browser()
   # infer dimension (only do marginal uncoditional on X) for now
   SIGMA <- diag(dZ + 1)
-  SIGMA[upper.tri(SIGMA)] <- beta_vector
+  SIGMA[upper.tri(SIGMA)] <- beta_vector_expit
   SIGMA[lower.tri(SIGMA)] <- t(SIGMA[upper.tri(SIGMA)])
  
 
@@ -89,7 +89,6 @@ sim_multi <- function (out, proc_inputs) {
     us <- rfgmCopula(n, alpha)
   }
   
-  
   for (i in seq_along(order)) {
     vnm <- vars[order[i]]
     
@@ -98,7 +97,7 @@ sim_multi <- function (out, proc_inputs) {
       ## simulate Y variable
       # qY <- runif(n)
       wh <- order[i] - dZ - dX
-      wh_u <- order[i] - dZ
+      wh_u <- (order[i] - dZ) + 1
       # print(wh)
       
       ## code to use sim_variable
