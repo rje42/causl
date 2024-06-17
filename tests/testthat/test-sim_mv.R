@@ -17,10 +17,10 @@ pars2 <- pars
 pars2$cop <- list(beta=1)
 
 n <- 1e5
-dat0 <- rfrugalParam(n, formulas = forms, family = fam, pars = pars,
-                    method = "rejection")
-dat2 <- rfrugalParam(n, formulas = forms, family = fam2, pars = pars2,
-                     method = "inversion")
+dat0 <- suppressMessages(rfrugalParam(n, formulas = forms, family = fam, pars = pars,
+                    method = "rejection"))
+dat2 <- suppressMessages(rfrugalParam(n, formulas = forms, family = fam2, pars = pars2,
+                     method = "inversion"))
 dats <- list(dat0, dat2)
 
 for (dat in dats) {

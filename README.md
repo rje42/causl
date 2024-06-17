@@ -1,5 +1,5 @@
 # causl
-Methods for Specifying, Simulating from and Fitting Causal Models
+Methods for Specifying, Simulating from and Fitting Marginal Causal Models
 
 ## Basic Idea
 
@@ -40,7 +40,7 @@ forms <- list(Z ~ 1, X ~ Z, Y ~ X, ~ 1)
 # vector of model families (3=gamma/exponential, 1=normal/Gaussian)
 fam <- c(3, 1, 1, 1)
 # list of parameters, including 'beta' (regression params) and 'phi' dispersion
-pars <- list(Z = list(beta=log(1), phi=1),
+pars <- list(Z = list(beta=log(1), phi=1),   # note log-link
              X = list(beta=c(0,0.5), phi=1),
              Y = list(beta=c(-0.5,0.5), phi=1),
              cop = list(beta=1))
@@ -48,6 +48,7 @@ pars <- list(Z = list(beta=log(1), phi=1),
 # now simulate 100 observations
 rfrugalParam(n=100, formulas=forms, pars=pars, family=fam)
 ```
+Note that, by default, we use the log link for the Gamma distribution.
 
 ### Reference
 

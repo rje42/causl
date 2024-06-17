@@ -1,3 +1,15 @@
+causl 0.8.8
+
+-------------------------------------------------------------------------------
+
+ * Added log-link for binomial family
+ 
+ * Suppressed messages in tests
+ 
+ * Edited to remove quantiles from simulated data under inversion method
+
+
+
 causl 0.8.7
 -------------------------------------------------------------------------------
 
