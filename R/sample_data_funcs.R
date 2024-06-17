@@ -123,7 +123,7 @@ rescale_var <- function(U, X, pars, family=1, link) {
 ##' @describeIn rescale_var Old name, now deprecated
 ##' @export
 rescaleVar <- function(U, X, pars, family=1, link) {
-  deprecate_soft("0.8.0", "rescaleVar", "rescale_var")
+  deprecate_soft("0.8.0", "rescaleVar()", "rescale_var()")
   rescale_var(U, X, pars, family=family, link)
 }
 
@@ -226,7 +226,7 @@ rescale_cop <- function(U, X, beta, family=1, par2) {
 ##' @describeIn rescale_cop Old name, now deprecated
 ##' @export
 rescaleCop <- function(U, X, beta, family=1, par2) {
-  deprecate_soft("0.8.0", "rescaleCop", "rescale_cop")
+  deprecate_soft("0.8.0", "rescaleCop()", "rescale_cop()")
   rescale_cop(U, X, beta, family=family, par2)
 }
 
@@ -356,7 +356,7 @@ sim_copula <- function(dat, family, par, par2, model_matrix) {
 ##' @describeIn sim_copula Old name, now deprecated
 ##' @export
 sim_CopVal <- function(dat, family, par, par2, model_matrix) {
-  deprecate_soft("0.8.0", "sim_CopVal", "sim_copula")
+  deprecate_soft("0.8.0", "sim_CopVal()", "sim_copula()")
   sim_copula(dat, family, par, par2, model_matrix)
 }
 

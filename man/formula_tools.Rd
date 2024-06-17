@@ -2,30 +2,30 @@
 % Please edit documentation in R/utility.R
 \name{formula_tools}
 \alias{formula_tools}
-\alias{tidy_formulas}
 \alias{lhs}
 \alias{lhs<-}
 \alias{rhs_vars}
+\alias{tidy_formulas}
 \title{Tools for manipulating formulas}
 \usage{
-tidy_formulas(formulas, kwd, prefix = "V")
-
 lhs(formulas, surv = FALSE)
 
 lhs(formulas) <- value
 
 rhs_vars(formulas)
+
+tidy_formulas(formulas, kwd, prefix = "V")
 }
 \arguments{
 \item{formulas}{list of formulae}
 
-\item{kwd}{string used to denote copula}
-
-\item{prefix}{string to begin each new variable name}
-
 \item{surv}{logical indicating whether to treat as survey data}
 
 \item{value}{character vector to assign}
+
+\item{kwd}{string used to denote copula}
+
+\item{prefix}{string to begin each new variable name}
 }
 \description{
 Tools for manipulating formulas
@@ -45,12 +45,12 @@ of formulas.
 }
 \section{Functions}{
 \itemize{
-\item \code{tidy_formulas()}: Tidy up formulae
-
 \item \code{lhs()}: Obtain left-hand sides from list of formulas
 
 \item \code{lhs(formulas) <- value}: Assign left-hand sides to list of formulas
 
 \item \code{rhs_vars()}: Extract variables from right-hand sides
+
+\item \code{tidy_formulas()}: Tidy up formulae
 
 }}
