@@ -4,13 +4,15 @@
 \alias{tidy_formulas}
 \title{Tidy up formulae}
 \usage{
-tidy_formulas(formulas, kwd)
+tidy_formulas(formulas, kwd, prefix = "V")
 }
 \arguments{
 \item{formulas}{list of model formulae, for Y, for the Z variables, and
 finally for the copula}
 
 \item{kwd}{string used to denote copula}
+
+\item{prefix}{string to begin each new variable name}
 }
 \description{
 This function ensures that all formulae have a left hand side, by giving

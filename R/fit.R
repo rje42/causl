@@ -4,32 +4,32 @@
 ##' @param formulas list of model formulae, for Y, for the Z variables, and
 ##' finally for the copula
 ##' @param family families for the Y and Z distributions, and the copula. Should
-##' be the same length as \code{formulas}
+##' be the same length as `formulas`
 ##' @param link link functions for each variable
 ##' @param par2 additional parameters if required
 ##' @param sandwich logical: should sandwich standard errors be returned?
 ##' @param useC logical: should C++ routines be used?
 ## @param init should linear models be used to initialize starting point?
-##' @param control list of parameters to be passed to \code{optim}
+##' @param control list of parameters to be passed to `optim`
 ##'
-##' @details \code{forms} is list of three or more formulae giving
+##' @details `forms` is list of three or more formulae giving
 ##' predictors of y-margin, z-margin(s) and interaction
 ##' parameters.  Fit is by maximum likelihood.
 ##'
-##' \code{control} has the same arguments as the argument in \code{optim}, as well
-##' as \code{newton}, a logical which controls whether Newton iterates should be
-##' performed at the end, and \code{cop} which can edit the restricted variable name
+##' `control` has the same arguments as the argument in `optim`, as well
+##' as `newton`, a logical which controls whether Newton iterates should be
+##' performed at the end, and `cop` which can edit the restricted variable name
 ##' for the left-hand side of formulae.
-##' Useful for altering are \code{trace} (1 shows steps of optimization) and
-##' \code{maxit} for the number of steps, as well as \code{fact} which controls
+##' Useful for altering are `trace` (`1` shows steps of optimization) and
+##' `maxit` for the number of steps, as well as `fact` which controls
 ##' the proportion of correlation put into a Gaussian or t-Copula's starting
 ##' values.
 ##'
-##' **Warning** By default, none of the variables should be called \code{cop}, as
+##' **Warning** By default, none of the variables should be called `cop`, as
 ##' this is reserved for the copula.  The reserved word can be changed using
-##' the argument \code{cop} within control.
+##' the argument `cop` within control.
 ##'
-##' @return Returns a list of class \code{cop_fit}.
+##' @return Returns a list of class `cop_fit`.
 ##'
 ##' @export
 fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
@@ -40,7 +40,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   con <- list(method = "BFGS", newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
               abstol = -Inf, reltol = sqrt(.Machine$double.eps), alpha = 1, beta = 0.5,
               gamma = 2, REPORT = 10, warn.1d.NelderMead = TRUE, type = 1,
-              lmm = 5, factr = 1e+07, pgtol = 0, tmax = 10)
+              lmm = 5, factr = 1e+07, pgtol = 0, tmax = 10, start = NULL)
   matches = pmatch(names(control), names(con))
   con[matches[!is.na(matches)]] = control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ", paste(names(control[is.na(matches)]), sep = ", "))
@@ -124,7 +124,8 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   beta_start2 <- initializeParams2(dat, formulas=forms, family=family, link=link,
                                    full_form=full_form, kwd=kwd)
   theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
-
+  # theta_st <- c(0,0,-0.4,0.3,0.5,0.5,1,1,1,1)
+  
   ## other arguments to nll2()
   other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
@@ -136,7 +137,10 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## parameters to
   maxit <- con$maxit
   conv <- FALSE
-  out2 <- list(par = theta_st)
+  # if (!is.null(con$start)) out2 <- list(par = start)
+  # else 
+    out2 <- list(par = theta_st)
+  
   while (!conv) {
     con$maxit <- min(maxit, 5e3)
     out <- do.call(optim, c(list(fn=nll2, par=out2$par), other_args2, list(method="Nelder-Mead", control=con)))
