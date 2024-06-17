@@ -382,13 +382,16 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
   if (is.matrix(eta)) n <- nrow(eta)
   else n <- length(eta)
   if (missing(link)) {
-    ## get the default link for this family
-    link <- family_vals[family_vals$val==family,2]
+    if (is(family, "causl_family")) link <- family$link
+    else {
+      ## get the default link for this family
+      link <- family_vals[family_vals$val==family,2]
+    }
   }
 
   if (is(family, "causl_family")) {
     if (!(family$name %in% names(links_list))) {
-      if (!(link %in% family$links_list)) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
+      # if (!(link %in% family$links_list)) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
       stop(paste0("Family ", family$name, " is not a valid and registered family"))
     }
     if (!(link %in% links_list[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))

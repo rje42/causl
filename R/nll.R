@@ -13,52 +13,81 @@
 ##' quantiles of the input values) and `ld` (the log density of each
 ##' observation).
 ##'
-univarDens <- function (x, eta, phi, df, family=1, link) {
+##'
+glm_dens <- function (x, eta, phi, other_pars, family=1, link) {
 
-  if (missing(link)) link <- links_list[[family_vals[family_vals$val==family,"family"]]][1]
+  ## deal with case that family is a 'causl_family'
+  if (is(family, "causl_family")) {
+    if (!missing(link)) warning("Using link from 'causl_family' object")
+    link <- family$link
 
-  ## get the densities for x
-  if (family == 1) {
-    if (link=="identity") mu <- eta
-    else if (link=="inverse") mu <- 1/eta
-    else if (link=="log") mu <- exp(eta)
-    else stop("Not a valid link function for Gaussian distribution")
+    if (!(family$name %in% names(links_list))) {
+      # if (!(link %in% family$links_list)) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
+      stop(paste0("Family ", family$name, " is not a valid and registered family"))
+    }
+    if (!(link %in% links_list[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
 
-    lp <- dnorm(x, mu, sd=sqrt(phi), log=TRUE)
-    u <- pnorm(x, mu, sd=sqrt(phi))
+    ## get link function
+    mu <- link_apply(eta, link, family$name)
+
+    pars <- list(mu=mu)
+    if ("phi" %in% family$pars) pars <- c(pars, list(phi=phi))
+    if ("par2" %in% family$pars) pars <- c(pars, list(par2=other_pars$par2))
+
+    lp <- do.call(family$ddist, c(list(x=x, log=TRUE), pars))
+    u <- do.call(family$pdist, c(list(x=x), pars))
   }
-  else if (family == 2) {
-    if (link=="identity") mu <- eta
-    else if (link=="inverse") mu <- 1/eta
-    else if (link=="log") mu <- exp(eta)
-    else stop("Not a valid link function for t-distribution")
+  else if (is.numeric(family)) {
+    if (missing(link)) link <- links_list[[family_vals[family_vals$val==family,"family"]]][1]
 
-    lp <- dt((x - mu)/sqrt(phi), df=df, log=TRUE) - log(sqrt(phi))
-    u <- pt((x - mu)/sqrt(phi), df=df)
-  }
-  else if (family == 3) {
-    if (link=="log") mu <- exp(eta)
-    else if (link=="identity") mu <- eta
-    else if (link=="inverse") mu <- 1/eta
-    else stop("Not a valid link function for gamma distribution")
+    ## get the densities for x
+    if (family == 1) {
+      if (link=="identity") mu <- eta
+      else if (link=="inverse") mu <- 1/eta
+      else if (link=="log") mu <- exp(eta)
+      else stop("Not a valid link function for Gaussian distribution")
 
-    lp <- dgamma(x, shape=1/phi, scale=phi*mu, log=TRUE)
-    u <- pgamma(x, shape=1/phi, scale=phi*mu)
-  }
-  else if (family == 5) {
-    if (link=="logit") mu <- expit(eta)
-    else if (link=="probit") mu <- pnorm(eta)
-    else stop("Not a valid link function for Bernoulli distribution")
+      lp <- dnorm(x, mu, sd=sqrt(phi), log=TRUE)
+      u <- pnorm(x, mu, sd=sqrt(phi))
+    }
+    else if (family == 2) {
+      if (link=="identity") mu <- eta
+      else if (link=="inverse") mu <- 1/eta
+      else if (link=="log") mu <- exp(eta)
+      else stop("Not a valid link function for t-distribution")
+      df <- other_pars$par2
 
-    lp <- x*log(mu) + (1-x)*log(1-mu)
-    lp[is.nan(lp)] <- 0
-    u <- x
+      lp <- dt((x - mu)/sqrt(phi), df=df, log=TRUE) - log(sqrt(phi))
+      u <- pt((x - mu)/sqrt(phi), df=df)
+    }
+    else if (family == 3) {
+      if (link=="log") mu <- exp(eta)
+      else if (link=="identity") mu <- eta
+      else if (link=="inverse") mu <- 1/eta
+      else stop("Not a valid link function for gamma distribution")
+
+      lp <- dgamma(x, shape=1/phi, scale=phi*mu, log=TRUE)
+      u <- pgamma(x, shape=1/phi, scale=phi*mu)
+    }
+    else if (family == 5) {
+      if (link=="logit") mu <- expit(eta)
+      else if (link=="probit") mu <- pnorm(eta)
+      else stop("Not a valid link function for Bernoulli distribution")
+
+      lp <- x*log(mu) + (1-x)*log(1-mu)
+      lp[is.nan(lp)] <- 0
+      u <- x
+    }
+    else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
   }
-  else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
 
   return(list(u=u, ld=lp))
 }
 
+##' @describeIn glm_dens old name
+univarDens <- function (x, eta, phi, other_pars, family=1, link) {
+  glm_dens(x=x, eta=eta, phi=phi, other_pars=other_pars, family=family, link=link)
+}
 
 ##' Negative log-likelihood
 ##'
@@ -189,7 +218,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
           # conversion from logit to probit scale
           # eta2[,(nc - ndisc+1):nc] <- qnorm(expit(eta[,(nc - ndisc+1):nc]))
 
-          cop <- dGaussDiscCop2(dat_u2, m = ndisc, Sigma=Sigma, eta=eta2[,inCop,drop=FALSE], log=TRUE, useC=useC)
+          cop <- dGaussDiscCop(dat_u2, m = ndisc, Sigma=Sigma, eta=eta2[,inCop,drop=FALSE], log=TRUE, useC=useC)
         }
         else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
 

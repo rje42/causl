@@ -545,7 +545,7 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
   else if (!all(sapply(pars, is.list))) {
     ## put some code in here to correct fact that some pairs aren't represented
   }
-  else stop("'method' should be \"inversion\" or \"rejection\"")
+  # else stop("'method' should be \"inversion\" or \"rejection\"")
 
 
   return(list(formulas=formulas, family=family, pars=pars))
