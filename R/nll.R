@@ -86,6 +86,7 @@ glm_dens <- function (x, eta, phi, other_pars, family=1, link) {
 
 ##' @describeIn glm_dens old name
 univarDens <- function (x, eta, phi, other_pars, family=1, link) {
+  deprecate_soft("0.8.8", "univarDens()", "glm_dens()")
   glm_dens(x=x, eta=eta, phi=phi, other_pars=other_pars, family=family, link=link)
 }
 

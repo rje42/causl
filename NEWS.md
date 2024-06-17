@@ -1,8 +1,29 @@
+causl 0.8.9
+
+-------------------------------------------------------------------------------
+
+CHANGES
+
+ * Began migration of `univarDens()` to `glm_dens()`
+
+ * Changed name `dGaussDiscCop2()` to `dGaussDiscCop()`
+
+ * Fixed bug in discrete `causal_family` types.
+ 
+ * Fixed bug in `pair_copula_setup()`.
+
+
+
 causl 0.8.8
 
 -------------------------------------------------------------------------------
 
+NEW FEATURES
+
  * Added log-link for binomial family
+
+
+CHANGES
  
  * Suppressed messages in tests
  
