@@ -71,6 +71,7 @@ rescale_var <- function(U, X, pars, family=1, link) {
     else if (family == 0 || family == 5) {
       if (link == "probit") Y <- 1*(eta + qnorm(U) > 0)
       else if (link == "logit") Y <- 1*(eta + qlogis(U) > 0)
+      else if (link == "log") Y <- 1*(eta + log(U) > 0)
       else stop("invalid link function for binomial distribution")
 
       # trunc <- pars$trunc
@@ -472,6 +473,7 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
     else if (family == 5) {
       if (link=="logit") mu <- expit(eta)
       else if (link=="probit") mu <- pnorm(eta)
+      else if (link=="log") mu <- exp(eta)
       else stop("Not a valid link function for the Bernoulli distribution")
 
       x <- rbinom(n, size=1, prob=mu)

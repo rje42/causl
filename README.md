@@ -1,5 +1,5 @@
 # causl
-Methods for Specifying, Simulating from and Fitting Causal Models
+Methods for Specifying, Simulating from and Fitting Marginal Causal Models
 
 ## Basic Idea
 

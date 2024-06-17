@@ -15,7 +15,7 @@ pars <- list(A = list(beta=c(-0.5,0.5,0.25,-0.5)),
              cop = list(Y = list(Z1 = list(beta=c(0.5,0.5)),
                                  Z2 = list(beta=c(0.75,0.2)))))
 
-dat <- rfrugalParam(formulas = forms, family = fams, pars = pars, dat = df)
+dat <- suppressMessages(rfrugalParam(formulas = forms, family = fams, pars = pars, dat = df))
 
 test_that("plasmode simulation works", {
   expect_equal(dim(dat), c(n, 4L))
@@ -49,4 +49,4 @@ pars <- list(A = list(beta=c(0,1)),
              cop = list(beta=-1))
 
 dat <- data.frame(U = rep(1,100))
-dat <- rfrugalParam(formulas=forms, family=fams, pars=pars, dat=dat)
+dat <- suppressMessages(rfrugalParam(formulas=forms, family=fams, pars=pars, dat=dat))
