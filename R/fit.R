@@ -140,8 +140,16 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   # if (!is.null(con$start)) out2 <- list(par = start)
   # else 
     out2 <- list(par = theta_st)
+  con <- con[names(con) != 'start']
   
+  tries <- 20
+  i <- 1;
   while (!conv) {
+    i <- i + 1;
+    print(i)
+    if(i == tries){
+      stop("Failed to Reach Convergence")
+    }
     con$maxit <- min(maxit, 5e3)
     out <- do.call(optim, c(list(fn=nll2, par=out2$par), other_args2, list(method="Nelder-Mead", control=con)))
     con$maxit <- min(max(maxit - 5e3, 1e3), maxit)

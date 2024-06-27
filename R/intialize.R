@@ -147,7 +147,6 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
       }
       next
     }
-
     if (only_masks) {
       phi_m[family[-length(family)] %in% 1:3] <- 1
     }

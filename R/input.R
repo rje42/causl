@@ -210,7 +210,15 @@ var_order <- function (formulas, dims, inc_cop=TRUE) {
   }
 
   ## get order for simulation, if one exists
+  # break ties with Xs going first. 
+
+  z_depend <- colSums(ord_mat[1:dims[1], , drop = FALSE] == 1)
+  if(any(z_depend != 0)){
+    which_col <- which.max(z_depend)
+    ord_mat[1:dims[1], which_col] <- ord_mat[1:dims[1], which_col] + 0.1
+  }
   ord <- topOrd(ord_mat)
+  
   if (any(is.na(ord))) stop("Formulae contain cyclic dependencies")
 
   return(ord)

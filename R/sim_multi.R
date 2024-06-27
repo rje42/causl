@@ -36,60 +36,48 @@ sim_multi <- function (out, proc_inputs) {
   
   ## sample size
   n <- nrow(out)
-  
-  ## Simulate Copula
-  #TODO: add in the other COPULA types, besides normal, T, FGM
-  
-  beta_vector <- pars$cop$Y[[1]]$beta
-  beta_vector_expit <- 2 * expit(beta_vector) - 1
-  #   # infer dimension
-  # d <- (sqrt(1+8*length(beta_vector))+1)/2
-  # cop <- normalCopula(c(beta_vector), dim = d, dispstr = 'un')
-  
-  # # simulate from Copula 
-  # us <- rCopula(n,cop)
-  # # browser()
-  # infer dimension (only do marginal uncoditional on X) for now
-  SIGMA <- diag(dZ + 1)
-  SIGMA[upper.tri(SIGMA)] <- beta_vector_expit
-  SIGMA[lower.tri(SIGMA)] <- t(SIGMA[upper.tri(SIGMA)])
- 
 
-  copulafams <- family[[4]]
-  # TODO: allow for more than one copula fam only do one copula fam for now
-  if(length(unique(copulafams)) != 1) stop()
-  # TODO: allow for different copula's for Y, Z_i
-  # 
-  # us <- matrix(nrow = n)
-  # for(copulafam in unlist(copulafams)){
-  #   if(copulafam == 1){
-  #     us_i <- rGaussCop(n, SIGMA)
-  #   }
-  #   else if(copulafam == 2){
-  #     df <- pars$cop$Y[[1]]$df
-  #     us_i <- rtCop(n, SIGMA, df)
-  #   }
-  #   else if(copulafam == 11){
-  #     alpha <- pars$cop$Y[[1]]$alpha
-  #     us_i <- rfgmCopula(n, alpha)
-  #   }
-  #   us <- cbind(us, us_i)
-  # }
+# first sample X's upstream of the Z's
+for (i in seq_along(order))  {
+  vnm <- vars[order[i]]
+  if(vnm %in% LHS_Z){
+    j <- i
+    break
+  } 
   
-  copulafam <- unlist(copulafams)[1]
-  if(copulafam == 1){
-    us <- rGaussCop(n, SIGMA)
+  ## code to simulate Z and X variables in causal order
+  curr_link <- unlist(link)[order[i]]
+  curr_form <- formulas[[2]][[order[i]-dZ]]
+  curr_fam <- famX[[order[i]-dZ]]
+  trm <- terms(curr_form)
+  # curr_form2 <- delete.response(terms(curr_form))
+  MM <- model.matrix(delete.response(trm), data=out)
+  if (nrow(MM) != nrow(out)) {
+    if (length(attr(trm, "factors")) == 0) {
+      if (attr(trm, "intercept") == 1) MM <- matrix(1, nrow=nrow(out), ncol=1)
+      else MM <- matrix(0, nrow=nrow(out), ncol=0)
+    }
+    else warning(paste0("Missing entries for ", vnm))
   }
-  else if(copulafam == 2){
-    df <- pars$cop$Y[[1]]$df
-    us <- rtCop(n, SIGMA, df)
-  }
-  else if(copulafam == 11){
-    alpha <- pars$cop$Y[[1]]$alpha
-    us <- rfgmCopula(n, alpha)
-  }
-  
-  for (i in seq_along(order)) {
+  out[[vnm]] <- rescale_var(runif(n), X=MM, family=curr_fam, pars=pars[[vnm]], 
+                              link=curr_link)
+}
+## Simulate Copula
+# get beta and make model matrix
+
+famCopSingle <- unique(unlist(famCop))
+if(length(famCopSingle) != 1) stop("Must be only one family")
+beta_mat <- pars$cop$Y[[1]]$beta
+form <- formula(paste("~", paste(LHS_X, sep = "+")) )
+MM <- model.matrix(form, out)
+numCols <- dZ + 1;
+empty_init <- matrix(0, n, numCols)
+fam <- rep(famCopSingle, choose(numCols, 2))
+us <- sim_vinecop(empty_init,fam, 
+                  beta_mat,model_matrix = MM)
+
+
+  for (i in j:length(order)) {
     vnm <- vars[order[i]]
     
     ## code to get Y quantiles conditional on different Zs
@@ -97,8 +85,8 @@ sim_multi <- function (out, proc_inputs) {
       ## simulate Y variable
       # qY <- runif(n)
       wh <- order[i] - dZ - dX
-      wh_u <- (order[i] - dZ) + 1
       # print(wh)
+      wh_u <- dim(us)[2]
       
       ## code to use sim_variable
       forms <- list(formulas[[3]][[wh]], formulas[[4]][[wh]])
@@ -113,7 +101,6 @@ sim_multi <- function (out, proc_inputs) {
       
       
       # now rescale to correct margin
-
       X <- model.matrix(delete.response(terms(forms[[1]])), data=out)
       Y <- rescale_var(us[,wh_u], X=X, family=fams[[1]], pars=prs[[1]], link=lnk[[1]])
       out[[vnm]] <- Y
@@ -136,7 +123,6 @@ sim_multi <- function (out, proc_inputs) {
         curr_form <- formulas[[1]][[order[i]]]
         curr_fam <- famZ[[order[i]]]
       }
-      
       trm <- terms(curr_form)
       # curr_form2 <- delete.response(terms(curr_form))
       MM <- model.matrix(delete.response(trm), data=out)
@@ -148,10 +134,13 @@ sim_multi <- function (out, proc_inputs) {
         else warning(paste0("Missing entries for ", vnm))
       }
       if(vnm %in% LHS_X){
+        
         out[[vnm]] <- rescale_var(runif(n), X=MM, family=curr_fam, pars=pars[[vnm]], 
-                                  link=curr_link)
+                                 link=curr_link)
       }
       else{
+        # generate u's during the for loop instead of before; may be conditional on 
+        # previous vars
         out[[vnm]] <- rescale_var(us[,i], X=MM, family=curr_fam, pars=pars[[vnm]], 
                                   link=curr_link)
       }
