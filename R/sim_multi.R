@@ -41,6 +41,11 @@ sim_multi <- function (out, proc_inputs) {
 for (i in seq_along(order))  {
   vnm <- vars[order[i]]
   if(vnm %in% LHS_Z){
+    # if copula condition on Xs but Xs depend on Zs; send warning
+    cop_cond <- all.vars(terms(forms[[4]]))
+    if(cop_cond[1] != 1 && i == 1){
+      warning("Cannot do Specified Copula Condition ")
+    }
     j <- i
     break
   } 
