@@ -1,95 +1,3 @@
-##' Get univariate densities and uniform order statistics
-##'
-##' @param x vector of observations
-##' @param eta,phi linear component and dispersion parameters
-##' @param df degrees of freedom (only for t-distribution)
-##' @param family numeric indicator of family
-##' @param link link function
-##'
-##' @details `fam` follows the usual numeric pattern: 1=normal,
-##' 2=t-distribution and 3=Gamma with a log-link.
-##'
-##' @return A list with entries being the numeric vectors `u` (the
-##' quantiles of the input values) and `ld` (the log density of each
-##' observation).
-##'
-##'
-glm_dens <- function (x, eta, phi, other_pars, family=1, link) {
-
-  ## deal with case that family is a 'causl_family'
-  if (is(family, "causl_family")) {
-    if (!missing(link)) warning("Using link from 'causl_family' object")
-    link <- family$link
-
-    if (!(family$name %in% names(links_list))) {
-      # if (!(link %in% family$links_list)) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
-      stop(paste0("Family ", family$name, " is not a valid and registered family"))
-    }
-    if (!(link %in% links_list[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
-
-    ## get link function
-    mu <- link_apply(eta, link, family$name)
-
-    pars <- list(mu=mu)
-    if ("phi" %in% family$pars) pars <- c(pars, list(phi=phi))
-    if ("par2" %in% family$pars) pars <- c(pars, list(par2=other_pars$par2))
-
-    lp <- do.call(family$ddist, c(list(x=x, log=TRUE), pars))
-    u <- do.call(family$pdist, c(list(x=x), pars))
-  }
-  else if (is.numeric(family)) {
-    if (missing(link)) link <- links_list[[family_vals[family_vals$val==family,"family"]]][1]
-
-    ## get the densities for x
-    if (family == 1) {
-      if (link=="identity") mu <- eta
-      else if (link=="inverse") mu <- 1/eta
-      else if (link=="log") mu <- exp(eta)
-      else stop("Not a valid link function for Gaussian distribution")
-
-      lp <- dnorm(x, mu, sd=sqrt(phi), log=TRUE)
-      u <- pnorm(x, mu, sd=sqrt(phi))
-    }
-    else if (family == 2) {
-      if (link=="identity") mu <- eta
-      else if (link=="inverse") mu <- 1/eta
-      else if (link=="log") mu <- exp(eta)
-      else stop("Not a valid link function for t-distribution")
-      df <- other_pars$par2
-
-      lp <- dt((x - mu)/sqrt(phi), df=df, log=TRUE) - log(sqrt(phi))
-      u <- pt((x - mu)/sqrt(phi), df=df)
-    }
-    else if (family == 3) {
-      if (link=="log") mu <- exp(eta)
-      else if (link=="identity") mu <- eta
-      else if (link=="inverse") mu <- 1/eta
-      else stop("Not a valid link function for gamma distribution")
-
-      lp <- dgamma(x, shape=1/phi, scale=phi*mu, log=TRUE)
-      u <- pgamma(x, shape=1/phi, scale=phi*mu)
-    }
-    else if (family == 5) {
-      if (link=="logit") mu <- expit(eta)
-      else if (link=="probit") mu <- pnorm(eta)
-      else stop("Not a valid link function for Bernoulli distribution")
-
-      lp <- x*log(mu) + (1-x)*log(1-mu)
-      lp[is.nan(lp)] <- 0
-      u <- x
-    }
-    else stop("Only Gaussian, t, gamma and Bernoulli distributions are allowed")
-  }
-
-  return(list(u=u, ld=lp))
-}
-
-##' @describeIn glm_dens old name
-univarDens <- function (x, eta, phi, other_pars, family=1, link) {
-  deprecate_soft("0.8.8", "univarDens()", "glm_dens()")
-  glm_dens(x=x, eta=eta, phi=phi, other_pars=other_pars, family=family, link=link)
-}
-
 ##' Negative log-likelihood
 ##'
 ##' @param theta concatenated vector of parameters (`beta` followed by `phi`)
@@ -100,7 +8,7 @@ univarDens <- function (x, eta, phi, other_pars, family=1, link) {
 ##' @param inCop vector of integers giving variables in `dat` to be included in copula
 ##' @param fam_cop,family integer and integer vector for copula and distribution families respectively
 ##' @param link vector of link functions
-##' @param par2 degrees of freedom for t-distribution
+##' @param cop_pars other parameters for copula
 ##' @param useC logical: should Rcpp functions be used?
 ##'
 ##' @details The number of columns of `beta` should be the number of columns
@@ -113,19 +21,19 @@ univarDens <- function (x, eta, phi, other_pars, family=1, link) {
 ## @importFrom Matrix Matrix
 ##'
 nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
-                 family, link, par2=NULL, useC=TRUE) {
+                 family, link, cop_pars=NULL, useC=TRUE) {
   np <- sum(beta > 0)
 
   beta[beta > 0] <- theta[seq_len(np)]
   phi[phi > 0] <- theta[-seq_len(np)]
 
   -sum(ll(dat, mm=mm, beta=beta, phi=phi, inCop=inCop, fam_cop=fam_cop,
-      family=family, link=link, par2=par2, useC=useC))
+      family=family, link=link, cop_pars=cop_pars, useC=useC))
 }
 
 
 ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
-                 family=rep(1,nc), link, par2=NULL, useC=TRUE,
+                 family=rep(1,nc), link, cop_pars=NULL, useC=TRUE,
                 exclude_Z = FALSE, outcome = "y") {
 
   if (missing(inCop)) inCop <- seq_along(dat)
@@ -142,7 +50,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   if (length(family) != nc) stop(paste0("family should have length ", nc))
   else if (nv != nc) stop(paste0("phi should have length ", nv))
 
-  if (fam_cop == 2 && any(par2 <= 0)) stop("par2 must be positive for t-copula")
+  if (fam_cop == 2 && any(cop_pars <= 0)) stop("degrees of freedom must be positive for t-copula")
 
   ## number of discrete variables
   ndisc <- sum(family %in% c(5,0))
@@ -155,7 +63,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
   ## get univariate densities
   for (i in which(family != 5)) {
-    tmp <- univarDens(dat[,i], eta[,i], phi=phi[i], family=family[i])
+    tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], family=family[i])
     log_den[,i] <- tmp$ld
     dat_u[,i] <- pmax(pmin(tmp$u,1-1e-10),1e-10)
   }
@@ -163,7 +71,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   ## deal with discrete variables separately
   for (i in which(family == 5)) {
     # wh_trunc <- wh_trunc + 1
-    tmp <- univarDens(dat[,i], eta[,i], family=family[i])
+    tmp <- glm_dens(dat[,i], eta[,i], family=family[i])
     log_den[,i] <- tmp$ld
     # log_den[,i] <- 0 #### CHANGED HERE XI
     dat_u[,i] <- tmp$u
@@ -226,14 +134,14 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
         # cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
       }
       else if (fam_cop == 2) {
-        #q_dat <- qt(as.matrix(dat_u), df=par2)
-        cop <- dtCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, df=par2, log=TRUE)
+        #q_dat <- qt(as.matrix(dat_u), df=cop_pars)
+        cop <- dtCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, df=cop_pars, log=TRUE)
       }
       else stop("Only Gaussian and t-copulas implemented for more than two dimensions")
     }
     else if (nc == 2) {
       ### MODIFY THIS TO USE copula PACKAGE!
-      cop <- log(VineCopula::BiCopPDF(dat_u[,1], dat_u[,2], family=fam_cop, par=par[[1]], par2=par2))
+      cop <- log(VineCopula::BiCopPDF(dat_u[,1], dat_u[,2], family=fam_cop, par=par[[1]], par2=cop_pars))
     }
     else stop("should have that nc is an integer >= 2")
   }

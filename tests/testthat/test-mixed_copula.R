@@ -20,7 +20,7 @@ test_that("distribution is correct", {
 })
 
 ## try fitting model by ML
-out <- fitCausal(dat[1:1e3,], formulas = list(Y ~ X, Z ~ 1, ~ X), family=c(5,1,1))
+out <- fit_causl(dat[1:1e3,], formulas = list(Y ~ X, Z ~ 1, ~ X), family=c(5,1,1))
 
 test_that("fitting works", {
   expect_true(sqrt(sum(out$pars$Y$beta - c(-0.25,0.5))^2) < 0.1)

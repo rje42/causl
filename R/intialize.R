@@ -88,7 +88,7 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
 
   ## define output matrix/vector for beta,phi
   LHS <- lhs(formulas)
-  if (inc_cop) LHS <- LHS[-match(kwd, LHS)]
+  if (inc_cop) LHS <- LHS[-match(kwd, LHS, nomatch=0L)]
 
   if (inc_cop) {
     ## get column names for beta/beta_m

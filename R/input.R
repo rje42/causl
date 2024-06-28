@@ -117,7 +117,10 @@ process_family <- function (family, dims, func_return=get_family) {
 
     if (any(sapply(family, class) == "causl_family")) {
       wh <- which(sapply(family, class) == "causl_family")
-      for (i in wh) family[[i]] <- list(family[[i]])
+      for (i in wh) {
+        family[[i]] <- list(family[[i]])
+        lens[i] <- 1
+      }
     }
     if (!all(lens[seq_len(nU)] == dims[seq_len(nU)])) stop("Mismatch in family and formulae specifications")
   }
