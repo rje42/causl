@@ -144,7 +144,7 @@ binomial_causl_fam <- function (link) {
 
   ## define family
   out <- list(name="binomial", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
-              pars=c("mu"), default=default)
+              pars=c("mu"), default=default, link=link)
   class(out) <- "causl_family"
 
   return(out)

@@ -14,7 +14,7 @@ nll2(
   fam_cop = 1,
   family,
   link,
-  par2 = NULL,
+  cop_pars = NULL,
   useC = TRUE
 )
 }
@@ -35,7 +35,7 @@ nll2(
 
 \item{link}{vector of link functions}
 
-\item{par2}{degrees of freedom for t-distribution}
+\item{cop_pars}{other parameters for copula}
 
 \item{useC}{logical: should Rcpp functions be used?}
 }

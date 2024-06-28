@@ -391,10 +391,14 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
 
   if (is(family, "causl_family")) {
     if (!(family$name %in% names(links_list))) {
+      ## this is not a registered family
       # if (!(link %in% family$links_list)) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
-      stop(paste0("Family ", family$name, " is not a valid and registered family"))
+      # stop(paste0("Family ", family$name, " is not a valid and registered family"))
+
+      if (!(link %in% unlist(links_list)) &&
+          !(link %in% names(family$custom_links))) stop("Link function not known")
     }
-    if (!(link %in% links_list[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
+    else if (!(link %in% links_list[[family$name]])) stop(paste0(link, " is not a valid link function for ", family$name, " family"))
 
     if (family$name %in% c("categorical","ordinal")) {
       if (ncol(eta) != other_pars$nlevel - 1) stop("Invalid 'eta' input to glm_sim")
@@ -409,12 +413,18 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
       else stop("We shouldn't get here")
     }
     else {
-      if (link=="identity") mu <- eta
-      else if (link=="inverse") mu <- 1/eta
-      else if (link=="log") mu <- exp(eta)
-      else if (link=="logit") mu <- expit(eta)
-      else if (link=="probit") mu <- pnorm(eta)
-      else stop("We shouldn't get here")
+      if (link %in% unlist(links_list)) {
+        if (link=="identity") mu <- eta
+        else if (link=="inverse") mu <- 1/eta
+        else if (link=="log") mu <- exp(eta)
+        else if (link=="logit") mu <- expit(eta)
+        else if (link=="probit") mu <- pnorm(eta)
+        else stop("We shouldn't get here")
+      }
+      else {
+        if (link %in% names(family$custom_links)) mu <- family$custom_links[[link]]$linkinv(eta)
+        else stop("Link function not understood")
+      }
     }
 
     pars <- list(mu=mu)
