@@ -117,7 +117,10 @@ process_family <- function (family, dims, func_return=get_family) {
 
     if (any(sapply(family, class) == "causl_family")) {
       wh <- which(sapply(family, class) == "causl_family")
-      for (i in wh) family[[i]] <- list(family[[i]])
+      for (i in wh) {
+        family[[i]] <- list(family[[i]])
+        lens[i] <- 1
+      }
     }
     if (!all(lens[seq_len(nU)] == dims[seq_len(nU)])) stop("Mismatch in family and formulae specifications")
   }
@@ -549,6 +552,7 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
   else if (!all(sapply(pars, is.list))) {
     ## put some code in here to correct fact that some pairs aren't represented
   }
+  # else stop("'method' should be \"inversion\" or \"rejection\"")
 
 
   return(list(formulas=formulas, family=family, pars=pars))
@@ -585,4 +589,3 @@ process_prespecified <- function (dat, prespec) {
 
   return(quantiles)
 }
-

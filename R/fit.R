@@ -6,8 +6,7 @@
 ##' @param family families for the Y and Z distributions, and the copula. Should
 ##' be the same length as `formulas`
 ##' @param link link functions for each variable
-##' @param par2 additional parameters if required
-##' @param sandwich logical: should sandwich standard errors be returned?
+##' @param cop_pars additional parameters for copula if required
 ##' @param useC logical: should C++ routines be used?
 ## @param init should linear models be used to initialize starting point?
 ##' @param control list of parameters to be passed to `optim`
@@ -17,13 +16,14 @@
 ##' parameters.  Fit is by maximum likelihood.
 ##'
 ##' `control` has the same arguments as the argument in `optim`, as well
-##' as `newton`, a logical which controls whether Newton iterates should be
+
+##' as `sandwich`, a logical indicating if sandwich estimates of standard errors
+##' should be computed, `newton`, a logical which controls whether Newton iterates should be
 ##' performed at the end, and `cop` which can edit the restricted variable name
 ##' for the left-hand side of formulae.
-##' Useful for altering are `trace` (`1` shows steps of optimization) and
-##' `maxit` for the number of steps, as well as `fact` which controls
-##' the proportion of correlation put into a Gaussian or t-Copula's starting
-##' values.
+##' Useful for altering are `trace` (1 shows steps of optimization) and
+##' `maxit` for the number of steps.
+
 ##'
 ##' **Warning** By default, none of the variables should be called `cop`, as
 ##' this is reserved for the copula.  The reserved word can be changed using
@@ -32,12 +32,12 @@
 ##' @return Returns a list of class `cop_fit`.
 ##'
 ##' @export
-fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
-                      family=rep(1,length(formulas)), link, par2,
-                      sandwich=TRUE, useC=TRUE, control=list()) {
+fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
+                      family=rep(1,length(formulas)), link, cop_pars, useC=TRUE,
+                      control=list()) {
 
   # get control parameters for optim or use defaults
-  con <- list(method = "BFGS", newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
+  con <- list(sandwich = TRUE, method = "BFGS", newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
               abstol = -Inf, reltol = sqrt(.Machine$double.eps), alpha = 1, beta = 0.5,
               gamma = 2, REPORT = 10, warn.1d.NelderMead = TRUE, type = 1,
               lmm = 5, factr = 1e+07, pgtol = 0, tmax = 10, start = NULL)
@@ -46,11 +46,12 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   if (any(is.na(matches))) warning("Some names in control not matched: ", paste(names(control[is.na(matches)]), sep = ", "))
 
   ## ensure copula keyword is not a variable name
+  sandwich <- con$sandwich
   kwd <- con$cop
   if (kwd %in% names(dat)) stop(paste("Must not have a variable named '", kwd, "'", sep=""))
   newton <- con$newton
   method <- con$method
-  con <- con[-c(1,2,3)]
+  con <- con[-c(1:4)]
 
   ## may need to fix this to allow more flexibility in copula
   d <- length(formulas) - 1
@@ -62,43 +63,26 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   forms <- tidy_formulas(formulas, kwd=kwd)
   fam_cop <- last(family)
   link <- link_setup(link, family = family[-length(family)])
-
-  ## reorder variables so that discrete ones come last
-  ## for discrete variables, plug in empirical probabilities
-  disc <- family[-length(family)] == 5 | family[-length(family)] == 0
   LHS <- lhs(forms[-length(forms)])
-  inCop <- unlist(LHS)
-  trunc <- list()
 
-  if (any(disc)) {
-    wh_disc <- which(disc)
-
-    # ninCop <- setdiff(names(dat), inCop)
-    # dat <- dat[,c(inCop, ninCop)]
-
-    ## tabulate discrete variables
-    for (i in seq_along(wh_disc)) {
-      trunc[[i]] <- tabulate(dat[[LHS[wh_disc[i]]]] + 1)
-      if (sum(trunc[[i]]) == 0) stop("tabulation of values failed")
-      trunc[[i]] <- trunc[[i]]/sum(trunc[[i]])
-    }
-
-    ## then move discrete variables to the end
-    wh_cnt <- which(!disc)
-    new_ord <- c(wh_cnt, wh_disc, length(forms))  # adjust for multiple copula formulae
-    new_ord0 <- new_ord[-length(new_ord)]
-
-    LHS <- LHS[new_ord0]
-    forms <- forms[new_ord]
-    family <- family[new_ord]
-    link <- link[new_ord0]
+  ## put discrete variables at the end
+  if (any(family[-length(forms)] %in% c(0,5))) {
+    tmp <- process_discrete_dens(dat = dat, family = family[-length(forms)],
+                                 LHSs=LHS)
+    trunc <- tmp$trunc
+    forms <- forms[c(tmp$order, length(forms))]
+    LHS <- LHS[tmp$order]
+    family <- c(tmp$family, last(family))
+    link <- link[tmp$order]
   }
+  else trunc <- list()
 
+  ## get a joint formula
   full_form <- merge_formulas(forms)
+  mm <- model.matrix(full_form$formula, data=dat)
   # wh <- full_form$wh
   # dat[full_form$formula]
 
-  mm <- model.matrix(full_form$formula, data=dat)
   ## handle missingness cleanly
   if (nrow(mm) < nrow(dat)) {
     nlost <- nrow(dat) - nrow(mm)
@@ -111,15 +95,16 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   attr(mm, "trunc") <- trunc
 
   ## set secondary parameter to 4 if in a t-Copula model
-  if (missing(par2)) {
+  if (missing(cop_pars)) {
     if (fam_cop == 2) {
-      par2 <- 4
-      message("par2 set to 4\n")
+      cop_pars <- 4
+      message("degrees of freedom set to 4\n")
     }
-    else par2 = 0
+    else cop_pars = 0
   }
 
 
+  ## fitting code
   ## get some intitial parameter values
   beta_start2 <- initializeParams2(dat, formulas=forms, family=family, link=link,
                                    full_form=full_form, kwd=kwd)
@@ -129,10 +114,16 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
   ## other arguments to nll2()
   other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
-                      inCop = seq_along(inCop),
-                      fam_cop=fam_cop, fam=family[-length(family)], par2=par2,
+                      inCop = seq_along(beta_start2$phi_m),
+                      fam_cop=fam_cop, fam=family[-length(family)], cop_pars=cop_pars,
                       useC=useC,
                       link = link)
+
+  ## get some intitial parameter values
+  beta_start2 <- initializeParams2(dat[, LHS, drop=FALSE], formulas=forms, family=family, link=link,
+                                   full_form=full_form, kwd=kwd)
+  theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
+
 
   ## parameters to
   maxit <- con$maxit
@@ -309,6 +300,25 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
 
   out
 }
+
+##' @describeIn fit_causl old name
+##'
+##' @param par2 former name for `cop_pars` argument
+##' @param sandwich logical: should sandwich standard errors be returned?
+##'
+##' @export
+fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
+                      family=rep(1,length(formulas)), link, par2,
+                      sandwich=TRUE, useC=TRUE, control=list()) {
+  deprecate_soft("0.8.8", "fitCausal()", with="fit_causl()")
+
+  ## put sandwich option into control list
+  control = c(list(sandwich=sandwich), control)
+
+  fit_causl(dat=dat, formulas=formulas, family=family, link=link, cop_pars=par2,
+            useC=useC, control=control)
+}
+
 
 ## @param sandwich logical indicating whether to print sandwich standard errors (if present)
 ##' @export

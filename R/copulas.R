@@ -1,14 +1,17 @@
-##' Sample from Gaussian or t-copula
+##' Sample from multivariate copulas
 ##'
 ##' @param n sample size
 ##' @param Sigma in which each slice is a correlation matrix
 ##'
 ##' @details Quicker than rCopula.
 ##'
-##' Note that \code{rfgmCopula} only works for \eqn{d = 2}.
+##' Note that `rfgmCopula` only works for \eqn{d = 2}.
 ##'
 ##' @return A vector of the simulated random variables.
-##'
+##' @name sample_copulas
+NULL
+
+##' @describeIn sample_copulas Gaussian copula
 ##' @export
 rGaussCop <- function(n, Sigma) {
   d <- nrow(Sigma)
@@ -30,7 +33,7 @@ rGaussCop <- function(n, Sigma) {
   pnorm(x2)
 }
 
-##' @describeIn rGaussCop t-copula
+##' @describeIn sample_copulas t-copula
 ##' @param df degrees of freedom
 ##' @export
 rtCop <- function(n, Sigma, df) {
@@ -45,7 +48,7 @@ rtCop <- function(n, Sigma, df) {
 }
 
 
-##' @describeIn rGaussCop FGM-copula
+##' @describeIn sample_copulas FGM-copula
 ##'
 ##' @param d dimension of copula
 ##' @param alpha (vector of) parameter values
@@ -69,7 +72,7 @@ rfgmCopula <- function(n, d=2, alpha)
 }
 
 
-##' Density of a Gaussian or t-Copula
+##' Density of a multivariate copula
 ##'
 ##' @param x samples on (0,1)
 ##' @param Sigma collection of matrices
@@ -78,9 +81,13 @@ rfgmCopula <- function(n, d=2, alpha)
 ##' @param N optional integer for number of covariance matrices
 ##'
 ##' @details Computes the density for data from a
-##' Gaussian or t-copula.  Currently \code{useC} only
-##' works for \code{dGaussCop}.
+##' Gaussian or t-copula.  Currently `useC` only
+##' works for `dGaussCop`.
 ##'
+##' @name copula_density
+NULL
+
+##' @describeIn copula_density Gaussian copula
 ##' @export
 dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE, N) {
   d <- ncol(x)
@@ -159,7 +166,7 @@ dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE, N) {
   out
 }
 
-##' @describeIn dGaussCop t-Copula Density
+##' @describeIn copula_density t-Copula density
 ##' @param df degrees of freedom
 ##' @export
 dtCop <- function(x, Sigma, df, log=FALSE, useC=TRUE) {
@@ -194,21 +201,19 @@ dtCop <- function(x, Sigma, df, log=FALSE, useC=TRUE) {
 }
 
 
-##' Density of a bivariate FGM copula
-##'
-##' @param u1,u2 vector of probabilities
 ##' @param alpha parameter for copula
 ##'
 ##' @return numeric vector of densities
 ##'
+##' @describeIn copula_density bivariate FGM copula
 ##' @export
-dfgmCopula <- function(u1, u2, alpha) {
-  1 + alpha * (1 - 2 * u1) * (1 - 2 * u2)
+dfgmCopula <- function(x, alpha) {
+  1 + alpha * (1 - 2 * x[,1]) * (1 - 2 * x[,2])
 }
 
 # ##' Distribution Function of a Bivariate Copula
 # ##'
-# ##' Copy of \code{BiCopPDF} from \code{VineCopula} package,
+# ##' Copy of `BiCopPDF` from `VineCopula` package,
 # ##' but made faster by skipping checks.
 # ##'
 # ##' @seealso \link[package=VineCopula]{BiCopCDF}
@@ -251,7 +256,7 @@ dfgmCopula <- function(u1, u2, alpha) {
 ##' @importFrom mvtnorm pmvnorm
 ##'
 ##' @export
-dGaussDiscCop2 <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
+dGaussDiscCop <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
 
   if(is.null(dim(x)) || length(dim(x)) != 2) stop("x must be a matrix-like object")
   if(is.null(dim(Sigma))) stop("Sigma must be a matrix-like object")
@@ -392,7 +397,7 @@ cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
   if (missing(par2)) {
     cops <- lapply(param, copula)
   } else {
-    cops <- lapply(param, function(x) copula(x,par2=par2))
+    cops <- lapply(param, function(x) copula(x, df=par2))
   }
 
   splU <- apply(U, 1, FUN = function(x) x, simplify = FALSE)

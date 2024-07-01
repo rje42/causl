@@ -5,6 +5,7 @@
 \alias{lhs}
 \alias{lhs<-}
 \alias{rhs_vars}
+\alias{tidy_formulas}
 \title{Tools for manipulating formulas}
 \usage{
 lhs(formulas, surv = FALSE)
@@ -12,6 +13,8 @@ lhs(formulas, surv = FALSE)
 lhs(formulas) <- value
 
 rhs_vars(formulas)
+
+tidy_formulas(formulas, kwd, prefix = "V")
 }
 \arguments{
 \item{formulas}{list of formulae}
@@ -19,6 +22,10 @@ rhs_vars(formulas)
 \item{surv}{logical indicating whether to treat as survey data}
 
 \item{value}{character vector to assign}
+
+\item{kwd}{string used to denote copula}
+
+\item{prefix}{string to begin each new variable name}
 }
 \description{
 Tools for manipulating formulas
@@ -28,6 +35,10 @@ Tools for manipulating formulas
 list of formulae.  If \code{surv=TRUE} then two responses are returned in the
 event of the left-hand side being a valid \code{Surv} object.  \verb{lhs<-} allows
 one to assign the left-hand sides of variables in the obvious way.
+
+\code{tidy_formulas} ensures that all formulae in a list have a left hand side,
+by giving them names of the form \code{Vn} where \code{n} is some positive integer. The
+prefix \code{V} can be changed using the argument \code{prefix}.
 
 \code{rhs_vars} extracts all the variables used on the right-hand sides of a list
 of formulas.
@@ -39,5 +50,7 @@ of formulas.
 \item \code{lhs(formulas) <- value}: Assign left-hand sides to list of formulas
 
 \item \code{rhs_vars()}: Extract variables from right-hand sides
+
+\item \code{tidy_formulas()}: Tidy up formulae
 
 }}

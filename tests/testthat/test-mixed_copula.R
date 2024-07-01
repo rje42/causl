@@ -6,8 +6,8 @@ pars <- list(Z = list(beta = 0, phi = 1),
              cop = list(beta=c(1,0.25)))
 
 set.seed(123)
-dat <- rfrugalParam(1e4, formulas = forms, family = c(1,5,5,1), pars = pars,
-                    method = "inversion")
+dat <- suppressMessages(rfrugalParam(1e4, formulas = forms, family = c(1,5,5,1), pars = pars,
+                    method = "inversion"))
 
 modX <- glm(X ~ Z, data=dat, family=binomial)
 ps <- predict(modX, type = "response")
@@ -20,7 +20,7 @@ test_that("distribution is correct", {
 })
 
 ## try fitting model by ML
-out <- fitCausal(dat[1:1e3,], formulas = list(Y ~ X, Z ~ 1, ~ X), family=c(5,1,1))
+out <- fit_causl(dat[1:1e3,], formulas = list(Y ~ X, Z ~ 1, ~ X), family=c(5,1,1))
 
 test_that("fitting works", {
   expect_true(sqrt(sum(out$pars$Y$beta - c(-0.25,0.5))^2) < 0.1)

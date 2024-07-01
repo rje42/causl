@@ -33,7 +33,7 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles) {
 
     ## rescale quantiles for pair-copula
     qs <- cbind(quantiles[[LHS_cop[[i]]]], qY)
-    qY <- rescale_cop(qs, X=X, beta=pars[[2]][[i]]$beta, family=family[[2]][i],
+    qY <- rescale_cop(qs, X=X, beta=pars[[2]][[i]]$beta, family=family[[2]][[i]],
                      par2=pars[[2]][[i]]$par2) #, link=link[[2]][j])
   }
 

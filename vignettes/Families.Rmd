@@ -1,0 +1,41 @@
+---
+title: "Families, link functions and parameters"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, output = TRUE)
+```
+
+```{r package, message=FALSE}
+library(causl)
+```
+
+## Families
+
+The list of built-in families can be obtained by calling `family_vals`.  This
+shows the name of each family, and the value that can be used to obtain it when
+calling functions.  
+```{family_vals, include=TRUE}
+family_vals$val
+```
+The parameterizations for these families are based on 
+generalized linear models.  Essentially, we have that 
+\begin{align*}
+\mathbb{E} [Y \mid X=x] = \mu(x) = g^{-1}(\eta(x))
+\end{align*}
+where $\eta(x) = x^T\beta$ for a vector of real parameters $\beta$.
+
+Note that the beta and lognormal families are not actually exponential dispersion
+families, so they do not share all the nice properties of full GLM distributions.
+Here we include a table of the different models used.
+
+```{r}
+fams <- family_vals[-1,]
+fams$val[5] <- "0/5"
+fams$canon <- c("identity", "identity", "inverse", NA, "logistic", NA, "log-linear", "log-linear")
+fams$default <- c("-", "-", "log", "logistic", "-", "exponential", "-", "-")
+```
+
+

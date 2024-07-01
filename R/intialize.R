@@ -88,7 +88,7 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
 
   ## define output matrix/vector for beta,phi
   LHS <- lhs(formulas)
-  if (inc_cop) LHS <- LHS[-match(kwd, LHS)]
+  if (inc_cop) LHS <- LHS[-match(kwd, LHS, nomatch=0L)]
 
   if (inc_cop) {
     ## get column names for beta/beta_m
@@ -270,42 +270,6 @@ pars2mask <- function(pars, masks) {
   }
 
   return(out)
-}
-
-##' Tidy up formulae
-##'
-##' This function ensures that all formulae have a left hand side, by giving
-##' them names of the form `Vn` where `n` is some positive integer.
-##'
-##' @inheritParams fitCausal
-##' @param kwd string used to denote copula
-##' @param prefix string to begin each new variable name
-##'
-##' @export
-tidy_formulas <- function(formulas, kwd, prefix="V") {
-  forms <- formulas
-  nf <- length(forms)
-
-  ## make sure all the univariate formulae have left-hand sides
-  wh <- which(lengths(forms) < 3)
-
-  if (any(lengths(forms) < 3)) {
-    if (last(wh) == nf) wh2 <- wh[-length(wh)]
-    else wh2 <- wh
-    for (i in seq_along(wh2)) {
-      tmp_form <- formula(paste(prefix, i, " ~ .", sep=""))
-      forms[[wh[i]]] <- update.formula(forms[[wh[i]]], tmp_form)
-    }
-  }
-
-  ## give copula formula the keyword as its left-hand side
-  if (length(wh) > 0 && last(wh) == nf) {
-    tmp_form <- formula(paste(kwd, "~ ."))
-    forms[[nf]] <- update.formula(forms[[nf]], tmp_form)
-  }
-  else if (lhs(last(forms)) != kwd) stop("Error: keyword does not match left-hand side of copula formula")
-
-  return(forms)
 }
 
 ## Get theta vector from pars

@@ -1,7 +1,7 @@
 ##' Simulate for single time-step
 ##'
 ##' @param out data frame for output
-##' @param proc_inputs output of \code{process_inputs()}
+##' @param proc_inputs output of `process_inputs()`
 ##' @param control list of control parameters
 ##'
 ##' @details `sim_inversion` and `sim_rejection` correspond to
@@ -112,8 +112,9 @@ sim_inversion <- function (out, proc_inputs) {
       oth_pars <- pars[[vnm]]
       curr_phi <- pars[[vnm]]$phi
       tmp <- glm_sim(family=curr_fam, eta=eta, phi=curr_phi, other_pars=pars[[vnm]], link=curr_link)
-      out[[vnm]] <- tmp
       if (vnm %in% LHS_Z) quantiles[[vnm]] <- attr(tmp, "quantile")
+      attr(tmp, "quantile") <- NULL
+      out[[vnm]] <- tmp
     }
   }
 

@@ -7,11 +7,16 @@
 ##' event of the left-hand side being a valid `Surv` object.  `lhs<-` allows
 ##' one to assign the left-hand sides of variables in the obvious way.
 ##'
+##' `tidy_formulas` ensures that all formulae in a list have a left hand side,
+##' by giving them names of the form `Vn` where `n` is some positive integer. The
+##' prefix `V` can be changed using the argument `prefix`.
+##'
 ##' `rhs_vars` extracts all the variables used on the right-hand sides of a list
 ##' of formulas.
 ##'
 ##' @name formula_tools
 NULL
+
 
 ## To do: put in check for invalid name and then extract multiple variables if a Surv object
 ##
@@ -163,4 +168,35 @@ topOrd <- function (A) {
   }
 
   ord
+}
+
+## @inheritParams fitCausal
+##' @param kwd string used to denote copula
+##' @param prefix string to begin each new variable name
+##' @describeIn formula_tools Tidy up formulae
+##' @export
+tidy_formulas <- function(formulas, kwd, prefix="V") {
+  forms <- formulas
+  nf <- length(forms)
+
+  ## make sure all the univariate formulae have left-hand sides
+  wh <- which(lengths(forms) < 3)
+
+  if (any(lengths(forms) < 3)) {
+    if (last(wh) == nf) wh2 <- wh[-length(wh)]
+    else wh2 <- wh
+    for (i in seq_along(wh2)) {
+      tmp_form <- formula(paste(prefix, i, " ~ .", sep=""))
+      forms[[wh[i]]] <- update.formula(forms[[wh[i]]], tmp_form)
+    }
+  }
+
+  ## give copula formula the keyword as its left-hand side
+  if (length(wh) > 0 && last(wh) == nf) {
+    tmp_form <- formula(paste(kwd, "~ ."))
+    forms[[nf]] <- update.formula(forms[[nf]], tmp_form)
+  }
+  else if (lhs(last(forms)) != kwd) stop("Error: keyword does not match left-hand side of copula formula")
+
+  return(forms)
 }

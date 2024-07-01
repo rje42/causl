@@ -6,12 +6,12 @@ pars <- list(z = list(beta=0, phi=1),
 
 set.seed(123)
 dat <- causalSamp(1e2, par=pars, family=fam)
-out <- fitCausal(dat, family=c(1,1,1))
+out <- fit_causl(dat, family=c(1,1,1))
 
 set.seed(124)
 fam2 <- c(1,5,1,1)
 dat2 <- causalSamp(5e2, par=pars, family=fam2)
-out2 <- fitCausal(dat2, family=c(1,1,1))
+out2 <- fit_causl(dat2, family=c(1,1,1))
 
 
 test_that("fitting works as expected", {

@@ -1,3 +1,53 @@
+causl 0.8.9
+
+-------------------------------------------------------------------------------
+
+NEW FEATURES
+
+ * Made it possible to use a custom distribution to simulate via an object of 
+ class `causl_family`.
+
+
+CHANGES
+
+ * Began migration of `univarDens()` to `glm_dens()`.
+
+ * Changed name `dGaussDiscCop2()` to `dGaussDiscCop()`.
+ 
+ * Made changes to `fitCausal`, including renaming as `fit_causl` and removing
+ some arguments from function and splitting off identification of discrete
+ variables.
+ 
+ * Modified `par2` in simulations for t-distribution to `df`.
+
+
+BUG FIXES
+
+ * Fixed bug in discrete `causal_family` types.
+ 
+ * Fixed bug in `pair_copula_setup()`.
+ 
+ * Added `link` to output from `binomial_causl_fam`.
+
+
+
+causl 0.8.8
+
+-------------------------------------------------------------------------------
+
+NEW FEATURES
+
+ * Added log-link for binomial family
+
+
+CHANGES
+ 
+ * Suppressed messages in tests
+ 
+ * Edited to remove quantiles from simulated data under inversion method
+
+
+
 causl 0.8.7
 -------------------------------------------------------------------------------
 

@@ -1,0 +1,170 @@
+---
+title: "Custom Families"
+author: "Robin Evans"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache=TRUE)
+options(digits=3)
+```
+
+The `causl` package now allows users to specify custom families with which to
+perform their simulations.  To do this, one must create a function that takes as
+an argument the link function, and returns a list containing:
+
+ * `name`: the name of the relevant family;
+ * `ddist`: a function returning the density of the distributions;
+ * `qdist`: a function returning the quantiles from probabilities;
+ * `rdist`: a function to sample values from the distribution;
+ * `pdist`: a cumulative distribution function;
+ * `pars`: a list of the names of the parameters used;
+ * `default`: a function that returns a list of the default values for an 
+ observation and each of the parameters;
+ * `link`: the specified link function.
+ 
+The function should also give the output the class `"causl_family"`, so that
+it is interpreted appropriately.
+ 
+ 
+## Example (Poisson distribution)
+
+Suppose we wish to simulate from a Poisson distribution as part of a frugal 
+model.  Then we can define a function such as the below:
+ 
+```{r pois, message=FALSE}
+library(causl)
+
+poisson_causl_fam <- function (link) {
+  if (missing(link)) link = "log"
+
+  ## write functions
+  dens <- function (x, mu, log=FALSE) dpois(x, lambda=mu, log=log)
+  quan <- function (p, mu) qpois(p, lambda=mu)
+  sim <- function (n, mu) rpois(n, lambda=mu)
+  probs <- function (x, mu) ppois(x, lambda=mu)
+
+  default <- function(theta) list(x=1, mu=1)
+
+  ## define family
+  out <- list(name="poisson", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
+              pars=c("mu"), default=default, link=link)
+  class(out) <- "causl_family"
+
+  return(out)
+}
+```
+Some remarks are in order.  Note that the `ddist` function must have a `log` 
+argument to allow the log-density to be evaluated.  
+
+Now, let us try to simulate some data using this distribution.  We will need
+to use `poisson_causl_fam` in our `family` argument:
+```{r params}
+forms <- list(Z ~ 1, X ~ Z, Y ~ X, ~ 1)
+fams <- list(1, poisson_causl_fam(), 1, 1)
+pars <- list(Z = list(beta = 0, phi = 1),
+             X = list(beta = c(0.3,1)),
+             Y = list(beta = c(-1,0.5), phi = 1),
+             cop = list(beta = 1))
+
+set.seed(123)
+dat <- rfrugalParam(1e3, formulas = forms, family = fams, pars = pars)
+```
+
+### Treatment model
+
+Then we can check that the new variables have been simulated correctly.  We 
+ought to have:
+\begin{align*}
+P(X = x \mid z) &= \frac{1}{x!} \exp\{\alpha_0 + \alpha_1 z x - e^{\alpha_0 + \alpha_1 z}\}, 
+\end{align*}
+with $\alpha = `r pars$X$beta[1]`$ and $\alpha_1 = `r pars$X$beta[2]`$.
+Let's perform a regression to check the parameters:
+```{r chk_pois}
+modX <- glm(X ~ Z, family=quasipoisson, data=dat)
+summary(modX)$coefficients
+```
+So we can see that the estimates are well within two standard errors of the 
+true value.  In addition, 
+```{r chk_pois_disp}
+summary(modX)$dispersion
+```
+the dispersion parameter is close to its nominal value of 1.
+
+### Outcome model
+
+We can also fit the outcome model using maximum likelihood estimation with 
+sandwich errors.
+```{r fit_causl}
+out <- fit_causl(dat = dat, formulas = list(Y ~ X, Z ~ 1, cop ~ 1),
+                 family = c(1, 1, 1))
+```
+This gives us estimates of $\beta_0 = `r out$par[1]`$ (`r out$sandwich_se[1]`) and
+$\beta_1 = `r out$par[2]`$ (`r out$sandwich_se[2]`), which is consistent with 
+the values $-1$ and $0.5$ that we used to simulate.
+
+<!-- We can also attempt to infer the causal effect of $X$ on $Y$: -->
+<!-- ```{r fitX} -->
+<!-- eta <- c(cbind(1,dat$Z) %*% modX$coefficients) -->
+<!-- gps <- dpois(dat$X, lambda=exp(eta)) -->
+<!-- mean((dat$Y/gps)*(dat$X==1)) - mean((dat$Y/gps)*(dat$X==0)) -->
+<!-- mean((dat$Y/gps)*(dat$X==2)) - mean((dat$Y/gps)*(dat$X==1)) -->
+<!-- mean((dat$Y/gps)*(dat$X==3)) - mean((dat$Y/gps)*(dat$X==2)) -->
+<!-- mean((dat$Y/gps)*(dat$X==4)) - mean((dat$Y/gps)*(dat$X==3)) -->
+<!-- ``` -->
+
+## Custom Link Functions
+
+The example above works because `log` is an existing link function specified
+in the package.  Suppose, however, that we want to use the `sqrt` function as
+the link; this is not used with any built-in families. 
+
+For this we need to specify a `custom_links` argument to `poisson_causl_fam`; 
+each entry in this named list should itself be a list, containing:
+
+ * `linkfun`: the link function $g$;
+ * `linkinv`: the inverse of $g$.
+ 
+The names of the entries should correspond to the string used as the name of 
+the link function.
+```{r pois2}
+ poisson_causl_fam <- function (link) {
+  if (missing(link)) link = "log"
+
+  ## write functions
+  dens <- function (x, mu, log=FALSE) dpois(x, lambda=mu, log=log)
+  quan <- function (p, mu) qpois(p, lambda=mu)
+  sim <- function (n, mu) rpois(n, lambda=mu)
+  probs <- function (x, mu) ppois(x, lambda=mu)
+
+  default <- function(theta) list(x=1, mu=1)
+  
+  custom_links <- list(sqrt = list(linkfun = function (x) sqrt(x),
+                                   linkinv = function (x) x^2))
+
+  ## define family
+  out <- list(name="poisson", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
+              pars=c("mu"), default=default, link=link, custom_links=custom_links)
+  class(out) <- "causl_family"
+
+  return(out)
+}
+```
+Now we can suitably modify our earlier example:
+```{r params_sqrt}
+fams <- list(1, poisson_causl_fam(link="sqrt"), 1, 1)
+pars$X$beta <- c(0.9, 0.05)
+
+set.seed(124)
+dat <- rfrugalParam(1e3, formulas = forms, family = fams, pars = pars)
+```
+We can again check that the distribution was correctly sampled.
+```{r chk_pois_sqrt}
+modX <- glm(X ~ Z, family=quasipoisson(sqrt), data=dat, start=c(1,0))
+summary(modX)$coefficients
+```
+So we again see that the estimates are well within two standard errors of the 
+true value, and the dispersion parameter is estimated to be 
+`r summary(modX)$dispersion`, again close to 1.
+

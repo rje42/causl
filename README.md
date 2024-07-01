@@ -1,6 +1,7 @@
 # causl
 
-Methods for Specifying, Simulating from and Fitting Causal Models
+Methods for Specifying, Simulating from and Fitting Marginal Causal Models
+
 
 ## Basic Idea
 
@@ -27,10 +28,18 @@ between $Y$ and $Z$ conditional on $X$. We could use a (conditional)
 copula for this last model, or a conditional odds ratio if $Y$ and $Z$
 are both discrete.
 
+<<<<<<< HEAD
 One example would consist of setting $Z \sim \text{Exp}(1)$, with
 $X \mid Z=z \sim N(z/2, 1)$ and $Y \mid do(X=x) \sim N((x-1)/2, 1)$,
 with a Gaussian copula between $Z$ and $Y$ with correlation
 $\rho = 2\text{expit}(1) - 1$.
+=======
+One example would consist of setting
+$Z \sim \text{Exp}(1)$, with $X \mid Z=z \sim N(z/2, 1)$
+and $Y \mid do(X=x) \sim N((x-1)/2, 1)$,
+with a Gaussian copula between $Z$ and $Y$ with correlation $\rho = 2\text{expit}(1) - 1$. 
+(Note that, by default, we use the log link for the Gamma distribution.)
+>>>>>>> upstream/devel
 
 ## Sample Code
 

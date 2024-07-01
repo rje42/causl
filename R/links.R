@@ -14,15 +14,29 @@ link_setup <- function(link, family, vars, sources=links_list,
 
   ## concatenate list of courses
   lk_lsts <- sources # do.call(c, sources)
+  all_lks <- unlist(lk_lsts)
   fm_lsts <- do.call(c, fam_list)
 
   ## set up output
+  is_cf <- sapply(family, function(x) (length(x) > 0 && is(x[[1]], "causl_family")))
   link_out <- lapply(family, function(x) {
-    if (length(x) > 0 && is(x[[1]], "causl_family")) sapply(x, function(y) y$name)
+    if (length(x) > 0 && is(x[[1]], "causl_family")) sapply(x, function(y) y$link)
     else fm_lsts$family[match(x, fm_lsts$val)]
   })
+  ## check that links are valid for causl_family specifications
+  if (any(is_cf)) {
+    cf_links <- link_out[is_cf]
+    cfs <- family[is_cf]
+    vld <- lapply(cf_links, function (x) x %in% all_lks)
+    vld <- mapply(function (x,y,z)
+      mapply(function (a,b) b %in% names(a$custom_links), a=x,b=y) | z,
+      cfs, cf_links, vld)
+    if (!all(unlist(vld))) stop("Some links not valid")
+  }
   if (any(is.na(unlist(link_out)))) stop("Invalid family variable specified")
-  link_out <- lapply(link_out, function(x) sapply(x, function(y) lk_lsts[[y]][1]))
+  link_out[!is_cf] <- lapply(link_out[!is_cf], function(x) {
+    sapply(x, function(y) lk_lsts[[y]][1])
+  })
 
   if (any(is.null(unlist(link_out)))) stop("Error in family specification for link functions")
 

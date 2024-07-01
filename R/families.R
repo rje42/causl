@@ -144,7 +144,7 @@ binomial_causl_fam <- function (link) {
 
   ## define family
   out <- list(name="binomial", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
-              pars=c("mu"), default=default)
+              pars=c("mu"), default=default, link=link)
   class(out) <- "causl_family"
 
   return(out)
@@ -217,6 +217,8 @@ categorical_causl_fam <- function (link) {
 
   ## write functions
   dens <- function (x, mu, log=FALSE) {
+    x <- as.integer(x)
+
     ## get matrix form for mu
     mu <- set_mu_matrix(mu, length(x))
 
@@ -248,6 +250,8 @@ categorical_causl_fam <- function (link) {
     # sample(length(mu), size=n, replace=TRUE, prob=mu)
   }
   probs <- function (x, mu) {
+    x <- as.integer(x)
+
     ## get matrix form for mu
     mu <- set_mu_matrix(mu, length(x))
 
@@ -264,7 +268,7 @@ categorical_causl_fam <- function (link) {
 
   ## define family
   out <- list(name="categorical", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
-              pars=c("mu"), default=default)
+              pars=c("mu"), default=default, link=link)
   class(out) <- "causl_family"
 
   return(out)
@@ -291,6 +295,8 @@ ordinal_causl_fam <- function (link) {
 
   ## write functions
   dens <- function (x, mu, log=FALSE) {
+    x <- as.integer(x)
+
     ## get matrix form for mu
     mu <- set_mu_matrix(mu, length(x))
 
@@ -322,6 +328,8 @@ ordinal_causl_fam <- function (link) {
     # sample(length(mu), size=n, replace=TRUE, prob=mu)
   }
   probs <- function (x, mu) {
+    x <- as.integer(x)
+
     ## get matrix form for mu
     mu <- set_mu_matrix(mu, length(x))
 
@@ -344,7 +352,7 @@ ordinal_causl_fam <- function (link) {
 
   ## define family
   out <- list(name="ordinal", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
-              pars=c("mu"), default=default)
+              pars=c("mu"), default=default, link=link)
   class(out) <- "causl_family"
 
   return(out)
