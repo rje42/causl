@@ -69,7 +69,6 @@ for (i in seq_along(order))  {
 }
 ## Simulate Copula
 # get beta and make model matrix
-
 famCopSingle <- unique(unlist(famCop))
 if(length(famCopSingle) != 1) stop("Must be only one family")
 beta_mat <- pars$cop$Y[[1]]$beta
@@ -80,8 +79,6 @@ empty_init <- matrix(0, n, numCols)
 fam <- rep(famCopSingle, choose(numCols, 2))
 us <- sim_vinecop(empty_init,fam, 
                   beta_mat,model_matrix = MM)
-
-
   for (i in j:length(order)) {
     vnm <- vars[order[i]]
     
