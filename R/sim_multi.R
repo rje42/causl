@@ -79,6 +79,7 @@ empty_init <- matrix(0, n, numCols)
 fam <- rep(famCopSingle, choose(numCols, 2))
 us <- sim_vinecop(empty_init,fam, 
                   beta_mat,model_matrix = MM)
+  idx <- 0;
   for (i in j:length(order)) {
     vnm <- vars[order[i]]
     
@@ -141,9 +142,10 @@ us <- sim_vinecop(empty_init,fam,
                                  link=curr_link)
       }
       else{
+        idx <- idx + 1;
         # generate u's during the for loop instead of before; may be conditional on 
         # previous vars
-        out[[vnm]] <- rescale_var(us[,i], X=MM, family=curr_fam, pars=pars[[vnm]], 
+        out[[vnm]] <- rescale_var(us[,idx], X=MM, family=curr_fam, pars=pars[[vnm]], 
                                   link=curr_link)
       }
 

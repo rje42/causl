@@ -152,7 +152,7 @@ fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
       out <- out2
       conv  <- TRUE
     }
-    else conv <- TRUE#out2 <- list(par = out$par)
+    else out2 <- list(par = out$par)
   }
   curr_val = out$value
   if (out$convergence != 0) {
