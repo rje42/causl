@@ -36,7 +36,6 @@ sim_multi <- function (out, proc_inputs) {
   
   ## sample size
   n <- nrow(out)
-browser()
 # first sample X's upstream of the Z's
 for (i in seq_along(order))  {
   vnm <- vars[order[i]]
@@ -77,9 +76,12 @@ MM <- model.matrix(form, out)
 numCols <- dZ + 1;
 empty_init <- matrix(0, n, numCols)
 fam <- rep(famCopSingle, choose(numCols, 2))
-browser()
-us <- sim_vinecop(empty_init,fam, 
-                  beta_mat,model_matrix = MM)
+
+# write function to get copula
+cop <- get_copula(famCopSingle, NULL)
+us <- sim_cop(cop, beta_mat, NULL, MM)
+#us <- sim_vinecop(empty_init,fam, 
+#                  beta_mat,model_matrix = MM)
 
   idx <- 0;
   for (i in j:length(order)) {
