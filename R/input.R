@@ -14,7 +14,7 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
   formulas <- process_formulas(formulas)
   ## check ordering is sound
 
-  ord <- var_order(formulas)
+  ord <- var_order(formulas, method=method)
   dims <- lengths(formulas)
 
   ## obtain variable names
@@ -174,7 +174,7 @@ process_family <- function (family, dims, func_return=get_family) {
 ##' @inheritParams process_inputs
 ##' @param inc_cop logical indicating whether to include copula in the ordering
 ##'
-var_order <- function (formulas, dims, inc_cop=TRUE) {
+var_order <- function (formulas, dims, inc_cop=TRUE, method) {
 
   if (missing(dims)) dims <- lengths(formulas)
   nU <- length(dims) - 1
@@ -215,7 +215,8 @@ var_order <- function (formulas, dims, inc_cop=TRUE) {
 
   ## get order for simulation, if one exists
 
-  # break ties with Xs going first. 
+  if (method == "multi_copula") {
+  # break ties with Xs going first.
   # if there are uncoditional treatments put them first
   treats <- ord_mat[(dims[1] + 1) : (dims[1] + dims[2]), , drop = FALSE]
   nuisance <- ord_mat[1:dims[1], , drop = FALSE]
@@ -228,9 +229,9 @@ var_order <- function (formulas, dims, inc_cop=TRUE) {
       ord_mat[which_nuisance, which_treats] <- 0.1
     }
   }
-
+}
   ord <- topOrd(ord_mat)
-  
+
   if (any(is.na(ord))) stop("Formulae contain cyclic dependencies")
 
   return(ord)
