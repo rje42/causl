@@ -214,9 +214,21 @@ var_order <- function (formulas, dims, inc_cop=TRUE) {
   }
 
   ## get order for simulation, if one exists
+
   # break ties with Xs going first. 
-  ord_mat[1:dims[1], (dims[1] + dims[2])] <- ord_mat[1:dims[1], (dims[1] + dims[2])] + 0.1
-  
+  # if there are uncoditional treatments put them first
+  treats <- ord_mat[(dims[1] + 1) : (dims[1] + dims[2]), , drop = FALSE]
+  nuisance <- ord_mat[1:dims[1], , drop = FALSE]
+  marginal_treats <- apply(treats == 0, 1, all)
+  if(any(marginal_treats)){
+    which_treats <- which(marginal_treats) + dims[1]
+    marginal_nuisance <- apply(nuisance == 0, 1, all)
+    if(any(marginal_nuisance)){
+      which_nuisance <- which(marginal_nuisance)
+      ord_mat[which_nuisance, which_treats] <- 0.1
+    }
+  }
+
   ord <- topOrd(ord_mat)
   
   if (any(is.na(ord))) stop("Formulae contain cyclic dependencies")

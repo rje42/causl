@@ -37,13 +37,15 @@ sim_multi <- function (out, proc_inputs) {
   ## sample size
   n <- nrow(out)
 # first sample X's upstream of the Z's
+
 for (i in seq_along(order))  {
   vnm <- vars[order[i]]
   if(vnm %in% LHS_Z){
     # if copula condition on Xs but Xs depend on Zs; send warning
     cop_cond <- all.vars(terms(forms[[4]]))
-    if(cop_cond[1] != 1 && i == 1){
+    if(!identical(cop_cond, character(0)) && i == 1){
       warning("Cannot do Specified Copula Condition ")
+      
     }
     j <- i
     break
@@ -73,6 +75,7 @@ if(length(famCopSingle) != 1) stop("Must be only one family")
 beta_mat <- pars$cop$Y[[1]]$beta
 form <- formula(paste("~", paste(LHS_X, sep = "+")) )
 MM <- model.matrix(form, out)
+MM <- MM[,colSums(MM) != 0 ,drop = FALSE]
 numCols <- dZ + 1;
 empty_init <- matrix(0, n, numCols)
 fam <- rep(famCopSingle, choose(numCols, 2))
