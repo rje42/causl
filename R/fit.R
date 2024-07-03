@@ -16,12 +16,14 @@
 ##' parameters.  Fit is by maximum likelihood.
 ##'
 ##' `control` has the same arguments as the argument in `optim`, as well
+
 ##' as `sandwich`, a logical indicating if sandwich estimates of standard errors
 ##' should be computed, `newton`, a logical which controls whether Newton iterates should be
 ##' performed at the end, and `cop` which can edit the restricted variable name
 ##' for the left-hand side of formulae.
 ##' Useful for altering are `trace` (1 shows steps of optimization) and
 ##' `maxit` for the number of steps.
+
 ##'
 ##' **Warning** By default, none of the variables should be called `cop`, as
 ##' this is reserved for the copula.  The reserved word can be changed using
@@ -38,7 +40,7 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   con <- list(sandwich = TRUE, method = "BFGS", newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
               abstol = -Inf, reltol = sqrt(.Machine$double.eps), alpha = 1, beta = 0.5,
               gamma = 2, REPORT = 10, warn.1d.NelderMead = TRUE, type = 1,
-              lmm = 5, factr = 1e+07, pgtol = 0, tmax = 10)
+              lmm = 5, factr = 1e+07, pgtol = 0, tmax = 10, start = NULL)
   matches = pmatch(names(control), names(con))
   con[matches[!is.na(matches)]] = control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ", paste(names(control[is.na(matches)]), sep = ", "))
@@ -107,7 +109,8 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   beta_start2 <- initializeParams2(dat, formulas=forms, family=family, link=link,
                                    full_form=full_form, kwd=kwd)
   theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
-
+  # theta_st <- c(0,0,-0.4,0.3,0.5,0.5,1,1,1,1)
+  
   ## other arguments to nll2()
   other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
@@ -125,7 +128,11 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   ## parameters to
   maxit <- con$maxit
   conv <- FALSE
-  out2 <- list(par = theta_st)
+  # if (!is.null(con$start)) out2 <- list(par = start)
+  # else 
+    out2 <- list(par = theta_st)
+  con <- con[names(con) != 'start']
+
   while (!conv) {
     con$maxit <- min(maxit, 5e3)
     out <- do.call(optim, c(list(fn=nll2, par=out2$par), other_args2, list(method="Nelder-Mead", control=con)))
@@ -200,7 +207,6 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
 
     if (con$trace > 0) cat("done\n")
   }
-
   # ## construct output
   out$counts = c(out$counts, newton_its = it)
 

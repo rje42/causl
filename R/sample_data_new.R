@@ -171,6 +171,9 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
   else if (method == "rejection") { ## rejection sampling method
     out <- sim_rejection(out, proc_inputs, careful, control)
   }
+  else if (method == "multi_copula"){ # multivariate copula
+    out <- sim_multi(out, proc_inputs)
+  }
   else stop("Not a recognised method")
 
   rownames(out) <- NULL
