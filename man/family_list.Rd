@@ -8,6 +8,8 @@ family_list(family, func_return = get_family)
 }
 \arguments{
 \item{family}{numeric or character vector of families}
+
+\item{func_return}{function to apply to list of families}
 }
 \description{
 Obtain list of family functions from numeric or character representation

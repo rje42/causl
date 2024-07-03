@@ -14,11 +14,11 @@ univarDens(x, eta, phi, other_pars, family = 1, link)
 
 \item{eta, phi}{linear component and dispersion parameters}
 
+\item{other_pars}{other parameters for certain families}
+
 \item{family}{numeric indicator of family}
 
 \item{link}{link function}
-
-\item{df}{degrees of freedom (only for t-distribution)}
 }
 \value{
 A list with entries being the numeric vectors \code{u} (the

@@ -4,16 +4,20 @@
 \alias{ll_frugal}
 \title{Log-likelihood for frugal parameterization}
 \usage{
-ll_frugal(pars, dat, formulas, family)
+ll_frugal(pars, dat, formulas, family, link, kwd = "cop")
 }
 \arguments{
 \item{pars}{parameter values}
 
-\item{dat}{}
+\item{dat}{\code{data.frame} containing data}
 
 \item{formulas}{list of lists of formulas}
 
 \item{family}{families for variables and copula}
+
+\item{link}{list of link functions}
+
+\item{kwd}{string to use for copula}
 }
 \description{
 Log-likelihood for frugal parameterization

@@ -4,7 +4,7 @@
 \alias{dGaussDiscCop}
 \title{Density of a Mixed Copula}
 \usage{
-dGaussDiscCop(x, m, Sigma, eta, log = FALSE, useC = TRUE)
+dGaussDiscCop(x, m, Sigma, eta, log = FALSE, use_cpp = TRUE)
 }
 \arguments{
 \item{x}{matrix of samples on (0,1)}
@@ -17,7 +17,7 @@ dGaussDiscCop(x, m, Sigma, eta, log = FALSE, useC = TRUE)
 
 \item{log}{logical: return log=density?}
 
-\item{useC}{logical: use the C routine?}
+\item{use_cpp}{logical: use the C routine?}
 }
 \value{
 numeric vector of densities

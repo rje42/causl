@@ -27,6 +27,8 @@ process_family(family, dims, func_return = get_family)
 
 \item{method}{either \code{"inversion"} (the default) or \code{"rejection"}}
 
+\item{len}{number of formulas}
+
 \item{dims}{number of variables in each class}
 
 \item{func_return}{function to use to process character arguments}

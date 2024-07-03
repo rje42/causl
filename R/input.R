@@ -41,7 +41,7 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
 
   ## different approaches based on method selected
   if (method == "rejection") pars <- check_rej(formulas=formulas, family=family, pars=pars, dims=dims, kwd=kwd)$pars
-  else if (method == "inversion" || method == "multi_copula") {
+  else {
 
     ## obtain empirical quantiles from any plasmode variables that will appear in copula
     if (!is.null(dat)) {
@@ -57,13 +57,19 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
 
     ## put some validation code in here for inversion method
 
-    tmp <- pair_copula_setup(formulas=formulas[[4]], family=family[[4]],
-                             pars=pars[[kwd]], LHSs=LHSs, quans=wh_q, ord=ord)
-    formulas[[4]] <- tmp$formulas
-    family[[4]] <- tmp$family
-    pars[[kwd]] <- tmp$pars
+    if (method == "inversion") {
+      tmp <- pair_copula_setup(formulas=formulas[[4]], family=family[[4]],
+                               pars=pars[[kwd]], LHSs=LHSs, quans=wh_q, ord=ord)
+      formulas[[4]] <- tmp$formulas
+      family[[4]] <- tmp$family
+      pars[[kwd]] <- tmp$pars
+    }
+    else if (method == "multi_copula") {
+      if (length(formulas[[4]]) != 1) stop("Only one formula for multivariate copula")
+      if (length(family[[4]]) != 1) stop("Only one family for multivariate copula")
+    }
+    else stop("'method' should be \"inversion\", \"multi_copula\" or \"rejection\"")
   }
-  else stop("'method' should be \"inversion\" or \"rejection\"")
 
   if (!exists("quantiles")) quantiles <- NULL
 
@@ -77,6 +83,7 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
 }
 
 ##' @inheritParams process_inputs
+##' @param len number of formulas
 ##' @describeIn process_inputs Process input for family variables
 process_formulas <- function (formulas, len=4) {
   ## check we have four groups of formulas
@@ -215,7 +222,7 @@ var_order <- function (formulas, dims, inc_cop=TRUE, method) {
 
   ## get order for simulation, if one exists
 
-  if (method == "multi_copula") {
+  if (FALSE && method == "multi_copula") {
   # break ties with Xs going first.
   # if there are uncoditional treatments put them first
   treats <- ord_mat[(dims[1] + 1) : (dims[1] + dims[2]), , drop = FALSE]

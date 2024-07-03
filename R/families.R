@@ -409,6 +409,7 @@ theta_to_p_cat <- function (theta) {
 ##' Obtain list of family functions from numeric or character representation
 ##'
 ##' @param family numeric or character vector of families
+##' @param func_return function to apply to list of families
 ##'
 ##' @examples
 ##' family_list(c(1,3,5))

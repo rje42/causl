@@ -1,3 +1,13 @@
+causl 0.9.0
+-------------------------------------------------------------------------------
+
+NEW FEATURES
+
+ * Introducing ability to simulate from a multivariate copula using the 
+ inversion method.  Choose method = "multi_copula".
+
+
+
 causl 0.8.9
 -------------------------------------------------------------------------------
 

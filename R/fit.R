@@ -7,7 +7,7 @@
 ##' be the same length as `formulas`
 ##' @param link link functions for each variable
 ##' @param cop_pars additional parameters for copula if required
-##' @param useC logical: should C++ routines be used?
+##' @param use_cpp logical: should C++ routines be used?
 ## @param init should linear models be used to initialize starting point?
 ##' @param control list of parameters to be passed to `optim`
 ##'
@@ -33,7 +33,7 @@
 ##'
 ##' @export
 fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
-                      family=rep(1,length(formulas)), link, cop_pars, useC=TRUE,
+                      family=rep(1,length(formulas)), link, cop_pars, use_cpp=TRUE,
                       control=list()) {
 
   # get control parameters for optim or use defaults
@@ -110,13 +110,13 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
                                    full_form=full_form, kwd=kwd)
   theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
   # theta_st <- c(0,0,-0.4,0.3,0.5,0.5,1,1,1,1)
-  
+
   ## other arguments to nll2()
   other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
                       inCop = seq_along(beta_start2$phi_m),
                       fam_cop=fam_cop, fam=family[-length(family)], cop_pars=cop_pars,
-                      useC=useC,
+                      use_cpp=use_cpp,
                       link = link)
 
   ## get some intitial parameter values
@@ -129,7 +129,7 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   maxit <- con$maxit
   conv <- FALSE
   # if (!is.null(con$start)) out2 <- list(par = start)
-  # else 
+  # else
     out2 <- list(par = theta_st)
   con <- con[names(con) != 'start']
 
@@ -309,14 +309,14 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
 ##' @export
 fitCausal <- function(dat, formulas=list(y~x, z~1, ~x),
                       family=rep(1,length(formulas)), link, par2,
-                      sandwich=TRUE, useC=TRUE, control=list()) {
+                      sandwich=TRUE, use_cpp=TRUE, control=list()) {
   deprecate_soft("0.8.8", "fitCausal()", with="fit_causl()")
 
   ## put sandwich option into control list
   control = c(list(sandwich=sandwich), control)
 
   fit_causl(dat=dat, formulas=formulas, family=family, link=link, cop_pars=par2,
-            useC=useC, control=control)
+            use_cpp=use_cpp, control=control)
 }
 
 

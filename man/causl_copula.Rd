@@ -2,19 +2,41 @@
 % Please edit documentation in R/copula_fams.R
 \name{causl_copula}
 \alias{causl_copula}
+\alias{get_copula}
 \alias{gaussian_causl_cop}
+\alias{t_causl_cop}
+\alias{sim_cop}
 \title{Copula family functions}
 \usage{
+get_copula(family_index, link = NULL)
+
 gaussian_causl_cop(link)
+
+t_causl_cop(link)
+
+sim_cop(causl_copula, beta_matrix, other_pars, model_matrix)
 }
 \arguments{
+\item{family_index}{integer representing copula family}
+
 \item{link}{link function}
+
+\item{causl_copula}{family from which to simulate}
+
+\item{beta_matrix}{matrix of regression coefficients}
+
+\item{other_pars}{other parameters for some families}
+
+\item{model_matrix}{matrix of regressors}
 }
 \description{
 Copula family functions
 }
 \details{
-These return a list that contains, for each valid family:
+\code{get_copula} returns the \code{causl_copula} that corresponds to the particular
+integer given.  So far, \code{1} for Gaussian and \code{2} for t copulas are implemented.
+
+The \code{copula_fam} functions return a list that contains, for each valid family:
 \itemize{
 \itemize{
 \item \code{name}: the name of the family;
@@ -28,6 +50,12 @@ These return a list that contains, for each valid family:
 }
 \section{Functions}{
 \itemize{
+\item \code{get_copula()}: getter copula family
+
 \item \code{gaussian_causl_cop()}: Gaussian copula family
+
+\item \code{t_causl_cop()}: t copula family
+
+\item \code{sim_cop()}: simulate from copula family
 
 }}

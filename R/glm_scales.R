@@ -38,7 +38,7 @@ process_discrete_dens <- function (dat, family, LHSs) {
 ##'
 ##' @param x vector of observations
 ##' @param eta,phi linear component and dispersion parameters
-##' @param df degrees of freedom (only for t-distribution)
+##' @param other_pars other parameters for certain families
 ##' @param family numeric indicator of family
 ##' @param link link function
 ##'

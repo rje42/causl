@@ -4,7 +4,7 @@
 \alias{var_order}
 \title{Obtain variable ordering from formulas}
 \usage{
-var_order(formulas, dims, inc_cop = TRUE)
+var_order(formulas, dims, inc_cop = TRUE, method)
 }
 \arguments{
 \item{formulas}{list of lists of formulas}
@@ -12,6 +12,8 @@ var_order(formulas, dims, inc_cop = TRUE)
 \item{dims}{number of variables in each class}
 
 \item{inc_cop}{logical indicating whether to include copula in the ordering}
+
+\item{method}{either \code{"inversion"} (the default) or \code{"rejection"}}
 }
 \description{
 Obtain variable ordering from formulas

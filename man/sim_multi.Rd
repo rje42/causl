@@ -10,8 +10,6 @@ sim_multi(out, proc_inputs)
 \item{out}{data frame for output}
 
 \item{proc_inputs}{output of \code{process_inputs()}}
-
-\item{control}{list of control parameters}
 }
 \description{
 Simulate for single time-step
