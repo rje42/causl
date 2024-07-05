@@ -88,11 +88,41 @@ test_that("simulation (inv) works 1", {
 })
 
 ## test log link for binomial
+# set.seed(124)
+# fam <- c(1,5,1,1)
+# pars <- list(z = list(beta=0, phi=1),
+#              x = list(beta=c(-5,0.5)),
+#              y = list(beta=c(0,0.5), phi=0.5),
+#              cop = list(y=list(z=list(beta=1))))
+# dat <- suppressMessages(rfrugalParam(1e4, formulas = forms, family=fam, par=pars,
+#                                      link = list("identity", "log", "identity")))
+
 set.seed(124)
-fam <- c(1,5,1,1)
-pars <- list(z = list(beta=0, phi=1),
-             x = list(beta=c(-5,0.5)),
-             y = list(beta=c(0,0.5), phi=0.5),
-             cop = list(y=list(z=list(beta=1))))
-dat <- suppressMessages(rfrugalParam(1e4, formulas = forms, family=fam, par=pars,
-                                     link = list("identity", "log", "identity")))
+fam <- list(1,5,5,1)
+forms <- list(X ~ 1, 
+              list(A ~ X),
+              Y ~ A, 
+              ~ A)
+
+pars <- list(X = list(beta = 0,phi = 1),
+             A = list(beta = c(-1,2)),
+             Y = list(beta = c(-1,0.2)),
+             cop = list(beta = c(0,0.5)))
+
+set.seed(123)
+dat <- suppressMessages(rfrugalParam(1e5, formulas = forms, pars=pars, family = fam,
+                    link = list("identity","logit","log")))
+
+
+modX <- glm(A ~ X, family=binomial, data=dat)
+ps <- fitted(modX)
+wt <- dat$A/ps + (1-dat$A)/(1-ps)
+modY <- suppressWarnings(glm(Y ~ A, data=dat, family=binomial("log"), weights = wt))
+
+
+test_that("distribution is correct", {
+  expect_true(sqrt(sum(modX$coef - c(-1,2))^2) < 0.05)
+  expect_true(sqrt(sum(modY$coef - c(-1,0.2))^2) < 0.05)
+})
+
+

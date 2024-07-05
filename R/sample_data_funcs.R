@@ -71,7 +71,7 @@ rescale_var <- function(U, X, pars, family=1, link) {
     else if (family == 0 || family == 5) {
       if (link == "probit") Y <- 1*(eta + qnorm(U) > 0)
       else if (link == "logit") Y <- 1*(eta + qlogis(U) > 0)
-      else if (link == "log") Y <- 1*(eta + log(U) > 0)
+      else if (link == "log") Y <- 1*(eta - log(U) > 0)
       else stop("invalid link function for binomial distribution")
 
       # trunc <- pars$trunc
