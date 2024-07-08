@@ -2,7 +2,7 @@
 ##'
 ##' @param out data frame for output
 ##' @param proc_inputs output of `process_inputs()`
-##' @param control list of control parameters
+## @param control list of control parameters
 ##'
 ##' @details `sim_inversion` and `sim_rejection` correspond to
 ##' performing the sampling by inversion or using rejection sampling.

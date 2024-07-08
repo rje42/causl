@@ -12,7 +12,8 @@ pars <- list(Z1 = list(beta=0, phi=1),
              cop = list(beta=matrix(c(0.1,0.5,0.6), nrow=1)))
 
 n <- 1e4
-dat <- rfrugalParam(n, formulas = forms, family = fams, pars = pars, method="multi_copula")
+dat <- rfrugalParam(n, formulas = forms, family = fams, pars = pars,
+                    method="inversion_mv", control=list(quiet=TRUE))
 
 modX <- glm(X ~ Z1 + Z2, family=binomial, data=dat)
 coefsX <- summary(modX)$coefficients

@@ -8,7 +8,7 @@
 ##' @details Function that processes and checks the validity of the main arguments
 ##' used for simulating data.
 ##'
-process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inversion") {
+process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inversion") {
 
   ## process univariate formulas and obtain dimensions of model
   formulas <- process_formulas(formulas)
@@ -30,14 +30,21 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
   ## useful variable summaries
   # output <- c(LHS_Z, LHS_Y)
   vars <- c(LHS_Z, LHS_X, LHS_Y)
-  if (any(duplicated(vars))) stop("Repeated variable names not allowed")
+  # if (!is.null(dat)) avars <- c(names(dat), vars)
+  if ((is.null(dat) && any(duplicated(vars))) ||
+      any(duplicated(c(names(dat), vars)))) stop("Repeated variable names not allowed")
   LHSs <- list(LHS_Z, LHS_X, LHS_Y)
 
   ## check univariate parameter values are appropriate
-  if (missing(pars)) stop("Must supply parameter values")
-  dummy_dat <- gen_dummy_dat(family=family, pars=pars, dat=dat, LHSs=LHSs, dims=dims)
-  pars <- check_pars(formulas=formulas, family=family, pars=pars, dummy_dat=dummy_dat,
-                     LHSs=LHSs, kwd=kwd, dims=dims)$pars
+  if (!missing(pars)) {
+    dummy_dat <- gen_dummy_dat(family=family, pars=pars, dat=dat, LHSs=LHSs, dims=dims)
+    pars <- check_pars(formulas=formulas, family=family, pars=pars, dummy_dat=dummy_dat,
+                       LHSs=LHSs, kwd=kwd, dims=dims)$pars
+  }
+  else {
+    message("Parameters missing, treating as a model only for fitting")
+    pars <- NULL
+  }
 
   ## different approaches based on method selected
   if (method == "rejection") pars <- check_rej(formulas=formulas, family=family, pars=pars, dims=dims, kwd=kwd)$pars
@@ -64,11 +71,11 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
       family[[4]] <- tmp$family
       pars[[kwd]] <- tmp$pars
     }
-    else if (method == "multi_copula") {
-      if (length(formulas[[4]]) != 1) stop("Only one formula for multivariate copula")
-      if (length(family[[4]]) != 1) stop("Only one family for multivariate copula")
+    else if (method == "inversion_mv") {
+      if (length(formulas[[4]]) != 1) stop("Should only be one formula for multivariate copula")
+      if (length(family[[4]]) != 1) stop("Should only be one family for multivariate copula")
     }
-    else stop("'method' should be \"inversion\", \"multi_copula\" or \"rejection\"")
+    else stop("'method' should be \"inversion\", \"inversion_mv\" or \"rejection\"")
   }
 
   if (!exists("quantiles")) quantiles <- NULL
@@ -76,10 +83,13 @@ process_inputs <- function (formulas, pars, family, link, dat, kwd, method="inve
   ## set up link functions
   link <- link_setup(link, family[1:3], vars=LHSs)
 
-  return(list(formulas=formulas, pars=pars, family=family, link=link,
-              LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y),
-              quantiles=quantiles, kwd=kwd, dim=dims[1:3], vars=vars, #output=output,
-              order=ord))
+  caus_mod <- list(formulas=formulas, family=family, pars=pars, link=link,
+                   dat=dat, LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y),
+                   quantiles=quantiles, kwd=kwd, dim=dims[1:3], vars=vars, #output=output,
+                   order=ord, method=method)
+  class(caus_mod) <- "causl_model"
+
+  return(caus_mod)
 }
 
 ##' @inheritParams process_inputs
@@ -114,10 +124,12 @@ process_family <- function (family, dims, func_return=get_family) {
   if (missing(family)) {
     ## assume everything is Gaussian
     family <- lapply(dims, rep.int, x=1)
+    message("No families provided, so assuming all variables are Gaussian")
     return(family)
   }
 
   nU <- length(family) - 1
+  if (length(family) != length(dims)) stop("Should be a family entry for each set of formulas")
 
   if (is.list(family)) {
     lens <- lengths(family)
@@ -222,21 +234,21 @@ var_order <- function (formulas, dims, inc_cop=TRUE, method) {
 
   ## get order for simulation, if one exists
 
-  if (FALSE && method == "multi_copula") {
-  # break ties with Xs going first.
-  # if there are uncoditional treatments put them first
-  treats <- ord_mat[(dims[1] + 1) : (dims[1] + dims[2]), , drop = FALSE]
-  nuisance <- ord_mat[1:dims[1], , drop = FALSE]
-  marginal_treats <- apply(treats == 0, 1, all)
-  if(any(marginal_treats)){
-    which_treats <- which(marginal_treats) + dims[1]
-    marginal_nuisance <- apply(nuisance == 0, 1, all)
-    if(any(marginal_nuisance)){
-      which_nuisance <- which(marginal_nuisance)
-      ord_mat[which_nuisance, which_treats] <- 0.1
+  if (FALSE && method == "inversion_mv") {
+    # break ties with Xs going first.
+    # if there are uncoditional treatments put them first
+    treats <- ord_mat[(dims[1] + 1) : (dims[1] + dims[2]), , drop = FALSE]
+    nuisance <- ord_mat[1:dims[1], , drop = FALSE]
+    marginal_treats <- apply(treats == 0, 1, all)
+    if(any(marginal_treats)){
+      which_treats <- which(marginal_treats) + dims[1]
+      marginal_nuisance <- apply(nuisance == 0, 1, all)
+      if(any(marginal_nuisance)){
+        which_nuisance <- which(marginal_nuisance)
+        ord_mat[which_nuisance, which_treats] <- 0.1
+      }
     }
   }
-}
   ord <- topOrd(ord_mat)
 
   if (any(is.na(ord))) stop("Formulae contain cyclic dependencies")
@@ -544,36 +556,35 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
   }
   # if (length(dims) == 4) return(list(formulas=formulas, family=family))
 
-
-  ## get parameters in right format
-  if (!setequal(names(pars), LHS_Y)) {
-    if ("beta" %in% names(pars)) {
-      pars <- rep(list(list(list(beta=pars$beta))), length(LHS_Y))
-      names(pars) <- LHS_Y
-      ordY <- rank(ord[dZ+dX+seq_len(dY)])
-      if (nQ+dZ > 1 || dY > 1) {
-        for (i in seq_len(dY)) {
-          vnm <- LHS_Y[[ordY[i]]]
-          pars[[vnm]] <- rep(pars[[vnm]], nQ+dZ+i-1)
-          names(pars[[vnm]]) <- c(quans, LHS_Z, LHS_Y[ord[seq_len(i-1)]])
+  if (!is.null(pars)) {
+    ## get parameters in right format
+    if (!setequal(names(pars), LHS_Y)) {
+      if ("beta" %in% names(pars)) {
+        pars <- rep(list(list(list(beta=pars$beta))), length(LHS_Y))
+        names(pars) <- LHS_Y
+        ordY <- rank(ord[dZ+dX+seq_len(dY)])
+        if (nQ+dZ > 1 || dY > 1) {
+          for (i in seq_len(dY)) {
+            vnm <- LHS_Y[[ordY[i]]]
+            pars[[vnm]] <- rep(pars[[vnm]], nQ+dZ+i-1)
+            names(pars[[vnm]]) <- c(quans, LHS_Z, LHS_Y[ord[seq_len(i-1)]])
+          }
         }
       }
+      else {
+        nrep <- setdiff(LHS_Y, names(pars))
+        if (length(nrep) > 0) stop(paste0("Variable ", paste(nrep, collapse=", "),
+                                          " not represented in the copula parameters list"))
+        rep <- setdiff(names(pars), LHS_Y)
+        if (length(rep) > 0) stop(paste0("Variable ", paste(rep, collapse=", "),
+                                         " represented in copula parameters list but not a response variable"))
+        stop("Shouldn't get here")
+      }
     }
-    else {
-      nrep <- setdiff(LHS_Y, names(pars))
-      if (length(nrep) > 0) stop(paste0("Variable ", paste(nrep, collapse=", "),
-                                        " not represented in the copula parameters list"))
-      rep <- setdiff(names(pars), LHS_Y)
-      if (length(rep) > 0) stop(paste0("Variable ", paste(rep, collapse=", "),
-                                       " represented in copula parameters list but not a response variable"))
-      stop("Shouldn't get here")
+    else if (!all(sapply(pars, is.list))) {
+      ## put some code in here to correct fact that some pairs aren't represented
     }
   }
-  else if (!all(sapply(pars, is.list))) {
-    ## put some code in here to correct fact that some pairs aren't represented
-  }
-  # else stop("'method' should be \"inversion\" or \"rejection\"")
-
 
   return(list(formulas=formulas, family=family, pars=pars))
 }

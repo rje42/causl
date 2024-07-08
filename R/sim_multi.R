@@ -1,12 +1,6 @@
-##' Simulate for single time-step
-##'
-##' @param out data frame for output
-##' @param proc_inputs output of `process_inputs()`
-## @param control list of control parameters
-##'
-##' @details `sim_inversion` and `sim_rejection` correspond to
-##' performing the sampling by inversion or using rejection sampling.`sim_multi` first
-##' simulates from the copula then transforms to the correct margins in the correct causal ordering
+##' @describeIn sim_inversion simulation with multivariate copula
+##' @details `sim_multi` first simulates from the copula then transforms to the
+##' correct margins in the correct causal ordering
 ##'
 ##' @export
 sim_multi <- function (out, proc_inputs) {

@@ -36,12 +36,13 @@ pars <- list(Z1 = list(beta=0, phi=1),
              X = list(beta=c(-0.3,0.1,0.2,0)),
              Y = list(beta=c(-0.25, 0.5), phi=0.5),
              cop = list(beta=matrix(c(0.5,0.3,0.4), nrow=1)))
+cm <- causl_model(formulas = forms, family = fams, pars = pars)
 ```
-Now call `rfrugalParam` as usual.  
+Now call `rfrugal` as usual.  
 ```{r simulate}
 set.seed(1234)
 n <- 1e4
-dat <- rfrugalParam(n, formulas = forms, family = fams, pars = pars)
+dat <- rfrugal(n, causl_model = cm)
 ```
 Then we can check that the distributions follow the specification that we 
 asked for.
@@ -105,12 +106,13 @@ pars <- list(A0 = list(beta = 0),
              A1 = list(beta = 2*c(-0.3,0.4,0.3,0.5,0.3,0.5)),
              Y = list(beta = c(-0.5,0.2,0.3,0), phi=1),
              cop = list(beta=c(2,0.5)))
+cm <- causl_model(formulas=forms, pars=pars, family=fams)
 ```
 In this case we set both covariate variables to be categorical. 
 ```{r}
 set.seed(123)
 n <- 5e4
-dat <- rfrugalParam(n, formulas = forms, pars=pars, family = fams)
+dat <- rfrugal(n=n, causl_model=cm)
 ```
 Now we can check that the parameters being simulated match those input.
 ```{r check_cat}

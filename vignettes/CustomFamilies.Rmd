@@ -67,9 +67,10 @@ pars <- list(Z = list(beta = 0, phi = 1),
              X = list(beta = c(0.3,1)),
              Y = list(beta = c(-1,0.5), phi = 1),
              cop = list(beta = 1))
+cm <- causl_model(formulas = forms, family = fams, pars = pars)
 
 set.seed(123)
-dat <- rfrugalParam(1e3, formulas = forms, family = fams, pars = pars)
+dat <- rfrugal(n=1e3, causl_model=cm)
 ```
 
 ### Treatment model
@@ -155,16 +156,17 @@ Now we can suitably modify our earlier example:
 ```{r params_sqrt}
 fams <- list(1, poisson_causl_fam(link="sqrt"), 1, 1)
 pars$X$beta <- c(0.9, 0.05)
+cm_sq <- modify.causl_model(cm, family=fams, pars=pars)
 
 set.seed(124)
-dat <- rfrugalParam(1e3, formulas = forms, family = fams, pars = pars)
+dat <- rfrugal(1e3, causl_model = cm_sq, control=list(quiet=TRUE))
 ```
 We can again check that the distribution was correctly sampled.
 ```{r chk_pois_sqrt}
 modX <- glm(X ~ Z, family=quasipoisson(sqrt), data=dat, start=c(1,0))
 summary(modX)$coefficients
 ```
-So we again see that the estimates are well within two standard errors of the 
-true value, and the dispersion parameter is estimated to be 
-`r summary(modX)$dispersion`, again close to 1.
+So we again see that the estimates are (just about) within two standard errors 
+of the true values (0.9 and 0.05), and the dispersion parameter is estimated to 
+be `r summary(modX)$dispersion`, again close to 1.
 

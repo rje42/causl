@@ -39,6 +39,23 @@ copula_vals <- data.frame(val=c(1:6,11),
 ##' The functions `gaussian_causl_fam()` etc. represent the functions that are
 ##' returned by `get_family()`.
 ##'
+##' A few function of this form can be defined by the user, and it should return
+##' the following:
+##'
+##'   * `name`: the name of the relevant family;
+##'   * `ddist`: a function returning the density of the distributions;
+##'   * `qdist`: a function returning the quantiles from probabilities;
+##'   * `rdist`: a function to sample values from the distribution;
+##'   * `pdist`: a cumulative distribution function;
+##'   * `pars`: a list of the names of the parameters used;
+##'   * `default`: a function that returns a list of the default values for an
+##'   observation and each of the parameters;
+##'   * `link`: the specified link function.
+##'
+##' The function should also give the output the class `"causl_family"`, so that
+##' it is interpreted appropriately.  Note that `ddist` should have a `log`
+##' argument, to allow the log-likelihood to be evaluated.
+##'
 ##'
 ##' @seealso [family_vals]
 ##'

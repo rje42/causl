@@ -13,9 +13,10 @@ pars <- list(A0 = list(beta = 0),
 
 set.seed(123)
 n <- 5e4
-dat <- suppressMessages(rfrugalParam(n, formulas = forms, pars=pars,
-                    family = list(c("categorical","categorical"),c(5,5),1,1),
-                    method="inversion"))
+cm <- causl_model(formulas = forms, pars=pars,
+                  family = list(c("categorical","categorical"),c(5,5),1,1),
+                  method="inversion")
+dat <- rfrugal(n=n, causl_model=cm,  control=list(quiet=TRUE))
 
 ps <- predict(glm(A1 ~ A0*L0, family=binomial, data=dat), type="response")
 wt <- dat$A1/ps + (1-dat$A1)/(1-ps)

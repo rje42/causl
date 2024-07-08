@@ -6,8 +6,8 @@ pars <- list(Z = list(beta = 0, phi = 1),
              cop = list(beta=c(1,0.25)))
 
 set.seed(123)
-dat <- suppressMessages(rfrugalParam(1e4, formulas = forms, family = c(1,5,5,1), pars = pars,
-                    method = "inversion"))
+dat <- rfrugalParam(1e4, formulas = forms, family = c(1,5,5,1), pars = pars,
+                    method = "inversion", control=list(quiet=TRUE))
 
 modX <- glm(X ~ Z, data=dat, family=binomial)
 ps <- predict(modX, type = "response")

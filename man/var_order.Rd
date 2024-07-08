@@ -13,7 +13,7 @@ var_order(formulas, dims, inc_cop = TRUE, method)
 
 \item{inc_cop}{logical indicating whether to include copula in the ordering}
 
-\item{method}{either \code{"inversion"} (the default) or \code{"rejection"}}
+\item{method}{either \code{"inversion"} (the default), \code{"inversion_mv"}, or \code{"rejection"}}
 }
 \description{
 Obtain variable ordering from formulas

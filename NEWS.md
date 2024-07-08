@@ -1,10 +1,37 @@
+causl 0.9.1
+-------------------------------------------------------------------------------
+
+NEW FEATURES
+
+ * Introduced `causl_model()` and `rfrugal()` functions, to create a causal 
+ model---an object that can be used to simulate from or, in future, fit a 
+ frugally parameterized model.
+
+ * Added vignette showing how to add a custom family to simulation methods.
+ 
+
+CHANGES
+
+ * `rfrugalParam` calls new function `rfrugal` to simulate data.
+
+ * Redundant argument `seed` removed from `rfrugalParam`.  Argument `careful` 
+ moved to `control`.
+ 
+ * Other `control` arguments removed: `trace`, `warn`, `max_wt`.
+ 
+ * `control` argument removed from `sim_inversion()` and `sim_rejection()`.
+
+ * `"multi_copula"` changed to `"inversion_mv"`.
+
+
+
 causl 0.9.0
 -------------------------------------------------------------------------------
 
 NEW FEATURES
 
  * Introducing ability to simulate from a multivariate copula using the 
- inversion method.  Choose method = "multi_copula".
+ inversion method.  Choose `method = "multi_copula"`.
 
 
 

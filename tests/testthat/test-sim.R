@@ -4,9 +4,13 @@ pars <- list(z = list(beta=0, phi=1),
              y = list(beta=c(0,0.5), phi=0.5),
              cop = list(beta=matrix(1, 1, 1)))
 
+test_that("No families message", {
+  expect_message(dat <- causalSamp(10, par=pars),
+                 "No families provided, so assuming all variables are Gaussian")
+})
+
 set.seed(123)
 dat <- causalSamp(1e3, par=pars)
-
 z_p <- ks.test(dat$z, pnorm)$p.value
 x_p <- ks.test(dat$x - 0.5*dat$z, pnorm)$p.value
 # mvn_p <- MVN::mvn(dat, mvnTest = "hz")$multivariateNormality$`p value`
@@ -76,8 +80,10 @@ pars <- list(z = list(beta=0, phi=1),
              x = list(beta=c(0,0.5)),
              y = list(beta=c(0,0.5), phi=0.5),
              cop = list(y=list(z=list(beta=1))))
-dat <- suppressMessages(rfrugalParam(1e4, formulas = forms, family=fam, par=pars,
-                    method="inversion"))
+cm <- causl_model(formulas = forms, family=fam, par=pars, method="inversion")
+dat <- rfrugal(n=1e4, causl_model = cm, control=list(quiet=TRUE))
+# dat <- rfrugalParam(1e4, formulas = forms, family=fam, par=pars,
+                    # method="inversion", control=list(quiet=TRUE))
 
 z_p <- ks.test(pnorm(dat$z), runif(1e4))$p.value
 x_p <- glm(x ~ z, family=binomial, data=dat)$coef
@@ -89,10 +95,14 @@ test_that("simulation (inv) works 1", {
 
 ## test log link for binomial
 set.seed(124)
-fam <- c(1,5,1,1)
-pars <- list(z = list(beta=0, phi=1),
-             x = list(beta=c(-5,0.5)),
-             y = list(beta=c(0,0.5), phi=0.5),
-             cop = list(y=list(z=list(beta=1))))
-dat <- suppressMessages(rfrugalParam(1e4, formulas = forms, family=fam, par=pars,
-                                     link = list("identity", "log", "identity")))
+cm2 <- modify.causl_model(cm, pars=list(x=list(beta=c(-5,0.5))),
+                          link = list("identity", "log", "identity"))
+# fam <- c(1,5,1,1)
+# pars <- list(z = list(beta=0, phi=1),
+#              x = list(beta=c(-5,0.5)),
+#              y = list(beta=c(0,0.5), phi=0.5),
+#              cop = list(y=list(z=list(beta=1))))
+dat <- rfrugal(n=1e4, causl_model=cm2, control=list(quiet=TRUE))
+# dat <- rfrugalParam(1e4, formulas = forms, family=fam, par=pars,
+#                     link = list("identity", "log", "identity"),
+#                     control=list(quiet=TRUE))

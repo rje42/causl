@@ -55,6 +55,7 @@ link_setup <- function(link, family, vars, sources=links_list,
     if (all(lengths(link) == lengths(family))) {
       ## if lengths the same, assume in same position as family variables
       for (i in seq_along(link_out)) {
+        if (is(family[[i]][[1]], "causl_family")) next
         link_out[[i]][] <- tmp[pmatch(link[[i]], tmp)]
         if (any(is.na(link_out[[i]]))) stop("link not properly matched")
       }
