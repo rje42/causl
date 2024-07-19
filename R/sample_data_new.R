@@ -17,7 +17,7 @@
 ##' @details Samples from a given causal model under the frugal
 ##' parameterization.
 ##'
-##' ##' The entries for  `formula` and `family` should each be a
+##' The entries for  `formula` and `family` should each be a
 ##' list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and
 ##' the copula.  `formula` determines the model, so it is crucial that
 ##' every variable to be simulated is represented there exactly once.  Each
@@ -35,9 +35,8 @@
 ##' 6 = log-normal.
 ##'
 ##' The family variables for the copula are also numeric and taken from
-##' `VineCopula`.
-##' Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton, 4 for Gumbel,
-##' 5 for Frank, 6 for Joe and 11 for FGM copulas.
+##' `VineCopula`. Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton,
+##' 4 for Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas.
 ##'
 ##' `pars` should be a named list containing variable names that correspond
 ##' to the LHS of

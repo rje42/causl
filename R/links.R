@@ -10,9 +10,12 @@
 link_setup <- function(link, family, vars, sources=links_list,
                        fam_list=list(family_vals)) {
 
-  if (!missing(vars) && !all(lengths(vars) == lengths(family))) stop("length of variable names vector does not match number of families provided")
+  if (!missing(vars)) {
+    if (!all(lengths(vars) == lengths(family))) stop("length of variable names vector does not match number of families provided")
+    if (!missing(link) && isTRUE(any(!(names(unlist(link)) %in% unlist(vars))))) stop("Link named for variable not in the model")
+  }
 
-  ## concatenate list of courses
+  ## concatenate list of sources
   lk_lsts <- sources # do.call(c, sources)
   all_lks <- unlist(lk_lsts)
   fm_lsts <- do.call(c, fam_list)
@@ -50,23 +53,40 @@ link_setup <- function(link, family, vars, sources=links_list,
 
   tmp <- unlist(lk_lsts)
 
-  ## now add in any modifications made in 'link'
-  if (is.list(link)) {
-    if (all(lengths(link) == lengths(family))) {
-      ## if lengths the same, assume in same position as family variables
-      for (i in seq_along(link_out)) {
-        if (is(family[[i]][[1]], "causl_family")) next
-        link_out[[i]][] <- tmp[pmatch(link[[i]], tmp)]
-        if (any(is.na(link_out[[i]]))) stop("link not properly matched")
-      }
-      return(link_out)
-    }
-  }
 
-  ## otherwise try to use names to deduce which is which
-  if (!missing(vars)) {
+  if (is.null(names(unlist(link)))) {
+    if (!all(lengths(family) == lengths(link))) stop("If no names provided, lengths of 'link' must match those of 'family'")
+    ## if lengths the same, assume in same position as family variables
+    for (i in seq_along(link_out)) {
+      if (is(family[[i]][[1]], "causl_family")) {
+        link_out[[i]] <- sapply(family[[i]], link)
+        next
+      }
+      else {
+        link_out[[i]][] <- tmp[pmatch(link[[i]], tmp)]
+        valid <- mapply(
+          function(x,y) {
+            fms <- family_vals$family[match(y,family_vals$val)]
+            match(x, lk_lsts[[fms]])
+          },
+          link_out[[i]], family[[i]])
+        if (any(is.na(valid))) stop(paste0("Invalid link supplied for families: ",
+                                           paste(family[[i]][is.na(valid)], collapse=", ")))
+      }
+      if (any(is.na(link_out[[i]]))) stop("link not properly matched")
+    }
+    return(link_out)
+  }
+  else {
+    ## unlist provided links
     link <- unlist(link)
-    if (is.null(names(link))) stop("names must be supplied for links in order to match with them")
+
+    ## now add in any modifications made in 'link'
+    ## see if names can be used
+    if (!missing(vars)) {
+      if (!isTRUE(all(names(link) %in% unlist(vars)))) stop("Some names not contained in 'vars'")
+    }
+
     nms <- names(link)
     wh_set <- subsetmatch(as.list(nms), vars)
     if (any(is.na(wh_set))) stop("names must be supplied for links in order to match with them")
@@ -78,33 +98,29 @@ link_setup <- function(link, family, vars, sources=links_list,
       if (is.na(wh_val[i])) stop("some links not matched")
       link_out[[wh_set[i]]][wh_val[i]] <- tmp[pmatch(link[i], tmp)]
     }
+    for (i in seq_along(family)) {
+      if (is(family[[i]][[1]], "causl_family")) {
+        for (j in seq_along(family[[i]])) {
+          if (link(family[[i]][[j]]) != link_out[[i]][j]) {
+            warning("Provided link does not match that in family. Using family link")
+            link_out[[i]][[j]] <- link(family[[i]][[j]])
+          }
+        }
+      }
+      else {
+        valid <- mapply(
+          function(x,y) {
+            fms <- family_vals$family[match(y,family_vals$val)]
+            match(x, lk_lsts[[fms]])
+          },
+          link_out[[i]], family[[i]])
+        if (any(is.na(valid))) stop(paste0("Invalid link supplied for families: ",
+                                           paste(family[[i]][is.na(valid)], collapse=", ")))
+      }
+    }
     if (any(is.na(unlist(link_out)))) stop("some links not matched")
-    #
-    #
-    # for (j in seq_along(vars)) {
-    #   mask <- wh_set == j
-    #
-    #   for (i in seq_along(lk_lsts)) {
-    #     lki <- link[mask && fam_nm == nms[i]]
-    #     linknm <- pmatch(lki, lk_lsts[[i]])
-    #     lki2 <- lk_lsts[[i]][linknm]
-    #     if (any(is.na(lki2))) stop("link ", paste(lki[which(is.na(lki2))], sep=", "), " not supported")
-    #     lki[]
-    #   }
-    #   chk <- wh_set
-    # }
   }
-  else stop("variable names must be provided to match using them")
 
-  # ## matching
-  # fam_nm <- fm_lsts$family[fm_lsts$val==fams]
-  # nms <- names(lk_lsts)
-  # for (i in seq_along(lk_lsts)) {
-  #   lki <- link[fam_nm == nms[i]]
-  #   linknm <- pmatch(lki, lk_lsts[[i]])
-  #   lki2 <- lk_lsts[[i]][linknm]
-  #   if (any(is.na(lki2))) stop("link ", paste(lki[which(is.na(lki2))], sep=", "), " not supported")
-  #
 
   return(link_out)
 }

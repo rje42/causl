@@ -1,3 +1,15 @@
+causl 0.9.2
+-------------------------------------------------------------------------------
+
+NEW FEATURES
+
+ * We now allow for specification of only certain link functions.
+ 
+ * Added `link()` to obtain link functions from `causl_family` and `causl_cop`
+ objects.
+
+
+
 causl 0.9.1
 -------------------------------------------------------------------------------
 

@@ -10,7 +10,7 @@ test_that("No families message", {
 })
 
 set.seed(123)
-dat <- causalSamp(1e3, par=pars)
+dat <- suppressMessages(causalSamp(1e3, par=pars))
 z_p <- ks.test(dat$z, pnorm)$p.value
 x_p <- ks.test(dat$x - 0.5*dat$z, pnorm)$p.value
 # mvn_p <- MVN::mvn(dat, mvnTest = "hz")$multivariateNormality$`p value`
