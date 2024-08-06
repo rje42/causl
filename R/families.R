@@ -39,6 +39,23 @@ copula_vals <- data.frame(val=c(1:6,11),
 ##' The functions `gaussian_causl_fam()` etc. represent the functions that are
 ##' returned by `get_family()`.
 ##'
+##' A few function of this form can be defined by the user, and it should return
+##' the following:
+##'
+##'   * `name`: the name of the relevant family;
+##'   * `ddist`: a function returning the density of the distributions;
+##'   * `qdist`: a function returning the quantiles from probabilities;
+##'   * `rdist`: a function to sample values from the distribution;
+##'   * `pdist`: a cumulative distribution function;
+##'   * `pars`: a list of the names of the parameters used;
+##'   * `default`: a function that returns a list of the default values for an
+##'   observation and each of the parameters;
+##'   * `link`: the specified link function.
+##'
+##' The function should also give the output the class `"causl_family"`, so that
+##' it is interpreted appropriately.  Note that `ddist` should have a `log`
+##' argument, to allow the log-likelihood to be evaluated.
+##'
 ##'
 ##' @seealso [family_vals]
 ##'
@@ -409,6 +426,7 @@ theta_to_p_cat <- function (theta) {
 ##' Obtain list of family functions from numeric or character representation
 ##'
 ##' @param family numeric or character vector of families
+##' @param func_return function to apply to list of families
 ##'
 ##' @examples
 ##' family_list(c(1,3,5))
@@ -430,5 +448,31 @@ family_list <- function (family, func_return=get_family) {
   else stop("'family' should be a numeric or character vector, or a list of 'causl_family' objects")
 
   return(out)
+}
+
+##' Default method
+##'
+##' @param `...` other arguments (not currently used)
+##'
+##' @export
+link <- function(x, ...) {
+  UseMethod("link")
+}
+
+
+##' Obtain link from a `causl_family` or `causl_copula` obect
+##'
+##' @param x an object of class `causl_family` or `causl_copula`
+##'
+##' @export
+link.causl_family <- function (x, ...) {
+  return(x$link)
+}
+
+##' @describeIn link.causl_family method for `causl_copula` object
+##'
+##' @export
+link.causl_copula <- function (x, ...) {
+  return(x$link)
 }
 

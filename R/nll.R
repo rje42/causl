@@ -9,7 +9,7 @@
 ##' @param fam_cop,family integer and integer vector for copula and distribution families respectively
 ##' @param link vector of link functions
 ##' @param cop_pars other parameters for copula
-##' @param useC logical: should Rcpp functions be used?
+##' @param use_cpp logical: should Rcpp functions be used?
 ##'
 ##' @details The number of columns of `beta` should be the number of columns
 ##' in `dat` plus the number required to parameterize the copula.  The first
@@ -21,19 +21,19 @@
 ## @importFrom Matrix Matrix
 ##'
 nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
-                 family, link, cop_pars=NULL, useC=TRUE) {
+                 family, link, cop_pars=NULL, use_cpp=TRUE) {
   np <- sum(beta > 0)
 
   beta[beta > 0] <- theta[seq_len(np)]
   phi[phi > 0] <- theta[-seq_len(np)]
 
   -sum(ll(dat, mm=mm, beta=beta, phi=phi, inCop=inCop, fam_cop=fam_cop,
-      family=family, link=link, cop_pars=cop_pars, useC=useC))
+      family=family, link=link, cop_pars=cop_pars, use_cpp=use_cpp))
 }
 
 
 ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
-                 family=rep(1,nc), link, cop_pars=NULL, useC=TRUE,
+                 family=rep(1,nc), link, cop_pars=NULL, use_cpp=TRUE,
                 exclude_Z = FALSE, outcome = "y") {
 
   if (missing(inCop)) inCop <- seq_along(dat)
@@ -127,11 +127,11 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
           # conversion from logit to probit scale
           # eta2[,(nc - ndisc+1):nc] <- qnorm(expit(eta[,(nc - ndisc+1):nc]))
 
-          cop <- dGaussDiscCop(dat_u2, m = ndisc, Sigma=Sigma, eta=eta2[,inCop,drop=FALSE], log=TRUE, useC=useC)
+          cop <- dGaussDiscCop(dat_u2, m = ndisc, Sigma=Sigma, eta=eta2[,inCop,drop=FALSE], log=TRUE, use_cpp=use_cpp)
         }
-        else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
+        else cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, use_cpp=use_cpp)
 
-        # cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, useC=useC)
+        # cop <- dGaussCop(dat_u[,inCop,drop=FALSE], Sigma=Sigma, log=TRUE, use_cpp=use_cpp)
       }
       else if (fam_cop == 2) {
         #q_dat <- qt(as.matrix(dat_u), df=cop_pars)

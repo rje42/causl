@@ -116,6 +116,5 @@ sim_vinecop <- function (dat, family, par, par2=NULL, model_matrix, link) {
                                    names = names(dat))
     dat[gp_mem,] <- VineCopula::RVineSim(n_gp, RVM)
   }
-
   dat
 }

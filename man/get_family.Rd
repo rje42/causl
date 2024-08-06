@@ -38,6 +38,24 @@ Return causl_fam function from integer index
 \details{
 The functions \code{gaussian_causl_fam()} etc. represent the functions that are
 returned by \code{get_family()}.
+
+A few function of this form can be defined by the user, and it should return
+the following:
+\itemize{
+\item \code{name}: the name of the relevant family;
+\item \code{ddist}: a function returning the density of the distributions;
+\item \code{qdist}: a function returning the quantiles from probabilities;
+\item \code{rdist}: a function to sample values from the distribution;
+\item \code{pdist}: a cumulative distribution function;
+\item \code{pars}: a list of the names of the parameters used;
+\item \code{default}: a function that returns a list of the default values for an
+observation and each of the parameters;
+\item \code{link}: the specified link function.
+}
+
+The function should also give the output the class \code{"causl_family"}, so that
+it is interpreted appropriately.  Note that \code{ddist} should have a \code{log}
+argument, to allow the log-likelihood to be evaluated.
 }
 \section{Functions}{
 \itemize{

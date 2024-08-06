@@ -15,7 +15,7 @@ nll2(
   family,
   link,
   cop_pars = NULL,
-  useC = TRUE
+  use_cpp = TRUE
 )
 }
 \arguments{
@@ -37,7 +37,7 @@ nll2(
 
 \item{cop_pars}{other parameters for copula}
 
-\item{useC}{logical: should Rcpp functions be used?}
+\item{use_cpp}{logical: should Rcpp functions be used?}
 }
 \description{
 Negative log-likelihood

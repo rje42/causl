@@ -7,9 +7,9 @@
 \alias{dfgmCopula}
 \title{Density of a multivariate copula}
 \usage{
-dGaussCop(x, Sigma, log = FALSE, useC = TRUE, N)
+dGaussCop(x, Sigma, log = FALSE, use_cpp = TRUE, N)
 
-dtCop(x, Sigma, df, log = FALSE, useC = TRUE)
+dtCop(x, Sigma, df, log = FALSE, use_cpp = TRUE)
 
 dfgmCopula(x, alpha)
 }
@@ -20,7 +20,7 @@ dfgmCopula(x, alpha)
 
 \item{log}{logical: return log=density?}
 
-\item{useC}{logical: use the C routine?}
+\item{use_cpp}{logical: use the C routine?}
 
 \item{N}{optional integer for number of covariance matrices}
 
@@ -36,7 +36,7 @@ Density of a multivariate copula
 }
 \details{
 Computes the density for data from a
-Gaussian or t-copula.  Currently \code{useC} only
+Gaussian or t-copula.  Currently \code{use_cpp} only
 works for \code{dGaussCop}.
 }
 \section{Functions}{

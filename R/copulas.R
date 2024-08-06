@@ -77,11 +77,11 @@ rfgmCopula <- function(n, d=2, alpha)
 ##' @param x samples on (0,1)
 ##' @param Sigma collection of matrices
 ##' @param log logical: return log=density?
-##' @param useC logical: use the C routine?
+##' @param use_cpp logical: use the C routine?
 ##' @param N optional integer for number of covariance matrices
 ##'
 ##' @details Computes the density for data from a
-##' Gaussian or t-copula.  Currently `useC` only
+##' Gaussian or t-copula.  Currently `use_cpp` only
 ##' works for `dGaussCop`.
 ##'
 ##' @name copula_density
@@ -89,7 +89,7 @@ NULL
 
 ##' @describeIn copula_density Gaussian copula
 ##' @export
-dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE, N) {
+dGaussCop <- function(x, Sigma, log=FALSE, use_cpp=TRUE, N) {
   d <- ncol(x)
   if (d <= 1) {
     if (!log) return(1)
@@ -110,7 +110,7 @@ dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE, N) {
   }
 
   ## use the C++ implementation
-  if (useC) {
+  if (use_cpp) {
     ## if all the same matrix, use single copula implementation
     if (N == 1) {
       dim(Sigma) <- c(d,d)
@@ -169,7 +169,7 @@ dGaussCop <- function(x, Sigma, log=FALSE, useC=TRUE, N) {
 ##' @describeIn copula_density t-Copula density
 ##' @param df degrees of freedom
 ##' @export
-dtCop <- function(x, Sigma, df, log=FALSE, useC=TRUE) {
+dtCop <- function(x, Sigma, df, log=FALSE, use_cpp=TRUE) {
   if (missing(df)) stop("Degrees of freedom not specified")
   if (!is.null(ncol(x))) d <- ncol(x)
   else {
@@ -250,19 +250,19 @@ dfgmCopula <- function(x, alpha) {
 ##' @param eta eta matrix
 ##' @param Sigma collection of matrices
 ##' @param log logical: return log=density?
-##' @param useC logical: use the C routine?
+##' @param use_cpp logical: use the C routine?
 ##'
 ##' @return numeric vector of densities
 ##' @importFrom mvtnorm pmvnorm
 ##'
 ##' @export
-dGaussDiscCop <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
+dGaussDiscCop <- function(x, m, Sigma, eta, log=FALSE, use_cpp=TRUE) {
 
   if(is.null(dim(x)) || length(dim(x)) != 2) stop("x must be a matrix-like object")
   if(is.null(dim(Sigma))) stop("Sigma must be a matrix-like object")
 
   ## if no truncation points given, then assume just a Gaussian copula
-  # if(is.null(trunc)) return(dGaussCop(x, Sigma, log=log, useC=useC))
+  # if(is.null(trunc)) return(dGaussCop(x, Sigma, log=log, use_cpp=use_cpp))
   ## check that trunc values are valid
   # if (any(is.na(unlist(trunc)))) stop("NA or NaN in trunc values")
   # if (any(unlist(trunc) > 1 | unlist(trunc) < 0)) stop("trunc values not in [0,1]")
@@ -298,7 +298,7 @@ dGaussDiscCop <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
 
 
   ## use the C++ implementation
-  if (useC) {
+  if (use_cpp) {
     ## transform to standard normal, but ensure that discrete variables are not transformed
     x[,seq_len(dim(Sigma)[2] - m)] <- qnorm(x[,seq_len(dim(Sigma)[2] - m)])
 
@@ -367,7 +367,7 @@ dGaussDiscCop <- function(x, m, Sigma, eta, log=FALSE, useC=TRUE) {
   # }
 
   if (d > m) {
-    rest <- dGaussCop(x=x[,seq_len(d-m),drop=FALSE], Sigma[seq_len(d-m),seq_len(d-m),,drop=FALSE], log = TRUE, useC=useC)
+    rest <- dGaussCop(x=x[,seq_len(d-m),drop=FALSE], Sigma[seq_len(d-m),seq_len(d-m),,drop=FALSE], log = TRUE, use_cpp=use_cpp)
     out <- out + rest
   }
 

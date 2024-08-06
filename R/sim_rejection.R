@@ -313,8 +313,9 @@ rejectionWeights <- function (dat, mms,# formula,
 
 
 ##' @param careful should full, slower method be used?
+## @param max_wt maximum weight obtained
 ##' @describeIn sim_inversion Rejection sampling code
-sim_rejection <- function (out, proc_inputs, careful, control) {
+sim_rejection <- function (out, proc_inputs, careful) {
 
   n <- nrow(out)
 
@@ -371,6 +372,7 @@ sim_rejection <- function (out, proc_inputs, careful, control) {
   ## ready for loop
   OK <- rep(FALSE, n)
   nr <- n
+  max_wt <- 1  # max value to divide by
 
   while (nr > 0) {
     ## obtain treatment values
@@ -449,8 +451,8 @@ sim_rejection <- function (out, proc_inputs, careful, control) {
       if (any(wts > 1)) stop(paste("Weights ", paste(which(wts > 1), collapse=", "), " are > 1", sep=""))
     }
     else {
-      control$max_wt <- max(max(wts), control$max_wt)
-      wts <- wts/control$max_wt
+      max_wt <- max(max(wts), max_wt)
+      wts <- wts/max_wt
     }
 
     OK[!OK] <- runif(nr) < wts

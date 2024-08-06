@@ -11,7 +11,7 @@ fit_causl(
   family = rep(1, length(formulas)),
   link,
   cop_pars,
-  useC = TRUE,
+  use_cpp = TRUE,
   control = list()
 )
 
@@ -22,7 +22,7 @@ fitCausal(
   link,
   par2,
   sandwich = TRUE,
-  useC = TRUE,
+  use_cpp = TRUE,
   control = list()
 )
 }
@@ -39,7 +39,7 @@ be the same length as \code{formulas}}
 
 \item{cop_pars}{additional parameters for copula if required}
 
-\item{useC}{logical: should C++ routines be used?}
+\item{use_cpp}{logical: should C++ routines be used?}
 
 \item{control}{list of parameters to be passed to \code{optim}}
 

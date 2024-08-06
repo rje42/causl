@@ -39,8 +39,9 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles) {
 
   ## now rescale to correct margin
   X <- model.matrix(delete.response(terms(formulas[[1]])), data=dat)
-  Y <- rescale_var(qY, X=X, family=family[[1]], pars=pars[[1]], link=link[[1]])
 
+  Y <- rescale_var(qY, X=X, family=family[[1]], pars=pars[[1]], link=link[[1]])
+  # Y <- rescale_var(runif(n), X=X, family=family[[1]], pars=pars[[1]], link=link[[1]])
   dat[[vnm]] <- Y
   # quantiles[[vnm]] <- qY
   attr(dat, "quantiles") <- quantiles

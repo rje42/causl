@@ -365,7 +365,7 @@ arma::vec dGDcop(arma::mat const &x,
   Rprintf("3...");
 
   // arma::mat cDec = arma::chol(sigma1cov);
-  double tmp[q*(q-1)/2];
+  double *tmp = new double[q*(q-1)/2];
 
   // assign upper triangular elements to tmp
   int ct = 0;
@@ -377,7 +377,7 @@ arma::vec dGDcop(arma::mat const &x,
   }
 
   // initialize vector of zeros for FORTRAN function
-  double zmn[q];
+  double * zmn = new double[q];
   for (uword j = 0; j < q; j++) {
     zmn[j] = 0.0;
   }
@@ -385,10 +385,11 @@ arma::vec dGDcop(arma::mat const &x,
   int maxpts = 25000;
   double abseps = 1E-3, releps = 0.0;
 
-  // get limits and indicators of infinite limits
+  // set up limits and indicators of infinite limits
   for (uword i = 0; i < n; i++) {
-    double lower2[q], upper2[q];
-    int infin2[q];
+    double *lower2 = new double[q];
+    double *upper2 = new double[q];
+    int *infin2 = new int[q];
     double error = 0.0, value = 0.0;
 
     for (uword j = 0; j < q; j++) {
@@ -430,6 +431,12 @@ arma::vec dGDcop(arma::mat const &x,
 
     // Rprintf("value: %e\n", value);
     out(i) += log(value);
+
+    delete[] lower2;
+    delete[] upper2;
+    delete[] infin2;
+    delete[] zmn;
+    delete[] tmp;
   }
 
   if (logd)
@@ -549,7 +556,7 @@ arma::vec dGDcop_sig(arma::mat const &x,
     // Rprintf("3...\n");
 
     // arma::mat cDec = arma::chol(sigma1cov);
-    double tmp[q*(q-1)/2];
+    double* tmp = new double[q*(q-1)/2];
 
     // assign upper triangular elements of correlation to tmp
     int ct = 0;
@@ -561,7 +568,7 @@ arma::vec dGDcop_sig(arma::mat const &x,
     }
 
     // set up elements for FORTRAN function
-    double zmn[q];
+    double* zmn = new double[q];
     for (uword j = 0; j < q; j++) {
       zmn[j] = 0.0;
     }
@@ -570,8 +577,9 @@ arma::vec dGDcop_sig(arma::mat const &x,
     double abseps = 1E-3, releps = 0.0;
 
     // set up limits and indicators of infinite limits
-    double lower2[q], upper2[q];
-    int infin2[q];
+    double *lower2 = new double[q];
+    double *upper2 = new double[q];
+    int *infin2 = new int[q];
     double error = 0.0, value = 0.0;
 
     for (uword j = 0; j < q; j++) {
@@ -611,6 +619,12 @@ arma::vec dGDcop_sig(arma::mat const &x,
 
              // Rprintf("value = %f\n", value);
              out(i) += log(value);
+
+     delete[] lower2;
+     delete[] upper2;
+     delete[] infin2;
+     delete[] zmn;
+     delete[] tmp;
   }
 
   if (logd)
@@ -746,7 +760,7 @@ arma::vec dGDcop2_sig(arma::mat const &x,
     // Rprintf("3...\n");
 
     // arma::mat cDec = arma::chol(sigma1cov);
-    double tmp[q*(q-1)/2];
+    double *tmp = new double[q*(q-1)/2];
 
     // assign upper triangular elements of correlation to tmp
     int ct = 0;
@@ -758,7 +772,7 @@ arma::vec dGDcop2_sig(arma::mat const &x,
     }
 
     // set up elements for FORTRAN function
-    double zmn[q];
+    double *zmn = new double[q];
     for (uword j = 0; j < q; j++) {
       zmn[j] = 0.0;
     }
@@ -767,8 +781,9 @@ arma::vec dGDcop2_sig(arma::mat const &x,
     double abseps = 1E-3, releps = 0.0;
 
     // set up limits and indicators of infinite limits
-    double lower2[q], upper2[q];
-    int infin2[q];
+    double *lower2 = new double[q];
+    double *upper2 = new double[q];
+    int *infin2 = new int[q];
     double error = 0.0, value = 0.0;
 
     for (uword j = 0; j < q; j++) {
@@ -806,8 +821,14 @@ arma::vec dGDcop2_sig(arma::mat const &x,
              &inform,  // INFORM
              &rnd);  //RND
 
-             // Rprintf("value = %f\n", value);
-             out(i) += log(value);
+    // Rprintf("value = %f\n", value);
+    out(i) += log(value);
+
+    delete[] lower2;
+    delete[] upper2;
+    delete[] infin2;
+    delete[] zmn;
+    delete[] tmp;
   }
 
   if (logd)
@@ -918,7 +939,7 @@ arma::vec dGDcop2(arma::mat const &x,
     // Rprintf("3...\n");
 
     // arma::mat cDec = arma::chol(sigma1cov);
-    double tmp[q*(q-1)/2];
+    double *tmp = new double[q*(q-1)/2];
 
     // assign upper triangular elements of correlation to tmp
     int ct = 0;
@@ -930,7 +951,7 @@ arma::vec dGDcop2(arma::mat const &x,
     }
 
     // set up elements for FORTRAN function
-    double zmn[q];
+    double *zmn = new double[q];
     for (uword j = 0; j < q; j++) {
       zmn[j] = 0.0;
     }
@@ -939,8 +960,9 @@ arma::vec dGDcop2(arma::mat const &x,
     double abseps = 1E-3, releps = 0.0;
 
     // set up limits and indicators of infinite limits
-    double lower2[q], upper2[q];
-    int infin2[q];
+    double *lower2 = new double[q];
+    double *upper2 = new double[q];
+    int *infin2 = new int[q];
     double error = 0.0, value = 0.0;
 
     for (uword j = 0; j < q; j++) {
@@ -978,8 +1000,14 @@ arma::vec dGDcop2(arma::mat const &x,
              &inform,  // INFORM
              &rnd);  //RND
 
-             // Rprintf("value = %f\n", value);
-             out(i) += log(value);
+    // Rprintf("value = %f\n", value);
+    out(i) += log(value);
+
+    delete[] lower2;
+    delete[] upper2;
+    delete[] infin2;
+    delete[] zmn;
+    delete[] tmp;
   }
 
   if (logd)

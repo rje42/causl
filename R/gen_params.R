@@ -50,8 +50,8 @@ gen_cop_pars <- function (formulas, data, range=c(-1,1), ...) {
 
   ## get variables to put in copula
   vars <- c(lhs(formulas[[2]]), lhs(formulas[[3]]))
-  wh_q <- setdiff(c(lhs(formulas[[1]]), unlist(causl:::rhs_vars(formulas[[2]]))),
-                  c(unlist(causl:::rhs_vars(formulas[[3]])), vars))
+  wh_q <- setdiff(c(lhs(formulas[[1]]), unlist(rhs_vars(formulas[[2]]))),
+                  c(unlist(rhs_vars(formulas[[3]])), vars))
   nv <- length(wh_q)
 
   ## simulate values and put in appropriate structure

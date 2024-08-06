@@ -6,7 +6,7 @@
 \alias{process_family}
 \title{Process formulas, families and parameters}
 \usage{
-process_inputs(formulas, pars, family, link, dat, kwd, method = "inversion")
+process_inputs(formulas, family, pars, link, dat, kwd, method = "inversion")
 
 process_formulas(formulas, len = 4)
 
@@ -15,9 +15,9 @@ process_family(family, dims, func_return = get_family)
 \arguments{
 \item{formulas}{list of lists of formulas}
 
-\item{pars}{list of lists of parameters}
-
 \item{family}{families for variables and copula}
+
+\item{pars}{list of lists of parameters}
 
 \item{link}{list of link functions}
 
@@ -25,7 +25,9 @@ process_family(family, dims, func_return = get_family)
 
 \item{kwd}{keyword for copula}
 
-\item{method}{either \code{"inversion"} (the default) or \code{"rejection"}}
+\item{method}{either \code{"inversion"} (the default), \code{"inversion_mv"}, or \code{"rejection"}}
+
+\item{len}{number of formulas}
 
 \item{dims}{number of variables in each class}
 
