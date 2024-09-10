@@ -153,18 +153,31 @@ merge_formulas <- function (formulas) {
 }
 
 ## Get topological order from an adjacency matrix
-topOrd <- function (A) {
+topOrd <- function (A, from_top = FALSE) {
   ord <- integer(0)
   actv <- seq_len(nrow(A))
 
-  while(length(actv) > 0) {
-    npa <- rowSums(A[actv,,drop=FALSE])
-    wh0 <- which(npa == 0)
+  if (from_top) {
+    while(length(actv) > 0) {
+      npa <- rowSums(A[actv,,drop=FALSE])
+      wh0 <- which(npa == 0)
 
-    if (length(wh0) == 0) return(NA)
-    ord <- c(ord, actv[wh0])
-    A[,actv[wh0]] <- 0
-    actv <- actv[-wh0]
+      if (length(wh0) == 0) return(NA)
+      ord <- c(ord, actv[wh0])
+      A[,actv[wh0]] <- 0
+      actv <- actv[-wh0]
+    }
+  }
+  else {
+    while(length(actv) > 0) {
+      npa <- colSums(A[,actv,drop=FALSE])
+      wh0 <- which(npa == 0)
+
+      if (length(wh0) == 0) return(NA)
+      ord <- c(actv[wh0], ord)
+      A[actv[wh0],] <- 0
+      actv <- actv[-wh0]
+    }
   }
 
   ord
