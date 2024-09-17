@@ -12,7 +12,8 @@ fit_causl(
   link,
   cop_pars,
   use_cpp = TRUE,
-  control = list()
+  control = list(),
+  other_pars = list()
 )
 
 fitCausal(
@@ -43,6 +44,8 @@ be the same length as \code{formulas}}
 
 \item{control}{list of parameters to be passed to \code{optim}}
 
+\item{other_pars}{list of other parameters to use (e.g. degrees of freedom for a t-distribution)}
+
 \item{par2}{former name for \code{cop_pars} argument}
 
 \item{sandwich}{logical: should sandwich standard errors be returned?}
@@ -65,6 +68,9 @@ performed at the end, and \code{cop} which can edit the restricted variable name
 for the left-hand side of formulae.
 Useful for altering are \code{trace} (1 shows steps of optimization) and
 \code{maxit} for the number of steps.
+
+The list \code{other_pars} should be named with the relevant variables, and
+each entry should be a named list containing the relevant parameters.
 
 \strong{Warning} By default, none of the variables should be called \code{cop}, as
 this is reserved for the copula.  The reserved word can be changed using

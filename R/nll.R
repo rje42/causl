@@ -10,6 +10,7 @@
 ##' @param link vector of link functions
 ##' @param cop_pars other parameters for copula
 ##' @param use_cpp logical: should Rcpp functions be used?
+##' @param other_pars other parameters to pass to `glm_dens`
 ##'
 ##' @details The number of columns of `beta` should be the number of columns
 ##' in `dat` plus the number required to parameterize the copula.  The first
@@ -21,20 +22,20 @@
 ## @importFrom Matrix Matrix
 ##'
 nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
-                 family, link, cop_pars=NULL, use_cpp=TRUE) {
+                 family, link, cop_pars=NULL, use_cpp=TRUE, other_pars=list()) {
   np <- sum(beta > 0)
 
   beta[beta > 0] <- theta[seq_len(np)]
   phi[phi > 0] <- theta[-seq_len(np)]
 
   -sum(ll(dat, mm=mm, beta=beta, phi=phi, inCop=inCop, fam_cop=fam_cop,
-      family=family, link=link, cop_pars=cop_pars, use_cpp=use_cpp))
+      family=family, link=link, cop_pars=cop_pars, use_cpp=use_cpp, other_pars=other_pars))
 }
 
 
 ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
                  family=rep(1,nc), link, cop_pars=NULL, use_cpp=TRUE,
-                exclude_Z = FALSE, outcome = "y") {
+                exclude_Z = FALSE, other_pars=list(), outcome = "y") {
 
   if (missing(inCop)) inCop <- seq_along(dat)
 
@@ -63,7 +64,12 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
   ## get univariate densities
   for (i in which(family != 5)) {
-    tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], family=family[i])
+    if (family[i] == 2) {
+      vr_nm <- names(dat)[i]
+      tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], other_pars = other_pars[[vr_nm]], family=family[i])
+    }
+    else tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], family=family[i])
+
     log_den[,i] <- tmp$ld
     dat_u[,i] <- pmax(pmin(tmp$u,1-1e-10),1e-10)
   }

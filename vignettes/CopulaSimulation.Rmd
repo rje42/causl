@@ -81,7 +81,7 @@ is increased later on if necessary up to the control parameter `max_oversamp`
 
 We can fit a model using maximum likelihood.
 ```{r fit_model}
-out <- fitCausal(dat, formulas = list(z~1, y~x, ~x))
+out <- fit_causl(dat, formulas = list(z~1, y~x, ~x))
 out
 ```
 We see that the `x` coefficient in the regression parameter is correct (even
@@ -89,10 +89,30 @@ surprisingly so!).
 
 Note that if we allow `z` to depend upon `x` we obtain a biased estimate.
 ```{r fit_other}
-out2 <- fitCausal(dat, form = list(y~x, z~x, ~x))
+out2 <- fit_causl(dat, form = list(y~x, z~x, ~x))
 out2
 ```
 <!-- We can also use a different copula. -->
 <!-- ```{r fit_another} -->
 <!-- fit_cop(dat, forms = list(~ x, ~ 1, ~ 1), fam_cop=3) -->
 <!-- ``` -->
+
+### Other families
+
+We can also perform maximum likelihood estimation with other parametric 
+families.  Suppose that $Z$ is t-distributed and $Y$ Gamma distributed.  We can
+simulate with 
+```{r gammaY}
+forms <- list(Z ~ 1, X ~ Z, Y ~ X, ~ 1)
+fams <- c(2, 5, 3, 1)
+pars <- list(Z = list(beta = 0, phi=1, par2=4),
+             X = list(beta = c(0,0.5)),
+             Y = list(beta = c(1,-0.3), phi=2),
+             cop = list(beta = 1))
+set.seed(124)
+dat <- rfrugalParam(1e3, formulas=forms, family=fams, pars=pars)
+```
+Then we can perform maximum likelihood estimation on this data:
+```{r fit_gammaY}
+(out <- fit_causl(dat, formulas = forms[-2], family = fams[-2], other_pars=list(Z=list(par2=4L))))
+```

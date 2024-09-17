@@ -15,7 +15,8 @@ nll2(
   family,
   link,
   cop_pars = NULL,
-  use_cpp = TRUE
+  use_cpp = TRUE,
+  other_pars = list()
 )
 }
 \arguments{
@@ -38,6 +39,8 @@ nll2(
 \item{cop_pars}{other parameters for copula}
 
 \item{use_cpp}{logical: should Rcpp functions be used?}
+
+\item{other_pars}{other parameters to pass to \code{glm_dens}}
 }
 \description{
 Negative log-likelihood

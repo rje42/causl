@@ -10,20 +10,22 @@
 ##' @param use_cpp logical: should C++ routines be used?
 ## @param init should linear models be used to initialize starting point?
 ##' @param control list of parameters to be passed to `optim`
+##' @param other_pars list of other parameters to use (e.g. degrees of freedom for a t-distribution)
 ##'
 ##' @details `forms` is list of three or more formulae giving
 ##' predictors of y-margin, z-margin(s) and interaction
 ##' parameters.  Fit is by maximum likelihood.
 ##'
 ##' `control` has the same arguments as the argument in `optim`, as well
-
 ##' as `sandwich`, a logical indicating if sandwich estimates of standard errors
 ##' should be computed, `newton`, a logical which controls whether Newton iterates should be
 ##' performed at the end, and `cop` which can edit the restricted variable name
 ##' for the left-hand side of formulae.
 ##' Useful for altering are `trace` (1 shows steps of optimization) and
 ##' `maxit` for the number of steps.
-
+##'
+##' The list `other_pars` should be named with the relevant variables, and
+##' each entry should be a named list containing the relevant parameters.
 ##'
 ##' **Warning** By default, none of the variables should be called `cop`, as
 ##' this is reserved for the copula.  The reserved word can be changed using
@@ -34,7 +36,7 @@
 ##' @export
 fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
                       family=rep(1,length(formulas)), link, cop_pars, use_cpp=TRUE,
-                      control=list()) {
+                      control=list(), other_pars=list()) {
 
   # get control parameters for optim or use defaults
   con <- list(sandwich = TRUE, method = "BFGS", newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
@@ -116,8 +118,7 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
                       inCop = seq_along(beta_start2$phi_m),
                       fam_cop=fam_cop, fam=family[-length(family)], cop_pars=cop_pars,
-                      use_cpp=use_cpp,
-                      link = link)
+                      use_cpp=use_cpp, link = link, other_pars = other_pars)
 
   ## get some intitial parameter values
   beta_start2 <- initializeParams2(dat[, LHS, drop=FALSE], formulas=forms, family=family, link=link,
