@@ -58,6 +58,7 @@ link_setup <- function(link, family, vars, sources=links_list,
     if (!all(lengths(family) == lengths(link))) stop("If no names provided, lengths of 'link' must match those of 'family'")
     ## if lengths the same, assume in same position as family variables
     for (i in seq_along(link_out)) {
+      if (length(link_out[[i]]) == 0) next
       if (is(family[[i]][[1]], "causl_family")) {
         link_out[[i]] <- sapply(family[[i]], link)
         next
