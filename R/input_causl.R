@@ -327,6 +327,8 @@ check_rej <- function(formulas, family, pars, dims, kwd) {
 ##' @export
 gen_dummy_dat <- function (family, pars, dat, LHSs, dims) {
 
+  ## SHOULD MAKE THIS FUNCTION FOLLOW THE ORDER FOR SIMULATING VARIBLES
+
   if (missing(dims)) dims <- lengths(family)
   nU <- length(LHSs)
 
@@ -336,15 +338,17 @@ gen_dummy_dat <- function (family, pars, dat, LHSs, dims) {
     T <- attr(LHSs, "T")[1]
     strt <- attr(LHSs, "T")[2]
     if (is.na(strt)) strt <- 0
-    nv <- nv + (T-1)*sum(dims[2:4])
+
     nms <- LHSs[[1]]
     nms_t <- unlist(LHSs[2:4])
     nms <- c(nms, paste0(nms_t, "_", rep(seq_len(T)+strt-1, each=length(nms_t))))
+    # nms <- setdiff(nms, names(dat))
   }
   else {
     nms <- unlist(LHSs)
-    nv <- length(nms)
   }
+  nv <- length(nms)
+
   out <- as.data.frame(rep(list(NA), nv))
   names(out) <- nms
 
