@@ -594,8 +594,9 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
 ##' @param dat data frame containing variables
 ##' @param prespec character vector of prespecified variables in `dat`
 ##'
-##' @details Currently takes the rank of each entry, and subtracts 1/2.  If
-##' there are \eqn{k} ties they are randomly sorted with a uniform random variable
+##' @details Currently takes the rank of each entry, and subtracts 1/2 and
+##' normalizes by the number of entries.  If there are \eqn{k} ties they are
+##' randomly sorted with a uniform random variable
 ##' in the symmetric interval around the rank of width \eqn{k/n}.
 ##'
 ##' @export
@@ -620,3 +621,4 @@ process_prespecified <- function (dat, prespec) {
 
   return(quantiles)
 }
+

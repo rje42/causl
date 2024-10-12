@@ -5,6 +5,14 @@ cumsum_mat <- function(x) {
     .Call(`_causl_cumsum_mat`, x)
 }
 
+Rpr <- function(x, max) {
+    invisible(.Call(`_causl_Rpr`, x, max))
+}
+
+locations <- function(u, v) {
+    .Call(`_causl_locations`, u, v)
+}
+
 g <- function(n) {
     .Call(`_causl_g`, n)
 }

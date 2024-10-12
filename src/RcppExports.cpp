@@ -22,6 +22,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// Rpr
+void Rpr(Rcpp::NumericVector x, int max);
+RcppExport SEXP _causl_Rpr(SEXP xSEXP, SEXP maxSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< int >::type max(maxSEXP);
+    Rpr(x, max);
+    return R_NilValue;
+END_RCPP
+}
+// locations
+Rcpp::NumericVector locations(Rcpp::NumericVector u, Rcpp::NumericVector v);
+RcppExport SEXP _causl_locations(SEXP uSEXP, SEXP vSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type u(uSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type v(vSEXP);
+    rcpp_result_gen = Rcpp::wrap(locations(u, v));
+    return rcpp_result_gen;
+END_RCPP
+}
 // g
 int g(int n);
 RcppExport SEXP _causl_g(SEXP nSEXP) {
@@ -120,6 +143,8 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_causl_cumsum_mat", (DL_FUNC) &_causl_cumsum_mat, 1},
+    {"_causl_Rpr", (DL_FUNC) &_causl_Rpr, 2},
+    {"_causl_locations", (DL_FUNC) &_causl_locations, 2},
     {"_causl_g", (DL_FUNC) &_causl_g, 1},
     {"_causl_dGcop", (DL_FUNC) &_causl_dGcop, 3},
     {"_causl_dGcop_sig", (DL_FUNC) &_causl_dGcop_sig, 3},

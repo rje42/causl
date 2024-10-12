@@ -5,6 +5,7 @@
 \alias{get_copula}
 \alias{gaussian_causl_cop}
 \alias{t_causl_cop}
+\alias{emp_causl_cop}
 \alias{sim_cop}
 \title{Copula family functions}
 \usage{
@@ -13,6 +14,8 @@ get_copula(family_index, link = NULL)
 gaussian_causl_cop(link)
 
 t_causl_cop(link)
+
+emp_causl_cop(link)
 
 sim_cop(causl_copula, beta_matrix, other_pars, model_matrix)
 }
@@ -41,7 +44,8 @@ The \code{copula_fam} functions return a list that contains, for each valid fami
 \itemize{
 \item \code{name}: the name of the family;
 \item \code{ddist}: function  to evaluate the density;
-\item \code{rdist}: function to obtain samples;
+\item \code{rdist}: function to obtain samples from copula;
+\item \code{pdist}: copula function
 \item \code{pars}: character vector of the parameter names;
 \item \code{default}: list of default values;
 \item \code{link}: the chosen link function.
@@ -55,6 +59,8 @@ The \code{copula_fam} functions return a list that contains, for each valid fami
 \item \code{gaussian_causl_cop()}: Gaussian copula family
 
 \item \code{t_causl_cop()}: t copula family
+
+\item \code{emp_causl_cop()}: empirical copula family
 
 \item \code{sim_cop()}: simulate from copula family
 
