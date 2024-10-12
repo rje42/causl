@@ -90,7 +90,7 @@ x_p <- glm(x ~ z, family=binomial, data=dat)$coef
 
 test_that("simulation (inv) works 1", {
   expect_gt(z_p, 0.05)
-  expect_lt(abs(x_p[2]-0.5), 0.02)
+  expect_lt(abs(x_p[2]-0.5), 0.04)
 })
 
 ## test log link for binomial

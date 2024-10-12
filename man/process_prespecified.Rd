@@ -15,7 +15,8 @@ process_prespecified(dat, prespec)
 Obtain quantiles for prespecified variables
 }
 \details{
-Currently takes the rank of each entry, and subtracts 1/2.  If
-there are \eqn{k} ties they are randomly sorted with a uniform random variable
+Currently takes the rank of each entry, and subtracts 1/2 and
+normalizes by the number of entries.  If there are \eqn{k} ties they are
+randomly sorted with a uniform random variable
 in the symmetric interval around the rank of width \eqn{k/n}.
 }
