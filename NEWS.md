@@ -1,3 +1,12 @@
+causl 0.9.3
+-------------------------------------------------------------------------------
+
+BUG FIX
+
+ * Corrected quantile computation for Bernoulli random variables.
+
+
+
 causl 0.9.2
 -------------------------------------------------------------------------------
 
@@ -7,7 +16,7 @@ NEW FEATURES
  
  * Added `link()` to obtain link functions from `causl_family` and `causl_cop`
  objects.
-
+ 
 
 
 causl 0.9.1

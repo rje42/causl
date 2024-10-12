@@ -485,13 +485,26 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
       qx <- pbeta(x, th1, th2)
     }
     else if (family == 5) {
-      if (link=="logit") mu <- expit(eta)
-      else if (link=="probit") mu <- pnorm(eta)
-      else if (link=="log") mu <- exp(eta)
+      if (link=="logit") {
+        mu <- expit(eta)
+        z <- rlogis(n)
+        qx <- plogis(z)
+      }
+      else if (link=="probit") {
+        mu <- pnorm(eta)
+        z <- rnorm(n)
+        qx <- pnorm(z)
+      }
+      else if (link=="log") {
+        mu <- exp(eta)
+        z <- rexp(n)
+        qx <- pexp(z)
+      }
       else stop("Not a valid link function for the Bernoulli distribution")
 
-      x <- rbinom(n, size=1, prob=mu)
-      qx <- dbinom(x, size=1, prob=mu)
+      # x <- rbinom(n, size=1, prob=mu)
+      x <- eta + z > 0
+      # qx <- dbinom(x, size=1, prob=mu)
     }
     else if (family == 10) {
       if (link == "logit") mu <- theta_to_p_cat(eta)

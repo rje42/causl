@@ -50,7 +50,7 @@ Obtain samples from a causal model parameterized as in Evans and Didelez (2024).
 Samples from a given causal model under the frugal
 parameterization.
 
-##' The entries for  \code{formula} and \code{family} should each be a
+The entries for  \code{formula} and \code{family} should each be a
 list with four entries, corresponding to the \eqn{Z}, \eqn{X}, \eqn{Y} and
 the copula.  \code{formula} determines the model, so it is crucial that
 every variable to be simulated is represented there exactly once.  Each
@@ -68,9 +68,8 @@ We use the following codes for different families of distributions:
 6 = log-normal.
 
 The family variables for the copula are also numeric and taken from
-\code{VineCopula}.
-Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton, 4 for Gumbel,
-5 for Frank, 6 for Joe and 11 for FGM copulas.
+\code{VineCopula}. Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton,
+4 for Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas.
 
 \code{pars} should be a named list containing variable names that correspond
 to the LHS of
