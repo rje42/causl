@@ -503,7 +503,7 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
       else stop("Not a valid link function for the Bernoulli distribution")
 
       # x <- rbinom(n, size=1, prob=mu)
-      x <- eta + z > 0
+      x <- 1*(eta + z > 0)
       # qx <- dbinom(x, size=1, prob=mu)
     }
     else if (family == 10) {
