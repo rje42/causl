@@ -540,22 +540,32 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
   ## get copula families in right format
   if (!is.list(family) || length(family) != dY) {
     if (is.list(family)) {
-      family <- rep(family, dY)
+      family <- rep_len(family, dY)
     }
     if (!is.list(family)) {
       if (length(family) == dY) {
         family <- as.list(family)
       }
       else  {
-        family <- rep(as.list(family), dY)
+        family <- rep_len(list(family), dY)
       }
     }
   }
+  ## now ensure each family value is specified for each pair-copula
   if (any(lengths(family) != lengths(formulas))) {
 
-
-    dYcop <- lapply(formulas, length)
-    family <- mapply(function(x, y) rep(x, y), family, dYcop, SIMPLIFY = FALSE)
+    dYcop <- lengths(formulas)
+    fam_lns <- lengths(family)
+    # if (length(fam_lns) < length(dYcop)) {
+    #   if (length(fam_lns) != 1) warning("Insufficient family parameters for pair-copula. Copying earlier values")
+    #   family <- family[rep_len(length(fam_lns), length(dYcop))]
+    # }
+    # else if (length(fam_lns) < length(dYcop)) {
+    #   warning("Too many family parameters for pair-copula. Truncating to appropriate number")
+    #   family <- family[seq_along(dYcop)]
+    # }
+    ## now that lengths of objects are the same, ensure correct number of family variables in each list
+    if (any(fam_lns < dYcop)) family <- mapply(function(x, y) rep_len(x, y), family, dYcop, SIMPLIFY = FALSE)
 
   }
   # if (length(dims) == 4) return(list(formulas=formulas, family=family))
