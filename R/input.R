@@ -552,7 +552,11 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
     }
   }
   if (any(lengths(family) != lengths(formulas))) {
-    family <- mapply(function(x, y) rep(x, y), family, nQ+dZ+seq_len(dY)-1, SIMPLIFY = FALSE)
+
+
+    dYcop <- lapply(formulas, length)
+    family <- mapply(function(x, y) rep(x, y), family, dYcop, SIMPLIFY = FALSE)
+
   }
   # if (length(dims) == 4) return(list(formulas=formulas, family=family))
 
