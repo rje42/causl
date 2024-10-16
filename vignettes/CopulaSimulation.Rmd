@@ -25,8 +25,8 @@ library(causl)
 
 ## Simulation
 
-The main function for simulating data is `causalSamp()`.  Suppose we wish to
-have
+The former main function for simulating data is `causalSamp()`.  Suppose we 
+wish to have
 \begin{align*}
 Z &\sim N(0, \; \sigma_z^2)\\
 X \mid Z=z &\sim N(\mu_x, \; \sigma_x^2)\\

@@ -42,7 +42,12 @@ poisson_causl_fam <- function (link) {
   ## write functions
   dens <- function (x, mu, log=FALSE) dpois(x, lambda=mu, log=log)
   quan <- function (p, mu) qpois(p, lambda=mu)
-  sim <- function (n, mu) rpois(n, lambda=mu)
+  sim <- function (n, mu) {
+    qx <- runif(n)
+    x <- qpois(qx, lambda=mu)
+    attr(x, "quantile") <- qx
+    return(x)
+  }
   probs <- function (x, mu) ppois(x, lambda=mu)
 
   default <- function(theta) list(x=1, mu=1)
@@ -56,7 +61,12 @@ poisson_causl_fam <- function (link) {
 }
 ```
 Some remarks are in order.  Note that the `ddist` function must have a `log` 
-argument to allow the log-density to be evaluated.  
+argument to allow the log-density to be evaluated.  In addition, since this
+is a discrete distribution, if we use it in a copula we must know the exact 
+quantile used in the simulation (not just the one returned by applying 
+`ppois`).  Hence we simulate a uniform and then obtain the Poisson random
+variables by inversion from `qpois`.  For continuous distributions this is 
+unnecessary, and `glm_sim` will just apply the `pdist` function. 
 
 Now, let us try to simulate some data using this distribution.  We will need
 to use `poisson_causl_fam` in our `family` argument:
@@ -136,7 +146,12 @@ the link function.
   ## write functions
   dens <- function (x, mu, log=FALSE) dpois(x, lambda=mu, log=log)
   quan <- function (p, mu) qpois(p, lambda=mu)
-  sim <- function (n, mu) rpois(n, lambda=mu)
+  sim <- function (n, mu) {
+    qx <- runif(n)
+    x <- qpois(qx, lambda=mu)
+    attr(x, "quantile") <- qx
+    return(x)
+  }
   probs <- function (x, mu) ppois(x, lambda=mu)
 
   default <- function(theta) list(x=1, mu=1)

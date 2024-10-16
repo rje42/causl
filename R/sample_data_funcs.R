@@ -433,7 +433,9 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
     if ("par2" %in% family$pars) pars <- c(pars, list(par2=other_pars$par2))
 
     x <- do.call(family$rdist, c(list(n=n), pars))
-    if (quantiles && !(family$name %in% c("categorical","ordinal"))) qx <- do.call(family$pdist, c(list(x=x), pars))
+    if (quantiles &&
+        is.null(attr(x, "quantile")) &&
+        !(family$name %in% c("categorical","ordinal"))) qx <- do.call(family$pdist, c(list(x=x), pars))
   }
   else if (is.numeric(family)) {
 
