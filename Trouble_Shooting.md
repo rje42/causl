@@ -60,7 +60,7 @@ For errors during the installation phase, we recommend trying the following step
    ```
    and you will get a line similar to:
    ```
-   -L/opt/homebrew/opt/gcc/lib/gcc/14 -lgfortran -lquadmath -lm
+   FLIBS=-L/opt/homebrew/opt/gcc/lib/gcc/14 -lgfortran -lquadmath -lm
    ```
 ## In R:
 1. Install devtools
