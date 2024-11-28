@@ -18,3 +18,21 @@
   ```
 
    
+- Check R configuration
+1. create a file named Makevars in your .R directory, put the following lines in your .R/Makevars file
+   ```
+   FC = $path_gfortran
+   F77 = $path_gfortran
+   F
+   ```
+- In R:
+1. Install devtools
+   ```
+   install.packages("devtools")
+   library(devtools)
+   ```
+2. Install causl
+   ```
+   install_github("rje42/causl")
+   ```
+   
