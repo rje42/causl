@@ -16,14 +16,32 @@
   brew install llvm
   brew install gcc
   ```
+4. export FLIBS="-L$(brew --prefix gcc)/lib"
 
    
 - Check R configuration
 1. create a file named Makevars in your .R directory, put the following lines in your .R/Makevars file
    ```
-   FC = $path_gfortran
-   F77 = $path_gfortran
-   F
+   FC = $path_gfortran$
+   F77 = $path_gfortran$
+   FLIBS=-L$path_gcc$ -lgfortran -lquadmath -lm
+   ```
+   where you should replace the $path_gfortran$ with path returned by running the following command in your terminal:
+   ```
+   brew info gfortran
+   ```
+   you should be able to get something similar to:
+   ```
+   FC = /opt/homebrew/bin/gfortran
+   F77 = /opt/homebrew/bin/gfortran
+   ```
+   and $path_gcc$ with output by running this command in your terminal:
+   ```
+   brew info gcc
+   ```
+   and you will get a line similar to:
+   ```
+   -L/opt/homebrew/opt/gcc/lib/gcc/14 -lgfortran -lquadmath -lm
    ```
 - In R:
 1. Install devtools
