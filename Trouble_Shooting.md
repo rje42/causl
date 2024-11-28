@@ -38,7 +38,7 @@
       sudo ln -s /opt/homebrew/bin/g++-14 /usr/local/bin/g++
       ```
 
-## Check R configuration
+## Check R configuration:
 1. create a file named Makevars in your .R directory, put the following lines in your .R/Makevars file
    ```
    FC = (path_gfortran)
