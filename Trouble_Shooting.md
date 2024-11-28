@@ -1,7 +1,6 @@
 # Installation
    For errors in installation phase, we recommend the following steps to try. Note that the error messages could be different for Mac Users regarding M1/M2/M3 chips.
-
-- In terminal:
+## In terminal:
 1. Ensure Xcode Command Line Tools are installed
    ```
    xcode-select --install
@@ -39,7 +38,7 @@
       sudo ln -s /opt/homebrew/bin/g++-14 /usr/local/bin/g++
       ```
 
-- Check R configuration
+## Check R configuration
 1. create a file named Makevars in your .R directory, put the following lines in your .R/Makevars file
    ```
    FC = (path_gfortran)
@@ -63,7 +62,7 @@
    ```
    -L/opt/homebrew/opt/gcc/lib/gcc/14 -lgfortran -lquadmath -lm
    ```
-- In R:
+## In R:
 1. Install devtools
    ```
    install.packages("devtools")
@@ -73,4 +72,5 @@
    ```
    install_github("rje42/causl")
    ```
-   
+
+If you encounter any issues, please send us the error messages!
