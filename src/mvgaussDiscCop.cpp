@@ -324,12 +324,12 @@ arma::vec dGDcop(arma::mat const &x,
 
   Rprintf("here...");
 
-  Rprintf("q = %i, trunc.length() = %i\n", q, trunc.length());
+  Rprintf("q = %i, trunc.length() = %li\n", q, trunc.length());
 
   for (uword j = 0; j < q; j++) {
     Rprintf("j = %i\n", j);
     Rcpp::NumericVector tmp = trunc[j];
-    Rprintf("tmp.length() = %i, tmp(0) = %2e, tmp(1) = %2e\n", tmp.length(), tmp(0), tmp(1));
+    Rprintf("tmp.length() = %li, tmp(0) = %2e, tmp(1) = %2e\n", tmp.length(), tmp(0), tmp(1));
 
     Rcpp::NumericVector tmp2 = Rcpp::cumsum(tmp);
     tmp2.push_front(0);
@@ -337,7 +337,7 @@ arma::vec dGDcop(arma::mat const &x,
     // Rcpp::Rcout << "tmp2:\n" << tmp2 << std::endl;
 
     for (uword i = 0; i < n; i++) {
-      Rprintf("(i,j)=(%i,%i)...length(tmp) = %i...x2(i,j) = %0d", i, j, tmp.length(), x2(i,j));
+      Rprintf("(i,j)=(%i,%i)...length(tmp) = %li...x2(i,j) = %0d", i, j, tmp.length(), x2(i,j));
       lower(i,j) = (tmp2(x2(i,j)) + condmn(i,j))/sqrt(sigma1cov(j,j));
       upper(i,j) = (tmp2(x2(i,j)+1) + condmn(i,j))/sqrt(sigma1cov(j,j));
       infin(i,j) = 2 - 2*std::isinf(lower(i,j)) - std::isinf(upper(i,j));

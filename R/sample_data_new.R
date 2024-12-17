@@ -9,6 +9,7 @@
 ##' @param pars list of lists of parameters
 ##' @param link list of link functions
 ##' @param dat optional data frame of covariates
+##' @param estimand quantity to control, default is `"ATE"`
 ##' @param method either `"inversion"` (the default), `"inversion_mv"`, or `"rejection"`
 ##' @param control list of options for the algorithm
 ##' @param ... other arguments, such as custom families
@@ -144,7 +145,7 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
     n <- nrow(dat)
   }
 
-  ## process the four main arguments
+  ## process the four main arguments (change to use causl_model())
   proc_inputs <- process_inputs(formulas=formulas, family=family, pars=pars,
                                 link=link, dat=dat, kwd=kwd, method=method)
 
