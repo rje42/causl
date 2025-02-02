@@ -88,6 +88,7 @@ rfrugal <- function (n, causl_model, control=list()) {
   kwd <- con$cop
 
   ## set up output
+  if (missing(n)) n <- nrow(causl_model$dat)
   out <- data.frame(matrix(0, ncol=length(causl_model$vars), nrow=n))
   names(out) <- causl_model$vars
 

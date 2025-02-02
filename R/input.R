@@ -521,7 +521,7 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
   else if (length(formulas) != dY) {
     formulas <- rep(formulas[], dY)
   }
-  if (!all(sapply(formulas, is.list)) || any(lengths(formulas) < dZ+seq_len(dY)-1)) {
+  if (!all(sapply(formulas, is.list)) || any(lengths(formulas) < nQ+dZ+seq_len(dY)-1)) {
     for (i in seq_len(dY)) {
       if (is.list(formulas[[i]])) {
         formulas[[i]] <- rep(formulas[[i]], nQ+dZ+i-1)
