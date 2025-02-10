@@ -12,7 +12,7 @@ causl 0.9.5
 
 BUG FIX
 
-* Fixed bug in link_setup when no links provided
+* Fixed bug in `link_setup` when no links provided
 
 
 
