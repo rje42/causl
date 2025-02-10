@@ -6,6 +6,8 @@ BUG FIXES
  * Fixed bug for using plasmode data with `rfrugal()`
  
  * Fixed bugs in `pair_copula_setup()`
+ 
+ * Fixed bug in `glm_sim()`
 
 
 
