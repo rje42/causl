@@ -525,7 +525,7 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
   else if (length(formulas) != dY) {
     formulas <- rep(formulas[], dY)
   }
-  if (!all(sapply(formulas, is.list)) || any(lengths(formulas) < dZ+seq_len(dY)-1)) {
+  if (!all(sapply(formulas, is.list)) || any(lengths(formulas) < nQ+dZ+seq_len(dY)-1)) {
     for (i in seq_len(dY)) {
       if (is.list(formulas[[i]])) {
         formulas[[i]] <- rep(formulas[[i]], nQ+dZ+i-1)
@@ -544,19 +544,33 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
   ## get copula families in right format
   if (!is.list(family) || length(family) != dY) {
     if (is.list(family)) {
-      family <- rep(family, dY)
+      family <- rep_len(family, dY)
     }
     if (!is.list(family)) {
       if (length(family) == dY) {
         family <- as.list(family)
       }
       else  {
-        family <- rep(as.list(family), dY)
+        family <- rep_len(list(family), dY)
       }
     }
   }
+  ## now ensure each family value is specified for each pair-copula
   if (any(lengths(family) != lengths(formulas))) {
-    family <- mapply(function(x, y) rep(x, y), family, nQ+dZ+seq_len(dY)-1, SIMPLIFY = FALSE)
+
+    dYcop <- lengths(formulas)
+    fam_lns <- lengths(family)
+    # if (length(fam_lns) < length(dYcop)) {
+    #   if (length(fam_lns) != 1) warning("Insufficient family parameters for pair-copula. Copying earlier values")
+    #   family <- family[rep_len(length(fam_lns), length(dYcop))]
+    # }
+    # else if (length(fam_lns) < length(dYcop)) {
+    #   warning("Too many family parameters for pair-copula. Truncating to appropriate number")
+    #   family <- family[seq_along(dYcop)]
+    # }
+    ## now that lengths of objects are the same, ensure correct number of family variables in each list
+    if (any(fam_lns < dYcop)) family <- mapply(function(x, y) rep_len(x, y), family, dYcop, SIMPLIFY = FALSE)
+
   }
   # if (length(dims) == 4) return(list(formulas=formulas, family=family))
 
@@ -598,8 +612,9 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
 ##' @param dat data frame containing variables
 ##' @param prespec character vector of prespecified variables in `dat`
 ##'
-##' @details Currently takes the rank of each entry, and subtracts 1/2.  If
-##' there are \eqn{k} ties they are randomly sorted with a uniform random variable
+##' @details Currently takes the rank of each entry, and subtracts 1/2 and
+##' normalizes by the number of entries.  If there are \eqn{k} ties they are
+##' randomly sorted with a uniform random variable
 ##' in the symmetric interval around the rank of width \eqn{k/n}.
 ##'
 ##' @export
@@ -624,3 +639,4 @@ process_prespecified <- function (dat, prespec) {
 
   return(quantiles)
 }
+
