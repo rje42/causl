@@ -1,6 +1,6 @@
 suppressMessages(library(survey, quietly = TRUE))
 
-set.seed(130)
+set.seed(131)
 forms <- list(list(Z1 ~ 1, Z2 ~ Z1), list(X1 ~ Z1 + Z2, X2 ~ Z1*Z2 + X1),
               list(Y1 ~ X1*X2, Y2 ~ X1*X2), ~ X1)
 fam <- list(c(1,1), c(5,5), c(3,1), 1)
@@ -18,7 +18,7 @@ pars <- list(Z1 = list(beta=0, phi=1),
                                   Z2 = list(beta=c(0.75,0.2)),
                                   Y1 = list(beta=c(0.75,0.2)))))
 pars2 <- pars
-pars2$cop <- list(beta=1)
+# pars2$cop <- list(beta=1)
 
 n <- 1e5
 # dat0 <- rfrugalParam(n, formulas = forms, family = fam, pars = pars,
