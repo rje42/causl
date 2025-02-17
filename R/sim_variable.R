@@ -16,7 +16,8 @@
 ##' second to the pair-copulas being used.
 ##'
 ##' @export
-sim_variable <- function (n, formulas, family, pars, link, dat, quantiles) {
+sim_variable <- function (n, formulas, family, pars, link, dat, quantiles,
+                          tol=10*.Machine$double.eps) {
   qY <- runif(n)
 
   ## get variables
@@ -35,6 +36,15 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles) {
     qs <- cbind(quantiles[[LHS_cop[[i]]]], qY)
     qY <- rescale_cop(qs, X=X, beta=pars[[2]][[i]]$beta, family=family[[2]][[i]],
                      par2=pars[[2]][[i]]$par2) #, link=link[[2]][j])
+    ##
+    if (max(qY) > 1 - tol) {
+      warning(paste0("Quantiles numerically 1, reducing by ", tol))
+      qY <- pmin(qY, 1 - tol)
+    }
+    if (min(qY) < tol) {
+      qY <- pmax(qY, tol)
+      warning(paste0("Quantiles numerically 0, increasing by", tol))
+    }
   }
 
   ## now rescale to correct margin

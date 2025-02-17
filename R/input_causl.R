@@ -6,9 +6,10 @@
 ## @param ... dots from rfrugalParam
 ##'
 ##' @details Function that processes and checks the validity of the main arguments
-##' used for simulating data.
+##' used for simulating data.  The `control` argument only requires values useful
+##' for obtatining the empirical (conditional) quantiles of pre-specified data.
 ##'
-process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inversion") {
+process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inversion", control=list()) {
 
   ## process univariate formulas and obtain dimensions of model
   formulas <- process_formulas(formulas)
@@ -56,7 +57,10 @@ process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inve
 
       wh_q <- setdiff(unlist(rhs_vars(formulas[[2]])),
                       c(unlist(rhs_vars(formulas[[3]])), vars))
-      quantiles <- process_prespecified(dat, prespec = wh_q)
+      quantiles <- process_prespecified(dat, prespec = wh_q, cond = control$pm_cond,
+                                        nlevs = control$pm_nlevs,
+                                        cor_thresh = control$pm_cor_thresh,
+                                        tol = control$quan_tol)
     }
     else wh_q <- character(0)
 
@@ -611,6 +615,7 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
 ##'
 ##' @param dat data frame containing variables
 ##' @param prespec character vector of prespecified variables in `dat`
+##' @param cond logical: should conditional quantiles be estimated?
 ##'
 ##' @details Currently takes the rank of each entry, and subtracts 1/2 and
 ##' normalizes by the number of entries.  If there are \eqn{k} ties they are
@@ -618,23 +623,67 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
 ##' in the symmetric interval around the rank of width \eqn{k/n}.
 ##'
 ##' @export
-process_prespecified <- function (dat, prespec) {
-  quantiles <- dat[prespec]
+process_prespecified <- function (dat, prespec, cond=TRUE, nlevs=5, cor_thresh=0.25,
+                                  tol=sqrt(.Machine$double.eps)) {
   n <- nrow(dat)
+
+  if (cond) {
+    ## make sure variables are all real-valued
+    dat <- as.data.frame(lapply(dat, as.numeric))
+    if (any(sapply(dat, function(x) all(is.na(x))))) stop("Problem with conversion to numeric data")
+    vlev <- nrow(dat) - sapply(dat, function(x) sum(duplicated(x)))
+    do_disc <- (vlev <= nlevs)
+  }
+
+  ## perform marginal empirical transformation
+  quantiles <- data.frame(lapply(dat[prespec], rank))
+  if (cond) cors <- cor(quantiles)
 
   ## go through each variable and put into [0,1] in approx uniform manner
   for (i in seq_along(prespec)) {
-    var_nm <- prespec[i]
-    quan <- (rank(dat[[var_nm]])-1/2)/n
-    if (any(duplicated(quan))) {
-      cts <- table(quan)
-      vals <- as.numeric(names(cts))
-      for (j in which(cts > 1)) {
-        wh_j <- which(quan == vals[j])
-        quan[wh_j] <- quan[wh_j] + (runif(cts[j])-1/2)*cts[j]/n
+    if (cond && i > 1) {
+      cors_i <- which(abs(cors[i,seq_len(i-1)]) > cor_thresh)
+      if (length(cors_i) > 0) X <- as.matrix(dat[,prespec[cors_i]])
+      else X <- rep(1, n)
+
+      if (do_disc[i]) {
+        ## if fewer than 'nlevs' levels then treat as discrete
+        if (vlev == 2) {
+          mod <- glm(dat[,prespec[i]] ~ X, family=binomial)
+        }
+        else {
+          stop("Not implemented yet...")
+        }
+      }
+      else {
+        ## otherwise as continuous
+        mod <- lm(dat[,prespec[i]] ~ X)
+        preds <- mod$residuals
+        quan <- (rank(preds)-0.5)/n
+        if (any(duplicated(quan))) {
+          ## separate out ties
+          cts <- table(quan)
+          vals <- as.numeric(names(cts))
+          for (j in which(cts > 1)) {
+            wh_j <- which(abs(quan - vals[j]) < tol)
+            quan[wh_j] <- quan[wh_j] + (runif(cts[j])-1/2)*cts[j]/n
+          }
+        }
       }
     }
-    quantiles[prespec] <- quan
+    else {
+      var_nm <- prespec[i]
+      quan <- (rank(dat[[var_nm]])-1/2)/n
+      if (any(duplicated(quan))) {
+        cts <- table(quan)
+        vals <- as.numeric(names(cts))
+        for (j in which(cts > 1)) {
+          wh_j <- which(abs(quan - vals[j]) < tol)
+          quan[wh_j] <- quan[wh_j] + (runif(cts[j])-1/2)*cts[j]/n
+        }
+      }
+    }
+    quantiles[prespec[i]] <- quan
   }
 
   return(quantiles)

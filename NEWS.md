@@ -1,7 +1,16 @@
-causl 0.9.8
+causl 0.9.9
 -------------------------------------------------------------------------------
 
-BUG FIXES
+UPDATE
+
+ * Improved plasmode simulation by giving more sophisticated way to obtain 
+ conditional empirical quantiles.
+
+
+
+
+causl 0.9.8
+-------------------------------------------------------------------------------
 
  * Fixed bugs in testing files
 

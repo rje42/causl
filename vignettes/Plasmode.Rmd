@@ -21,7 +21,7 @@ methods.
 
 Start by loading the `causl` and `dplyr` packages.
 
-```{r cars, message=FALSE}
+```{r lib, message=FALSE}
 library(dplyr)
 library(causl)
 ```
@@ -52,7 +52,8 @@ forms <- list(list(),
               list(A ~ x_1 + x_3 + x_4),
               list(Y ~ A),
               list(~ 1))
-fams <- list(integer(0), 5, 1, 1)
+# fams <- list(integer(0), 5, 1, 1)
+fams <- list(integer(0), "binomial", "gaussian", 1)
 pars <- list(A = list(beta=c(-1.5,0.03,0.02,0.05)),
              Y = list(beta=c(3200, -500), phi=400^2),
              cop = list(beta=-1))
@@ -68,9 +69,9 @@ fit the treatment variable using the correct model.
 glmA <- glm(A ~ x_1 + x_3 + x_4, family=binomial, data=datAY)
 summary(glmA)$coefficients
 ```
-Indeed, the parameters appear correct.  Then we can use inverse weighting to
-estimate the parameters for the outcome model.  We will need to load the 
-`survey` package to get robust standard errors after the weighting.
+Indeed, the parameters appear correct.  Then we can use inverse probability 
+weighting (IPW) to estimate the parameters for the outcome model.  We will need 
+to load the `survey` package to get robust standard errors after the weighting.
 ```{r chkY1, message=FALSE, warning=FALSE}
 library(survey)
 ps <- predict(glmA, type="response")
@@ -105,6 +106,7 @@ This method gives (partial) correlations `r cors[1]`,  `r cors[2]`, and  `r cors
 
 We can then simulate using this set of parameters.
 ```{r simdat2}
+set.seed(124)
 datAY2 <- rfrugalParam(formulas=forms, family=fams, pars=pars2, dat=dat)
 ```
 ```{r chkAY2, echo=FALSE}
@@ -131,6 +133,7 @@ forms3 <- list(list(),
 ```
 and simulate as:
 ```{r gen_pars3}
+set.seed(125)
 pars3 <- pars
 pars3$cop <- gen_cop_pars(formulas = forms3, data=dat, range=c(-0.5,0))
 datAY3 <- rfrugalParam(formulas=forms3, family=fams, pars=pars3, dat=dat)
@@ -148,7 +151,7 @@ est3 <- summary(glmY)$coef[1:2,1:2]
 This time we obtain an intercept of `r round(est3[1,1])` (`r round(est3[1,2],1)`) and a 
 causal effect of `r round(est3[2,1],1)` (`r round(est3[2,2],1)`).  In this case
 the copula parameter is a vector of six entries; for example for the $Y$-$X_1$ 
-effect this is `r round(pars3$cop$Y$x_1$beta, 2)`.
+effect this is (`r round(pars3$cop$Y$x_1$beta, 2)`).
 
 ## Other copula families
 
@@ -158,6 +161,7 @@ In this case we need to choose a degrees of freedom parameter, though this is
 easily managed with `gen_cop_pars()` which allows additional arguments as `...`.  
 
 ```{r gen_pars4}
+set.seed(126)
 pars4 <- pars3
 (pars4$cop <- gen_cop_pars(forms3, data=dat, range=c(-0.5,0), par2=4))
 fams4 <- fams
@@ -183,10 +187,11 @@ We also introduce the function `adj_vars()`, which allows users to modify the
 strength of the partial correlations (or other parameters) by scaling the 
 parameters of the linear predictor.  The argument `factor` can be modified to
 control the strength of the `strong` and `weak` variables respectively; the 
-defauly values are 5 and 0.2.  Returning to the example above, suppose 
+default values are 5 and 0.2.  Returning to the example above, suppose 
 that we want `x_4` to be much more closely related than `x_1` or `x_3`.  Then
 we can apply:
 ```{r gen_pars5}
+set.seed(127)
 pars5 <- pars3
 pars_tmp <- gen_cop_pars(forms3, data=dat, range=c(-0.25,0))
 (pars5$cop <- causl:::adj_vars(pars_tmp, strong="x_4", weak=c("x_1","x_3"), factor=c(2,0.25)))
@@ -194,7 +199,7 @@ fams5 <- fams
 fams5[[4]] <- 5  # use Frank copula
 datAY5 <- rfrugalParam(formulas=forms3, family=fams5, pars=pars5, dat=dat)
 ```
-```{r chkAY5, echo=FALSE}
+```{r chkAY5, echo=FALSE, eval=FALSE}
 glmA <- glm(A ~ x_1 + x_3 + x_4, family=binomial, data=datAY5)
 # summary(glmA)$coefficients
 ps <- predict(glmA, type="response")
