@@ -199,7 +199,7 @@ fams5 <- fams
 fams5[[4]] <- 5  # use Frank copula
 datAY5 <- rfrugalParam(formulas=forms3, family=fams5, pars=pars5, dat=dat)
 ```
-```{r chkAY5, echo=FALSE, eval=FALSE}
+```{r chkAY5, echo=FALSE}
 glmA <- glm(A ~ x_1 + x_3 + x_4, family=binomial, data=datAY5)
 # summary(glmA)$coefficients
 ps <- predict(glmA, type="response")
