@@ -214,6 +214,14 @@ beta_causl_fam <- function (link) {
 # }
 
 ##' @describeIn get_family multinomial/categorical distribution family
+##'
+##' @details
+##' The only parameterization of the categorical family currently implemented
+##' is the multivariate logistic parameterization.  For a random variable \eqn{X}
+##' with \eqn{K} states, dependence on a vector \eqn{\boldsymbol{Z}} uses:
+##' \deqn{\log \dfrac{P(X=k)}{P(X=1)} = \beta_{k}^T \boldsymbol{Z},}
+##' and the \eqn{\beta_k} vectors are stored as \eqn{(\beta_2,\dots,\beta_K)}.
+##'
 ##' @export
 categorical_causl_fam <- function (link) {
   if (missing(link)) link = "logit"
@@ -292,6 +300,17 @@ categorical_causl_fam <- function (link) {
 }
 
 ##' @describeIn get_family ordinal categorical distribution family
+##'
+##' @details The ordinal family is parameterized using a variation of the ordinal
+##' logistic regression model.  This takes the logits of entries in the cumulative
+##' distribution function and treats the covariates variables linearly on that
+##' scale.  Suppose \eqn{\boldsymbol{Z}} is the vector of covariates and there are
+##' \eqn{K} levels, then
+##' \deqn{\log \dfrac{P(X \leq k)}{P(X > k)} = \beta_k^T \boldsymbol{Z}.}
+##' As in the categorical case, the vectors \eqn{\beta_k} are stored as
+##' \eqn{(\beta_1,\ldots,\beta_{K-1})}.
+##'
+##'
 ##' @export
 ordinal_causl_fam <- function (link) {
   if (missing(link)) link = "logit"
@@ -337,7 +356,7 @@ ordinal_causl_fam <- function (link) {
     mu <- set_mu_matrix(mu, n)
     U <- runif(n)
     Y <- 1 + colSums(apply(mu, 1, cumsum) < rep(U, each=ncol(mu)))
-    Y <- factor(Y, levels=seq_len(ncol(mu)))
+    Y <- factor(Y, levels=seq_len(ncol(mu)), ordered = TRUE)
 
     attr(Y, "quantile") <- U
 
@@ -400,6 +419,7 @@ theta_to_p_ord <- function (theta) {
   for (i in rev(seq_len(ncol(p))[-1])) {
     p[,i] <- p[,i] - p[,i-1]
   }
+  p <- cbind(p, 1-rowSums(p))
   NArow <- apply(p, 1, function(x) any(x < 0))
   p[NArow, ] <- NA  ## negative probabilities not allowed
 

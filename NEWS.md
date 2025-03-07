@@ -1,3 +1,13 @@
+causl 0.9.9
+-------------------------------------------------------------------------------
+
+BUG FIXES
+
+ * Fixed bugs in simulation of ordinals and documented parameterizations for
+ categorical and ordinal variables.
+
+
+
 causl 0.9.8
 -------------------------------------------------------------------------------
 
