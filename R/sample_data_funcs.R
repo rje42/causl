@@ -127,6 +127,14 @@ rescaleVar <- function(U, X, pars, family=1, link) {
   rescale_var(U, X, pars, family=family, link)
 }
 
+##' Helper Function to apply Link Function
+##'
+##' @param eta inner product of X and beta
+##' @param link link function
+##' @param family_nm family of distributions to use
+##' @return link transformed inner product eta
+##'
+##' @export
 link_apply <- function(eta, link, family_nm) {
   if (is.function(link)) {
     mu <- link(eta)
