@@ -90,7 +90,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   par <- vector(mode="list", length=choose(ncv,2))
 
   for (i in seq_len(choose(ncv,2))) {
-    if (sd(eta[,i+nv]) < tol[["sd"]]) sel <- 1
+    if (nrow(eta) > 1 && sd(eta[,i+nv]) < tol[["sd"]]) sel <- 1
     else sel <- TRUE
 
     if (fam_cop <= 2 || fam_cop == 11) {

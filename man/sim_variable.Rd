@@ -29,6 +29,8 @@ sim_variable(
 \item{dat}{data frame of current variables}
 
 \item{quantiles}{data frame of quantiles}
+
+\item{tol}{tolerance for quantile closeness to 0 or 1}
 }
 \value{
 The data frame \code{dat} with an additional column given by the left-hand side of \code{formula[[1]]}.
@@ -37,4 +39,7 @@ The data frame \code{dat} with an additional column given by the left-hand side 
 Each entry \code{formulas}, \code{family}, \code{pars}, \code{link} is a list
 with two entries, the first referring to the variable being simulated and the
 second to the pair-copulas being used.
+
+If the quantile is smaller than \code{tol} or bigger than 1 - \code{tol} the
+associated value is moved to \code{tol} and 1 - \code{tol} respectively.
 }

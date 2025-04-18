@@ -12,7 +12,6 @@ sim_multi <- function (out, proc_inputs) {
   dZ <- proc_inputs$dim[1]; dX <- proc_inputs$dim[2]; dY <- proc_inputs$dim[3]
   LHS_Z <- proc_inputs$LHSs$LHS_Z; LHS_X <- proc_inputs$LHSs$LHS_X; LHS_Y <- proc_inputs$LHSs$LHS_Y; kwd <- proc_inputs$kwd
   famZ <- proc_inputs$family[[1]]; famX <- proc_inputs$family[[2]]; famY <- proc_inputs$family[[3]]; famCop <- proc_inputs$family[[4]]
-  # dC <-
 
   vars <- proc_inputs$vars
 
@@ -61,6 +60,7 @@ sim_multi <- function (out, proc_inputs) {
     out[[vnm]] <- rescale_var(runif(n), X=MM, family=curr_fam, pars=pars[[vnm]],
                               link=curr_link)
   }
+
   ## Simulate Copula
   # get beta and make model matrix
   famCopSingle <- unique(unlist(famCop))

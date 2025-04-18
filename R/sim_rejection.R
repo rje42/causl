@@ -347,19 +347,19 @@ sim_rejection <- function (out, proc_inputs, careful) {
       unb_cts <- famZ %in% c(3,6)
       b01 <- famZ == 4
     }
-    rg <- list()
 
     ## get range of bins for unbounded continuous variables
+    rg <- matrix(nrow = sum(unb2_cts) + sum(unb_cts) + sum(b01), ncol=2)
     for (i in which(unb2_cts)) {
-      rg[[i]] <- range(Z0s[,i])
-      rg[[i]][1] <- floor(rg[[i]][1])
-      rg[[i]][2] <- ceiling(rg[[i]][2])
+      rg[i,] <- range(Z0s[,i])
+      rg[i,][1] <- floor(rg[[i]][1])
+      rg[i,][2] <- ceiling(rg[[i]][2])
     }
     for (i in which(unb_cts)) {
-      rg[[i]] <- c(0, ceiling(max(Z0s[,i])))
+      rg[i,] <- c(0, ceiling(max(Z0s[,i])))
     }
     for (i in which(b01)) {
-      rg[[i]] <- c(0,1)
+      rg[i,] <- c(0,1)
     }
 
     ## then find constant needed over this space

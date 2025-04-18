@@ -5,7 +5,7 @@
 ##' @param fam_X,fam_Z vector of families for treatments and covariates
 ##' @param LHS_Z variables in covariates
 ##' @param qden density of proposals
-##' @param ranges range of segments
+##' @param ranges matrix of ranges of segments
 ##' @param link link functions for treatments
 ##' @param ... not currently used
 ##'
@@ -78,27 +78,28 @@ get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, l
     -out
   }
 
-  if (length(ranges) >= 1) rg <- lapply(purrr::transpose(ranges), unlist)
-  else if (length(ranges) == 1) rg <- list(ranges[[1]][1],ranges[[1]][2])
-  else rg <- list()
+  # # if (length(ranges) > 1) rg <- lapply(purrr::transpose(ranges), unlist)
+  # if (length(ranges) > 1) rg <-
+  # else if (length(ranges) == 1) rg <- list(ranges[[1]][1],ranges[[1]][2])
+  # else rg <- list(numeric(0), numeric(0))
 
   ## need to make move in several directions
   best <- list(value=func(rep(0.1,dX+length(fam_Z)-sum(disc)),rep(0,sum(disc))))
   n_strts <- 10
   for (i in seq_len(n_strts)) {
-    strt <- runif(length(ranges), min = rg[[1]], max = rg[[2]])
+    strt <- runif(nrow(ranges), min = ranges[,1], max = ranges[,2])
     strt <- c(rnorm(dX-disX)/10, strt)
     if (nrow(combs) > 0) {
       for (dx in seq_len(nrow(combs))) {
         opt <- tryCatch(optim(par=strt, fn=func, dis_val = combs[dx,], method = "L-BFGS-B",
-                              lower=c(rep(-Inf, dX-disX),rg[[1]]), upper=c(rep(Inf, dX-disX),rg[[2]])),
+                              lower=c(rep(-Inf, dX-disX),ranges[,1]), upper=c(rep(Inf, dX-disX),ranges[,2])),
                         error=function(e) return(list(value=Inf)))
         if (opt$value < best$value) best <- opt
       }
     }
     else {
       opt <- tryCatch(optim(par=strt, fn=func, dis_val = integer(0), method = "L-BFGS-B",
-                            lower=c(rep(-Inf, dX),rg[[1]]), upper=c(rep(Inf, dX),rg[[2]])),
+                            lower=c(rep(-Inf, dX),ranges[,1]), upper=c(rep(Inf, dX),ranges[,2])),
                       error=function(e) return(list(value=Inf)))
       if (opt$value < best$value) best <- opt
     }

@@ -1,7 +1,7 @@
 Package: causl
 Type: Package
 Title: Methods for Specifying, Simulating from and Fitting Causal Models
-Version: 0.9.9
+Version: 0.9.10
 Authors@R: c(
   person("Robin", "Evans", , "evans@stats.ox.ac.uk", role = c("aut", "cre")),
   person("Xi", "Lin", , "xi.lin@stx.ox.ac.uk", role = c("aut")))
@@ -20,7 +20,6 @@ Imports: copula,
   MASS,
   methods,
   mvtnorm,
-  purrr,
   Rcpp,
   stats
 LinkingTo: Rcpp, RcppArmadillo, mvtnorm

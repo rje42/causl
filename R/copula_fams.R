@@ -20,6 +20,12 @@
 ##' @name causl_copula
 NULL
 
+link_name <- function (x) {
+  if (is(x, "causl_family")) x$link
+  else if (is(x, "causl_copula")) attr(x$link, "name")
+  else if (!is.null(attr(x, "name"))) attr(x, "name")
+  else return("NA")
+}
 
 ##' @describeIn causl_copula getter copula family
 ##' @param family_index integer representing copula family
@@ -37,11 +43,13 @@ get_copula <- function(family_index, link = NULL){
   else stop("Not a valid index")
 }
 
-
 ##' @describeIn causl_copula Gaussian copula family
 ##' @export
 gaussian_causl_cop <- function (link) {
-  if (missing(link)) link <- tanh
+  if (missing(link)) {
+    link <- tanh
+    attr(link, "name") <- "tanh"
+  }
 
   ## write functions
   dens <- function (x, Sigma, log=FALSE) dGaussCop(x, Sigma=Sigma, log=log)
@@ -61,7 +69,10 @@ gaussian_causl_cop <- function (link) {
 ##' @describeIn causl_copula t copula family
 ##' @export
 t_causl_cop <- function(link) {
-  if (missing(link)) link <- tanh
+  if (missing(link)) {
+    link <- tanh
+    attr(link, "name") <- "tanh"
+  }
 
   ## write functions
   dens <- function (x, Sigma, df, log=FALSE) dtCop(x, Sigma=Sigma, df=df, log=log)
@@ -91,7 +102,7 @@ emp_causl_cop <- function (link) {
     m <- nrow(u)
     return(u[sample(x=m, size=n, replace=TRUE),])
   }
-  probs <- function (u) {
+  probs <- function (u, pts) {
     if (!is.matrix(u)) u <- matrix(u, nrow=1)
     out <- numeric(nrow(u))
 

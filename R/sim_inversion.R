@@ -17,7 +17,6 @@ sim_inversion <- function (out, proc_inputs) {
   dZ <- proc_inputs$dim[1]; dX <- proc_inputs$dim[2]; dY <- proc_inputs$dim[3]
   LHS_Z <- proc_inputs$LHSs$LHS_Z; LHS_X <- proc_inputs$LHSs$LHS_X; LHS_Y <- proc_inputs$LHSs$LHS_Y; kwd <- proc_inputs$kwd
   famZ <- proc_inputs$family[[1]]; famX <- proc_inputs$family[[2]]; famY <- proc_inputs$family[[3]]; famCop <- proc_inputs$family[[4]]
-  # dC <-
 
   vars <- proc_inputs$vars
 
@@ -61,30 +60,6 @@ sim_inversion <- function (out, proc_inputs) {
                           link=lnk, dat=out, quantiles=quantiles)
       quantiles <- attr(out, "quantiles")
       attr(out, "quantiles") <- NULL
-
-      # out[[vars[order[i]]]] <- sim_Y(n, formulas=formulas[[4]][[wh]],
-      #                                family=family[[4]][[wh]],
-      #                                pars=pars[[kwd]][[wh]],
-      #                                formY = formulas[[3]][[wh]],
-      #                                famY=family[[3]][wh],
-      #                                parsY=pars[[LHS_Y[wh]]],
-      #                                linkY=link[[3]][wh], qZ=quantiles, vars=vars,
-      #                                dat=out)
-
-      # for (j in seq_len(dZ)) {
-      #   curr_qZ <- qZs[[vars[j]]]
-      #   X <- model.matrix(formulas[[4]][[wh]][[j]], data=out)
-      #   curr_fam <- family[[4]][wh,j]
-      #   curr_par <- pars[[kwd]]$beta[[wh]][[j]]
-      #   # eta <- X %*% curr_par
-      #   qY <- rescale_cop(cbind(curr_qZ,qY), X=X, pars=curr_par, family=curr_fam) #, link=link[[4]][i,j])
-      # }
-      # ##
-      # X <- model.matrix(formulas[[3]][[wh]], data=out)
-      # qY <- rescale_var(qY, X=X, family=famY[[wh]], pars=pars[[LHS_Y[wh]]],
-      #                  link=link[[3]][wh])
-      #
-      # out[[vars[order[i]]]] <- qY
     }
     else {
       ## code to simulate Z and X variables in causal order
@@ -123,37 +98,68 @@ sim_inversion <- function (out, proc_inputs) {
   return(out)
 }
 
-# ##' Generate outcome data by inversion
-# ##'
-# ##' @param n number of samples
-# ##' @param formulas list of formulae for copula parameters
-# ##' @param family vector of integers for distributions of variables
-# ##' @param pars vector of parameters for copula
-# ##' @param formY formulae for response variable
-# ##' @param famY family for response variable
-# ##' @param parsY regression parameters for response variable
-# ##' @param linkY link function for response variable
-# ##' @param qZ quantiles of covariate distribution
-# ##' @param vars character vector of variable names
-# ##' @param dat data frame containing variables in `formulas` and `formY`
-# ##'
-# sim_Y <- function(n, formulas, family, pars, formY, famY, parsY, linkY, qZ, vars, dat) {
-#
-#   qY <- runif(nrow(qZ))  # uniform quantiles
-#
-#   for (j in seq_along(formulas)) {
-#     ## for each Z variable
-#     quZ <- qZ[[vars[j]]]
-#     X <- model.matrix(delete.response(terms(formulas[[j]])), data=dat)  ## covariates matrix
-#     # curr_fam <- family[j]
-#     # curr_par <- pars[[j]]
-#     # eta <- X %*% curr_par
-#     qY <- rescale_cop(cbind(quZ,qY), X=X, beta=pars[[j]]$beta, family=family[j],
-#                      par2=pars[[j]]$par2) #, link=link[j])
-#   }
-#   ##
-#   X <- model.matrix(formY, data=dat)
-#   qY <- rescale_var(qY, X=X, family=famY, pars=parsY, link=linkY)
-#
-#   qY
-# }
+
+##' Simulate a single variable using the inversion method
+##'
+##' @param n sample size
+##' @param formulas list consisting of a formula for the output variables and a list of formulae for the pair-copula
+##' @param family list containing family variable
+##' @param pars list with two entries, first a list of parameters for response, and second a further list of parameters for pair-copula
+##' @param link list of same form as `family`
+##' @param dat data frame of current variables
+##' @param quantiles data frame of quantiles
+##' @param tol tolerance for quantile closeness to 0 or 1
+##'
+##' @return The data frame `dat` with an additional column given by the left-hand side of `formula[[1]]`.
+##'
+##' @description
+##' Each entry `formulas`, `family`, `pars`, `link` is a list
+##' with two entries, the first referring to the variable being simulated and the
+##' second to the pair-copulas being used.
+##'
+##' If the quantile is smaller than `tol` or bigger than 1 - `tol` the
+##' associated value is moved to `tol` and 1 - `tol` respectively.
+##'
+##' @export
+sim_variable <- function (n, formulas, family, pars, link, dat, quantiles,
+                          tol=10*.Machine$double.eps) {
+  qY <- runif(n)
+
+  ## get variables
+  vnm <- lhs(formulas[[1]])
+  if (length(vnm) != 1L) stop("Unable to extract variable name")
+
+  quantiles[[vnm]] <- qY
+
+  LHS_cop <- lhs(formulas[[2]])
+
+  for (i in rev(seq_along(formulas[[2]]))) {
+    X <- model.matrix(formulas[[2]][[i]], data=dat)
+    # eta <- X %*% pars[[2]][[i]]$beta
+
+    ## rescale quantiles for pair-copula
+    qs <- cbind(quantiles[[LHS_cop[[i]]]], qY)
+    qY <- rescale_cop(qs, X=X, beta=pars[[2]][[i]]$beta, family=family[[2]][[i]],
+                      par2=pars[[2]][[i]]$par2) #, link=link[[2]][j])
+    ##
+    if (max(qY) > 1 - tol) {
+      warning(paste0("Quantiles numerically 1, reducing by ", tol))
+      qY <- pmin(qY, 1 - tol)
+    }
+    if (min(qY) < tol) {
+      qY <- pmax(qY, tol)
+      warning(paste0("Quantiles numerically 0, increasing by", tol))
+    }
+  }
+
+  ## now rescale to correct margin
+  X <- model.matrix(delete.response(terms(formulas[[1]])), data=dat)
+
+  Y <- rescale_var(qY, X=X, family=family[[1]], pars=pars[[1]], link=link[[1]])
+  # Y <- rescale_var(runif(n), X=X, family=family[[1]], pars=pars[[1]], link=link[[1]])
+  dat[[vnm]] <- Y
+  # quantiles[[vnm]] <- qY
+  attr(dat, "quantiles") <- quantiles
+
+  return(dat)
+}

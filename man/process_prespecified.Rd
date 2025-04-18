@@ -19,6 +19,13 @@ process_prespecified(
 \item{prespec}{character vector of prespecified variables in \code{dat}}
 
 \item{cond}{logical: should conditional quantiles be estimated?}
+
+\item{nlevs}{maximum number of levels for 'discrete' variable}
+
+\item{cor_thresh}{threshold for when linear regression should be used to
+model dependence}
+
+\item{tol}{tolerance for similarity of ranks for applying uniform noise}
 }
 \description{
 Obtain quantiles for prespecified variables
@@ -28,4 +35,9 @@ Currently takes the rank of each entry, and subtracts 1/2 and
 normalizes by the number of entries.  If there are \eqn{k} ties they are
 randomly sorted with a uniform random variable
 in the symmetric interval around the rank of width \eqn{k/n}.
+
+\code{nlevs} is used to classify discrete vs continuous variables.  If a variable
+has more than this number of distinct values, it is considered to be
+continuous.  \code{cor_thresh} is used to determine when the correlation is small
+enough that it need not be modelled.
 }

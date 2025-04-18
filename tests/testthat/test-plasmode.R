@@ -3,14 +3,14 @@ set.seed(123)
 n <- 1e4
 
 ## check that plasmode approach works.  First simulate a dataset:
-df <- data.frame(Z1=rnorm(n), Z2=factor(sample(3, size=n, replace=TRUE)))
+df <- data.frame(Z1=rnorm(n), Z2=factor(sample(2, size=n, replace=TRUE)))
 
 forms <- list(list(),
               list(A ~ Z1 + Z2),
               list(Y ~ A),
               ~ A)
 fams <- list(integer(0), 5, 1, 1)
-pars <- list(A = list(beta=c(-0.5,0.5,0.25,-0.5)),
+pars <- list(A = list(beta=c(-0.5,0.5,0.25)), # list(beta=c(-0.5,0.5,0.25,-0.5)),
              Y = list(beta=c(-0.5,1), phi=1),
              cop = list(Y = list(Z1 = list(beta=c(0.5,0.5)),
                                  Z2 = list(beta=c(0.75,0.2)))))
@@ -52,3 +52,7 @@ pars <- list(A = list(beta=c(0,1)),
 dat <- data.frame(U = rep(1,100))
 dat <- rfrugalParam(formulas=forms, family=fams, pars=pars, dat=dat,
                     control=list(quiet=TRUE))
+
+test_that("plasmode simulation runs OK with one variable", {
+  expect_type(dat, "list")
+})

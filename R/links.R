@@ -1,11 +1,14 @@
-
 ##' Set up link functions
 ##'
-##' @param link input given to `msm_samp()` or `causalSamp()`
-##' @param family the list of families for `Z`,`X` and `Y` variables
+##' @param link input from `causl_model` object or similar
+##' @param family the list of families for random variables
 ##' @param vars a list of vectors of variable names with the same structure as `family`
 ##' @param sources list of links for parametric families
 ##' @param fam_list list of data frames in the same format as `family_vals`
+##'
+##' @description
+##' `family` and `vars` should have the same structure if `vars` is
+##' specified.
 ##'
 ##' @export
 link_setup <- function(link, family, vars, sources=links_list,

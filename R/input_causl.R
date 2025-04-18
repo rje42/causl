@@ -616,11 +616,21 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
 ##' @param dat data frame containing variables
 ##' @param prespec character vector of prespecified variables in `dat`
 ##' @param cond logical: should conditional quantiles be estimated?
+##' @param nlevs maximum number of levels for 'discrete' variable
+##' @param cor_thresh threshold for when linear regression should be used to
+##' model dependence
+##' @param tol tolerance for similarity of ranks for applying uniform noise
 ##'
 ##' @details Currently takes the rank of each entry, and subtracts 1/2 and
 ##' normalizes by the number of entries.  If there are \eqn{k} ties they are
 ##' randomly sorted with a uniform random variable
 ##' in the symmetric interval around the rank of width \eqn{k/n}.
+##'
+##' `nlevs` is used to classify discrete vs continuous variables.  If a variable
+##' has more than this number of distinct values, it is considered to be
+##' continuous.  `cor_thresh` is used to determine when the correlation is small
+##' enough that it need not be modelled.  `tol` is for classifying which ranks
+##' are sufficiently close together to add noise as a group.
 ##'
 ##' @export
 process_prespecified <- function (dat, prespec, cond=TRUE, nlevs=5, cor_thresh=0.25,
@@ -642,17 +652,20 @@ process_prespecified <- function (dat, prespec, cond=TRUE, nlevs=5, cor_thresh=0
   ## go through each variable and put into [0,1] in approx uniform manner
   for (i in seq_along(prespec)) {
     if (cond && i > 1) {
+      ## for conditional case, check which correlations are above the set threshold
       cors_i <- which(abs(cors[i,seq_len(i-1)]) > cor_thresh)
       if (length(cors_i) > 0) X <- as.matrix(dat[,prespec[cors_i]])
       else X <- rep(1, n)
 
       if (do_disc[i]) {
         ## if fewer than 'nlevs' levels then treat as discrete
-        if (vlev == 2) {
+        if (vlev[i] == 2) {
+          if (any(dat[,prespec[i]] %in% c(0,1))) dat[,prespec[i]] <- (dat[,prespec[i]] - min(dat[,prespec[i]]))/(max(dat[,prespec[i]])-min(dat[,prespec[i]]))
+
           mod <- glm(dat[,prespec[i]] ~ X, family=binomial)
         }
         else {
-          stop("Not implemented yet...")
+          stop("Plasmode simulation not implemented for discrete variables with more than 2 levels")
         }
       }
       else {
@@ -672,6 +685,7 @@ process_prespecified <- function (dat, prespec, cond=TRUE, nlevs=5, cor_thresh=0
       }
     }
     else {
+      ## if marginal (or for first variable in sequence)
       var_nm <- prespec[i]
       quan <- (rank(dat[[var_nm]])-1/2)/n
       if (any(duplicated(quan))) {
