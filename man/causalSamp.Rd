@@ -104,5 +104,5 @@ causalSamp(100, pars = pars)
 \references{
 Evans, R.J. and Didelez, V. Parameterizing and simulating from
 causal models (with discussion). \emph{Journal of the Royal Statistical Society, Series B},
-2024.
+86 (3), pp 535-568, 2024.
 }

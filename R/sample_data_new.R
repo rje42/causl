@@ -9,7 +9,7 @@
 ##' @param pars list of lists of parameters
 ##' @param link list of link functions
 ##' @param dat optional data frame of covariates
-##' @param estimand quantity to control, default is `"ATE"`
+## @param estimand quantity to control, default is `"ATE"`
 ##' @param method either `"inversion"` (the default), `"inversion_mv"`, or `"rejection"`
 ##' @param control list of options for the algorithm
 ##' @param ... other arguments, such as custom families

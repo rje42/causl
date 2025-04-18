@@ -67,7 +67,9 @@ should be computed, \code{newton}, a logical which controls whether Newton itera
 performed at the end, and \code{cop} which can edit the restricted variable name
 for the left-hand side of formulae.
 Useful for altering are \code{trace} (1 shows steps of optimization) and
-\code{maxit} for the number of steps.
+\code{maxit} for the number of steps.  It also include \code{start}, which can be
+provided with a vector of all the \code{beta} parameters in the model, as a point
+at which to start the optimization.
 
 The list \code{other_pars} should be named with the relevant variables, and
 each entry should be a named list containing the relevant parameters.

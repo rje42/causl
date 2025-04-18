@@ -1,3 +1,13 @@
+causl 0.9.10
+-------------------------------------------------------------------------------
+
+NEW FEATURES
+
+ * Modified `fit_causl` so that `control$start` can be given a vector of 
+ parameters for all the `beta` parameters.
+
+
+
 causl 0.9.9
 -------------------------------------------------------------------------------
 
