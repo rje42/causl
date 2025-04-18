@@ -1,3 +1,4 @@
+
 ##' Set up link functions
 ##'
 ##' @param link input given to `msm_samp()` or `causalSamp()`

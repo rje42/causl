@@ -51,7 +51,7 @@ pars <- list(Z = list(beta=log(1), phi=1),   # note log-link
              Y = list(beta=c(-0.5,0.5), phi=1),
              cop = list(beta=1))
 
-## create a `causl_model` object
+## now create a `causl_model` object
 cm <- causl_model(formulas=forms, family=fam, pars=pars)
 
 # now simulate 100 observations
@@ -64,4 +64,4 @@ Note that, by default, we use the log link for the Gamma distribution.
 
 Evans, R.J. and Didelez, V. Parameterizing and simulating from causal
 models (with discussion). *Journal of the Royal Statistical Society,
-Series B*, 86 (3), pp 535-568, 2024.
+Series B* (to appear), 2024.

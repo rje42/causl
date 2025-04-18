@@ -23,9 +23,6 @@ knitr::opts_chunk$set(
 library(causl)
 ```
 
-This vignette gives an overview on how to use copulas to simulate from a causal 
-model using the `causl` package.
-
 ## Simulation
 
 The former main function for simulating data is `causalSamp()`.  Suppose we 
@@ -82,10 +79,9 @@ is increased later on if necessary up to the control parameter `max_oversamp`
 
 ## Fitting Models
 
-We can fit a model using maximum likelihood.  Since computing the sandwich standard
-errors is slow we turn this option off, but one can easily change this.
+We can fit a model using maximum likelihood.
 ```{r fit_model}
-out <- fit_causl(dat, formulas = list(z~1, y~x, ~x), control = list(sandwich=FALSE))
+out <- fit_causl(dat, formulas = list(z~1, y~x, ~x))
 out
 ```
 We see that the `x` coefficient in the regression parameter is correct (even
@@ -93,7 +89,7 @@ surprisingly so!).
 
 Note that if we allow `z` to depend upon `x` we obtain a biased estimate.
 ```{r fit_other}
-out2 <- fit_causl(dat, form = list(y~x, z~x, ~x), control = list(sandwich=FALSE))
+out2 <- fit_causl(dat, form = list(y~x, z~x, ~x))
 out2
 ```
 <!-- We can also use a different copula. -->

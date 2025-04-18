@@ -79,9 +79,7 @@ glmY <- svyglm(Y ~ A, design = svydesign(~1, weights = wt, data=datAY))
 summary(glmY)$coef
 ```
 
-These coefficients look very close to the true values of `r pars$Y$beta[1]` and
-`r pars$Y$beta[2]`.  We can also compare with a naïve method that ignores 
-reweighting, giving a bias that is clearly too high.
+We can also compare with a naïve method that ignores reweighting.
 
 ```{r chkY1n, message=FALSE, warning=FALSE}
 glmYn <- glm(Y ~ A, data=datAY)
@@ -188,29 +186,22 @@ control the strength of the `strong` and `weak` variables respectively; the
 defauly values are 5 and 0.2.  Returning to the example above, suppose 
 that we want `x_4` to be much more closely related than `x_1` or `x_3`.  Then
 we can apply:
-```{r gen_pars5, eval=FALSE}
-set.seed(123)
+```{r gen_pars5}
 pars5 <- pars3
 pars_tmp <- gen_cop_pars(forms3, data=dat, range=c(-0.25,0))
 (pars5$cop <- causl:::adj_vars(pars_tmp, strong="x_4", weak=c("x_1","x_3"), factor=c(2,0.25)))
-
 fams5 <- fams
 fams5[[4]] <- 5  # use Frank copula
-
 datAY5 <- rfrugalParam(formulas=forms3, family=fams5, pars=pars5, dat=dat)
 ```
-We do not run this, because computation with the Frank copula is slow.  The code 
-below can be used to estimate the causal effects.
-```{r chkAY5, echo=FALSE, eval=FALSE}
+```{r chkAY5, echo=FALSE}
 glmA <- glm(A ~ x_1 + x_3 + x_4, family=binomial, data=datAY5)
-
+# summary(glmA)$coefficients
 ps <- predict(glmA, type="response")
 wt <- datAY5$A/ps + (1-datAY5$A)/(1-ps)
-
 glmY <- svyglm(Y ~ A, design = svydesign(~1, weights = wt, data=datAY5))
+# summary(glmY)$coef
 est5 <- summary(glmY)$coef[1:2,1:2]
 ```
-This time the estimates for the intercept and slope are 3203 (8) and $-500$ 
-(13) respectively.  
-<!-- ` round(est5[1,1])` (` round(est5[1,2],1)`) and a  -->
-<!-- causal effect of ` round(est5[2,1],1)` (` round(est5[2,2],1)`).   -->
+This time the estimates are `r round(est5[1,1])` (`r round(est5[1,2],1)`) and a 
+causal effect of `r round(est5[2,1],1)` (`r round(est5[2,2],1)`).  

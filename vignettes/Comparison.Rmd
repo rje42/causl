@@ -108,7 +108,7 @@ For the remainder of this vignette, we will only use the first 1,000 entries
 of this dataset (change this to the commented out line to replicate results 
 from our paper).  
 ```{r dat, echo=TRUE}
-dat <- dat_max[seq_len(1e3), ]
+dat <- dat_max[seq_len(2e3), ]
 # dat <- dat_max[seq_len(1e4), ]
 ```
 
@@ -227,21 +227,15 @@ knitr::opts_chunk$set(
   fig.height=7
 )
 ```
-For the MLEs, since `optim` is slow we put in the true optimal value using the 
-`start` argument to `control`.  Replace this with `NULL` to fit from scratch.  Similarly,
-since sandwich estimation is slow, we set this option to `FALSE`; again, set to
-`TRUE` and replace the code in the second box to use the sandwich estimator 
-instead.
+
 ```{r mle, cache=TRUE}
-mles <- c(-0.551941377532778, 0.222817127994027, 0.289229711402156, 0.0662994400006758, 
-0.218296723427761, -0.0688172753274017, 1.09722918966994, 0.373603581732664, 
-0.00960899986651661, 0.0745286078272209)
 modY <- fitCausal(dat, formulas = list(Y ~ A0*A1, L ~ A0, ~ A0*A1),
-                  family = c(1,3,1), control=list(maxit=2e4, sandwich=FALSE, start=mles))
+                  family = c(1,3,1), control=list(maxit=2e4, newton=TRUE))
+modY
 ```
-If `sandwich=TRUE`, `modY$pars$Y$beta_se` with the commented out `modY$pars$Y$beta_sandwich`.
+
 ```{r tab_mle, echo=FALSE, cache=TRUE}
-tab_mle <- cbind(modY$pars$Y$beta[1:4], modY$pars$Y$beta_se[1:4], # modY$pars$Y$beta_sandwich[1:4],
+tab_mle <- cbind(modY$pars$Y$beta[1:4], modY$pars$Y$beta_sandwich[1:4],
                  modY$pars$Y$beta[1:4]-pars$Y$beta)
 colnames(tab_mle) <- c("Est.", "SE", "Bias")
 ```

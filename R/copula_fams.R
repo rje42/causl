@@ -91,7 +91,7 @@ emp_causl_cop <- function (link) {
     m <- nrow(u)
     return(u[sample(x=m, size=n, replace=TRUE),])
   }
-  probs <- function (u, pts) {
+  probs <- function (u) {
     if (!is.matrix(u)) u <- matrix(u, nrow=1)
     out <- numeric(nrow(u))
 

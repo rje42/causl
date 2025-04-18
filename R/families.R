@@ -470,10 +470,9 @@ family_list <- function (family, func_return=get_family) {
   return(out)
 }
 
-##' Obtain link from `causl_` objects
+##' Default method
 ##'
-##' @param x an object of class `causl_family` or `causl_copula`
-##' @param ... other arguments (not currently used)
+##' @param `...` other arguments (not currently used)
 ##'
 ##' @export
 link <- function(x, ...) {
@@ -481,13 +480,17 @@ link <- function(x, ...) {
 }
 
 
-##' @describeIn link method for `causl_family` obect
+##' Obtain link from a `causl_family` or `causl_copula` obect
+##'
+##' @param x an object of class `causl_family` or `causl_copula`
+##'
 ##' @export
 link.causl_family <- function (x, ...) {
   return(x$link)
 }
 
-##' @describeIn link method for `causl_copula` object
+##' @describeIn link.causl_family method for `causl_copula` object
+##'
 ##' @export
 link.causl_copula <- function (x, ...) {
   return(x$link)

@@ -22,9 +22,7 @@
 ##' performed at the end, and `cop` which can edit the restricted variable name
 ##' for the left-hand side of formulae.
 ##' Useful for altering are `trace` (1 shows steps of optimization) and
-##' `maxit` for the number of steps.  It also include `start`, which can be
-##' provided with a vector of all the `beta` parameters in the model, as a point
-##' at which to start the optimization.
+##' `maxit` for the number of steps.
 ##'
 ##' The list `other_pars` should be named with the relevant variables, and
 ##' each entry should be a named list containing the relevant parameters.
@@ -113,6 +111,7 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   beta_start2 <- initializeParams2(dat, formulas=forms, family=family, link=link,
                                    full_form=full_form, kwd=kwd)
   theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
+  # theta_st <- c(0,0,-0.4,0.3,0.5,0.5,1,1,1,1)
 
   ## other arguments to nll2()
   other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
@@ -124,8 +123,7 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   ## get some intitial parameter values
   beta_start2 <- initializeParams2(dat[, LHS, drop=FALSE], formulas=forms, family=family, link=link,
                                    full_form=full_form, kwd=kwd)
-  if (is.null(con$start)) theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
-  else theta_st <- c(con$start, beta_start2$phi[beta_start2$phi_m > 0])
+  theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
 
 
   ## parameters to

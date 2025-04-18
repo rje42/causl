@@ -2,28 +2,13 @@
 % Please edit documentation in R/families.R
 \name{link}
 \alias{link}
-\alias{link.causl_family}
-\alias{link.causl_copula}
-\title{Obtain link from \code{causl_} objects}
+\title{Default method}
 \usage{
 link(x, ...)
-
-\method{link}{causl_family}(x, ...)
-
-\method{link}{causl_copula}(x, ...)
 }
 \arguments{
-\item{x}{an object of class \code{causl_family} or \code{causl_copula}}
-
-\item{...}{other arguments (not currently used)}
+\item{`...`}{other arguments (not currently used)}
 }
 \description{
-Obtain link from \code{causl_} objects
+Default method
 }
-\section{Methods (by class)}{
-\itemize{
-\item \code{link(causl_family)}: method for \code{causl_family} obect
-
-\item \code{link(causl_copula)}: method for \code{causl_copula} object
-
-}}
