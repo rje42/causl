@@ -39,6 +39,8 @@ rfrugalParam(
 \item{method}{either \code{"inversion"} (the default), \code{"inversion_mv"}, or \code{"rejection"}}
 
 \item{...}{other arguments, such as custom families}
+
+\item{estimand}{quantity to control, default is \code{"ATE"}}
 }
 \value{
 A data frame containing the simulated data.
