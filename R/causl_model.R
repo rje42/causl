@@ -14,7 +14,9 @@
 ##'
 ##' @export
 causl_model <- function (formulas, family, pars, link, dat=NULL, method="inversion",
-                         kwd="cop") {
+                         kwd="cop", control=list()) {
+
+
   out <- process_inputs(formulas=formulas, family=family, pars=pars,
                         link=link, dat=dat, kwd=kwd, method=method)
 

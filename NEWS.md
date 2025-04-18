@@ -6,6 +6,11 @@ BUG FIXES
  * Fixed bugs in simulation of ordinals and documented parameterizations for
  categorical and ordinal variables.
 
+UPDATE
+
+ * Improved plasmode simulation by giving more sophisticated way to obtain 
+ conditional empirical quantiles.
+
 
 
 causl 0.9.8

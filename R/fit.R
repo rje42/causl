@@ -12,9 +12,23 @@
 ##' @param control list of parameters to be passed to `optim`
 ##' @param other_pars list of other parameters to use (e.g. degrees of freedom for a t-distribution)
 ##'
-##' @details `forms` is list of three or more formulae giving
-##' predictors of y-margin, z-margin(s) and interaction
-##' parameters.  Fit is by maximum likelihood.
+##' @details `formulas` is list of three or more formulae giving predictors of
+##' y-margin, z-margin(s) and interaction parameters.  Fit is by maximum
+##' likelihood.
+##'
+##' `family` takes numeric values of the following forms:
+##'
+##' | val|family      |
+##' |---:|:-----------|
+##'   |   0|binomial    |
+##'   |   1|gaussian    |
+##'   |   2|t           |
+##'   |   3|Gamma       |
+##'   |   4|beta        |
+##'   |   5|binomial    |
+##'   |   6|lognormal   |
+##'   |  11|ordinal     |
+##'   |  10|categorical |
 ##'
 ##' `control` has the same arguments as the argument in `optim`, as well
 ##' as `sandwich`, a logical indicating if sandwich estimates of standard errors

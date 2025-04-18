@@ -4,12 +4,21 @@
 \alias{process_prespecified}
 \title{Obtain quantiles for prespecified variables}
 \usage{
-process_prespecified(dat, prespec)
+process_prespecified(
+  dat,
+  prespec,
+  cond = TRUE,
+  nlevs = 5,
+  cor_thresh = 0.25,
+  tol = sqrt(.Machine$double.eps)
+)
 }
 \arguments{
 \item{dat}{data frame containing variables}
 
 \item{prespec}{character vector of prespecified variables in \code{dat}}
+
+\item{cond}{logical: should conditional quantiles be estimated?}
 }
 \description{
 Obtain quantiles for prespecified variables

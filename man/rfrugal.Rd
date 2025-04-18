@@ -61,13 +61,19 @@ Each corresponding entry in \code{family} should be the same length as the
 list in \code{formula} or of length 1 (in which case it will be repeated
 for all the variables therein).
 
-We use the following codes for different families of distributions:
-0 or 5 = binary;
-1 = normal;
-2 = t-distribution;
-3 = gamma;
-4 = beta;
-6 = log-normal.
+We use the following codes for different families of distributions:\tabular{rl}{
+   val \tab family \cr
+   0 \tab binomial \cr
+   1 \tab gaussian \cr
+   2 \tab t \cr
+   3 \tab Gamma \cr
+   4 \tab beta \cr
+   5 \tab binomial \cr
+   6 \tab lognormal \cr
+   11 \tab ordinal \cr
+   10 \tab categorical \cr
+}
+
 
 The family variables for the copula are also numeric and taken from
 \code{VineCopula}. Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton,
@@ -89,7 +95,9 @@ probit, and log links are available.
 A variety of sampling methods are implemented.  The
 inversion method with pair-copulas is the default (\code{method="inversion"}),
 but we cam also use a multivariate copula (\code{method="inversion_mv"}) or even
-rejection sampling (\code{method="rejection"}).
+rejection sampling (\code{method="rejection"}).  Note that the \code{inveresion_mv}
+method simulates the entire copula, so it cannot depend upon intermediate
+variables.
 
 The only control parameters are \code{cop}: which gives a keyword for the
 copula that defaults to \code{"cop"}; \code{quiet} which defaults to \code{FALSE} but will

@@ -28,12 +28,17 @@
 ##' for all the variables therein).
 ##'
 ##' We use the following codes for different families of distributions:
-##' 0 or 5 = binary;
-##' 1 = normal;
-##' 2 = t-distribution;
-##' 3 = gamma;
-##' 4 = beta;
-##' 6 = log-normal.
+##'   | val | family      |
+##'   |----:|:------------|
+##'   |   0 | binomial    |
+##'   |   1 | gaussian    |
+##'   |   2 | t           |
+##'   |   3 | Gamma       |
+##'   |   4 | beta        |
+##'   |   5 | binomial    |
+##'   |   6 | lognormal   |
+##'   |  11 | ordinal     |
+##'   |  10 | categorical |
 ##'
 ##' The family variables for the copula are also numeric and taken from
 ##' `VineCopula`. Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton,
@@ -55,7 +60,9 @@
 ##' A variety of sampling methods are implemented.  The
 ##' inversion method with pair-copulas is the default (`method="inversion"`),
 ##' but we cam also use a multivariate copula (`method="inversion_mv"`) or even
-##' rejection sampling (`method="rejection"`).
+##' rejection sampling (`method="rejection"`).  Note that the `inveresion_mv`
+##' method simulates the entire copula, so it cannot depend upon intermediate
+##' variables.
 ##'
 ##' The only control parameters are `cop`: which gives a keyword for the
 ##' copula that defaults to `"cop"`; `quiet` which defaults to `FALSE` but will
@@ -78,7 +85,8 @@
 rfrugal <- function (n, causl_model, control=list()) {
 
   # get control parameters or use defaults
-  con <- list(careful = FALSE, cop="cop", quiet=FALSE)
+  con <- list(careful = FALSE, cop="cop", quiet = FALSE, quan_tol = 1e3*.Machine$double.eps,
+              pm_cond = TRUE, pm_cor_thresh = 0.25, pm_nlevs = 5)
   matches <- match(names(control), names(con))
   con[matches] <- control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ",
@@ -128,7 +136,8 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
                        method="inversion", control=list(), ...) {
 
   # get control parameters or use defaults
-  con <- list(careful = FALSE, quiet = FALSE, cop="cop")
+  con <- list(careful = FALSE, quiet = FALSE, cop="cop", quan_tol = 1e3*.Machine$double.eps,
+              pm_cond = TRUE, pm_cor_thresh = 0.25, pm_nlevs = 5)
   matches <- match(names(control), names(con))
   con[matches] <- control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ",
@@ -148,7 +157,7 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
 
   ## process the four main arguments (change to use causl_model())
   proc_inputs <- process_inputs(formulas=formulas, family=family, pars=pars,
-                                link=link, dat=dat, kwd=kwd, method=method)
+                                link=link, dat=dat, kwd=kwd, method=method, control=con)
 
   out <- rfrugal(n=n, causl_model=proc_inputs, control=con)
 

@@ -11,7 +11,8 @@ causl_model(
   link,
   dat = NULL,
   method = "inversion",
-  kwd = "cop"
+  kwd = "cop",
+  control = list()
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ causl_model(
 \item{method}{either \code{"inversion"} (the default), \code{"inversion_mv"}, or \code{"rejection"}}
 
 \item{kwd}{word used for copula formula and parameters}
+
+\item{control}{list of options for the algorithm}
 }
 \description{
 This defines a \code{causl_model} object, that can be used either for simulation
