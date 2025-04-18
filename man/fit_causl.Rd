@@ -57,9 +57,23 @@ Returns a list of class \code{cop_fit}.
 Fit multivariate copula regression model
 }
 \details{
-\code{forms} is list of three or more formulae giving
-predictors of y-margin, z-margin(s) and interaction
-parameters.  Fit is by maximum likelihood.
+\code{formulas} is list of three or more formulae giving predictors of
+y-margin, z-margin(s) and interaction parameters.  Fit is by maximum
+likelihood.
+
+\code{family} takes numeric values of the following forms:\tabular{rl}{
+   val \tab family \cr
+   0 \tab binomial \cr
+   1 \tab gaussian \cr
+   2 \tab t \cr
+   3 \tab Gamma \cr
+   4 \tab beta \cr
+   5 \tab binomial \cr
+   6 \tab lognormal \cr
+   11 \tab ordinal \cr
+   10 \tab categorical \cr
+}
+
 
 \code{control} has the same arguments as the argument in \code{optim}, as well
 as \code{sandwich}, a logical indicating if sandwich estimates of standard errors

@@ -61,7 +61,7 @@ The only parameterization of the categorical family currently implemented
 is the multivariate logistic parameterization.  For a random variable \eqn{X}
 with \eqn{K} states, dependence on a vector \eqn{\boldsymbol{Z}} uses:
 \deqn{\log \dfrac{P(X=k)}{P(X=1)} = \beta_{k}^T \boldsymbol{Z},}
-and the \eqn{\beta_k} vectors are stored as \eqn{(\beta_2,...\beta_K)}.
+and the \eqn{\beta_k} vectors are stored as \eqn{(\beta_2,\dots,\beta_K)}.
 
 The ordinal family is parameterized using a variation of the ordinal
 logistic regression model.  This takes the logits of entries in the cumulative

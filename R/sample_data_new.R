@@ -28,12 +28,17 @@
 ##' for all the variables therein).
 ##'
 ##' We use the following codes for different families of distributions:
-##' 0 or 5 = binary;
-##' 1 = normal;
-##' 2 = t-distribution;
-##' 3 = gamma;
-##' 4 = beta;
-##' 6 = log-normal.
+##'   | val | family      |
+##'   |----:|:------------|
+##'   |   0 | binomial    |
+##'   |   1 | gaussian    |
+##'   |   2 | t           |
+##'   |   3 | Gamma       |
+##'   |   4 | beta        |
+##'   |   5 | binomial    |
+##'   |   6 | lognormal   |
+##'   |  11 | ordinal     |
+##'   |  10 | categorical |
 ##'
 ##' The family variables for the copula are also numeric and taken from
 ##' `VineCopula`. Use, for example, 1 for Gaussian, 2 for t, 3 for Clayton,
@@ -55,7 +60,9 @@
 ##' A variety of sampling methods are implemented.  The
 ##' inversion method with pair-copulas is the default (`method="inversion"`),
 ##' but we cam also use a multivariate copula (`method="inversion_mv"`) or even
-##' rejection sampling (`method="rejection"`).
+##' rejection sampling (`method="rejection"`).  Note that the `inveresion_mv`
+##' method simulates the entire copula, so it cannot depend upon intermediate
+##' variables.
 ##'
 ##' The only control parameters are `cop`: which gives a keyword for the
 ##' copula that defaults to `"cop"`; `quiet` which defaults to `FALSE` but will

@@ -35,7 +35,8 @@ nll2 <- function(theta, dat, mm, beta, phi, inCop, fam_cop=1,
 
 ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
                  family=rep(1,nc), link, cop_pars=NULL, use_cpp=TRUE,
-                exclude_Z = FALSE, other_pars=list(), outcome = "y") {
+                exclude_Z = FALSE, other_pars=list(), outcome = "y",
+               tol=c(sd=sqrt(.Machine$double.eps), quan=sqrt(.Machine$double.eps))) {
 
   if (missing(inCop)) inCop <- seq_along(dat)
 
@@ -54,7 +55,8 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   if (fam_cop == 2 && any(cop_pars <= 0)) stop("degrees of freedom must be positive for t-copula")
 
   ## number of discrete variables
-  ndisc <- sum(family %in% c(5,0))
+  family[family == 0] <- 5
+  ndisc <- sum(family == 5)
   ## compute etas for each variable
   eta <- mm %*% beta
 
@@ -71,7 +73,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
     else tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], family=family[i])
 
     log_den[,i] <- tmp$ld
-    dat_u[,i] <- pmax(pmin(tmp$u,1-1e-10),1e-10)
+    dat_u[,i] <- pmax(pmin(tmp$u,1-tol[["quan"]]),tol[["quan"]])
   }
   # wh_trunc = 0
   ## deal with discrete variables separately
@@ -88,17 +90,20 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   par <- vector(mode="list", length=choose(ncv,2))
 
   for (i in seq_len(choose(ncv,2))) {
+    if (sd(eta[,i+nv]) < tol[["sd"]]) sel <- 1
+    else sel <- TRUE
+
     if (fam_cop <= 2 || fam_cop == 11) {
-      par[[i]] <- pmin(pmax(2*expit(eta[,i+nv])-1, -1+1e-10), 1-1e-10)
+      par[[i]] <- pmin(pmax(2*expit(eta[sel,i+nv])-1, -1+tol[["quan"]]), 1-tol[["quan"]])
     }
     else if (fam_cop == 3) {
-      par[[i]] <- exp(eta[,i+nv])
+      par[[i]] <- exp(eta[sel,i+nv])
     }
     else if (fam_cop == 4 || fam_cop == 6) {
-      par[[i]] <- exp(eta[,i+nv])+1
+      par[[i]] <- exp(eta[sel,i+nv])+1
     }
     else if (fam_cop == 5) {
-      par[[i]] <- eta[,i+nv]
+      par[[i]] <- eta[sel,i+nv]
     }
   }
 
