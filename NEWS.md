@@ -1,7 +1,9 @@
 causl 0.9.10
 -------------------------------------------------------------------------------
 
+BUG FIXES
 
+ * Fixed bug in parameter initialization for fitting Gamma distributions. 
 
 
 

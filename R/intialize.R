@@ -158,7 +158,7 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
         phi_m[i] <- 1
       }
       else if (family[i] == 3) {
-        beta[1,i] <- exp(mean(dat[[LHS[i]]]))
+        beta[1,i] <- log(mean(dat[[LHS[i]]]))
         phi[i] <- var(dat[[LHS[i]]])
         phi_m[i] <- 1
       }

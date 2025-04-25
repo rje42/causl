@@ -79,7 +79,7 @@ get_family <- function (val) {
 ##' @param link link function
 ##' @export
 gaussian_causl_fam <- function (link) {
-  if (missing(link)) link = "identity"
+  if (missing(link)) link <- "identity"
 
   ## write functions
   dens <- function (x, mu, phi, log=FALSE) dnorm(x, mean=mu, sd=sqrt(phi), log=log)
@@ -100,7 +100,7 @@ gaussian_causl_fam <- function (link) {
 ##' @describeIn get_family Student's t distribution family
 ##' @export
 t_causl_fam <- function (link) {
-  if (missing(link)) link = "identity"
+  if (missing(link)) link <- "identity"
 
   ## write functions
   dens <- function (x, mu, phi, par2, log=FALSE) {
@@ -127,7 +127,7 @@ t_causl_fam <- function (link) {
 ##' @describeIn get_family Gamma distribution family
 ##' @export
 Gamma_causl_fam <- function (link) {
-  if (missing(link)) link = "log"
+  if (missing(link)) link <- "log"
 
   ## write functions
   dens <- function (x, mu, phi, log=FALSE) dgamma(x, rate=1/(mu*phi),
@@ -149,7 +149,7 @@ Gamma_causl_fam <- function (link) {
 ##' @describeIn get_family binomial distribution family
 ##' @export
 binomial_causl_fam <- function (link) {
-  if (missing(link)) link = "logit"
+  if (missing(link)) link <- "logit"
 
   ## write functions
   dens <- function (x, mu, log=FALSE) dbinom(x, size=1, prob=mu, log=log)
@@ -170,7 +170,7 @@ binomial_causl_fam <- function (link) {
 ##' @describeIn get_family beta distribution family
 ##' @export
 beta_causl_fam <- function (link) {
-  if (missing(link)) link = "logit"
+  if (missing(link)) link <- "logit"
 
   ## write functions
   dens <- function (x, mu, phi, log=FALSE) dbeta(x, shape1=1+phi*mu,
@@ -195,7 +195,7 @@ beta_causl_fam <- function (link) {
 
 # ##' @describeIn get_family multinomial/categorical distribution family
 # multinom_causl_fam <- function (link) {
-#   if (missing(link)) link = "logit"
+#   if (missing(link)) link <- "logit"
 #
 #   ## write functions
 #   dens <- function (x, mu, log=FALSE) dmultinom(x, size=1, prob=mu, log=log)
@@ -224,7 +224,7 @@ beta_causl_fam <- function (link) {
 ##'
 ##' @export
 categorical_causl_fam <- function (link) {
-  if (missing(link)) link = "logit"
+  if (missing(link)) link <- "logit"
 
   set_mu_matrix <- function (mu, len) {
     if (is.matrix(mu)) {
@@ -313,7 +313,7 @@ categorical_causl_fam <- function (link) {
 ##'
 ##' @export
 ordinal_causl_fam <- function (link) {
-  if (missing(link)) link = "logit"
+  if (missing(link)) link <- "logit"
 
   set_mu_matrix <- function (mu, len) {
     if (is.matrix(mu)) {
