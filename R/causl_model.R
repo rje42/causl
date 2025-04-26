@@ -39,6 +39,32 @@ print.causl_model <- function (x, ...) {
   invisible(x)
 }
 
+##' Generic for modify
+##'
+##' @param x object to be modified
+##' @param ... other arguments
+##'
+##' @examples
+##' cm <- causl_model(formulas = list(Z ~ 1, Y ~ 1, ~ 1),
+##'                   family = list(3, 1, 1),
+##'                   pars = list(Z = list(beta = 1, phi = 1),
+##'                               Y = list(beta = 0, phi = 1),
+##'                               cop = list(beta = 1)))
+##' modify(cm, pars = list(cop = list(beta = 1.5)))
+##' cm$pars
+##'
+##' @export
+modify <- function (x, ...) {
+  NextMethod("modify")
+}
+
+modify.default <- function (x, ...) {
+  args <- list(...)
+  for (i in seq_along(args)) x[[names(args)[i]]] <- args[[i]]
+  return(x)
+}
+
+
 ##' Modify `causl_model` object
 ##'
 ##' Change one or more components of a `causl_model` object.

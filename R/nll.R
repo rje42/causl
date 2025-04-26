@@ -68,9 +68,9 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   for (i in which(family != 5)) {
     if (family[i] == 2) {
       vr_nm <- names(dat)[i]
-      tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], other_pars = other_pars[[vr_nm]], family=family[i])
+      tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], other_pars = other_pars[[vr_nm]], family=family[i], link=link[i])
     }
-    else tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], family=family[i])
+    else tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], family=family[i], link=link[i])
 
     log_den[,i] <- tmp$ld
     dat_u[,i] <- pmax(pmin(tmp$u,1-tol[["quan"]]),tol[["quan"]])

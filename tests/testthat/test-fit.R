@@ -27,3 +27,19 @@ test_that("fitting works as expected", {
 #                                          0.714666339742363, -0.10159280239843, 0.444723304635891,
 #                                          0.763841648563355))^2), 1e-6)
 # })
+
+fam[1] <- 3
+
+cm <- causl_model(formulas = list(z ~ 1, x ~ z, y ~ x, ~ 1),
+                  family = fam,
+                  pars = pars,
+                  link = c("inverse", "identity", "identity"))
+cm$pars$z$beta <- 2
+
+set.seed(123)
+dat <- suppressMessages(rfrugal(1e2, causl_model = cm))
+out <- fit_causl(dat, list(z ~ 1, y ~ x, cop ~ 1), family=fam[-2], link = c("inverse", "identity"))
+
+test_that("fitting works as expected with different links", {
+  testthat::expect_lt(sum((out$pars$z$beta - c(2.21898240437888))^2), 1e-12)
+})

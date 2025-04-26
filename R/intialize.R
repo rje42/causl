@@ -61,7 +61,6 @@
 #   return(beta_start)
 # }
 
-## NEEDS TO ACCOUNT FOR LINK FUNCTIONS
 initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
                               full_form, kwd, notInCop, inc_cop=TRUE, nc, only_masks=FALSE) {
 
@@ -153,12 +152,18 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
     else {
       ## pick mean and sd...
       if (family[i] <= 2) {
-        beta[1,i] <- mean(dat[[LHS[i]]])
+        if (link[i] == "identity") beta[1,i] <- mean(dat[[LHS[i]]])
+        else if (link[i] == "inverse") beta[1,i] <- 1/mean(dat[[LHS[i]]])
+        else if (link[i] == "log") beta[1,i] <- log(exp(mean(dat[[LHS[i]]])))
+
         phi[i] <- var(dat[[LHS[i]]])
         phi_m[i] <- 1
       }
       else if (family[i] == 3) {
-        beta[1,i] <- log(mean(dat[[LHS[i]]]))
+        if (link[i] == "identity") beta[1,i] <- mean(dat[[LHS[i]]])
+        else if (link[i] == "inverse") beta[1,i] <- 1/mean(dat[[LHS[i]]])
+        else if (link[i] == "log") beta[1,i] <- log(exp(mean(dat[[LHS[i]]])))
+
         phi[i] <- var(dat[[LHS[i]]])
         phi_m[i] <- 1
       }

@@ -1,3 +1,19 @@
+causl 0.9.11
+-------------------------------------------------------------------------------
+
+NEW FEATURES
+
+ * fit_causl() now initializes correctly with respect to link functions.
+ 
+ * Sandwich standard error estimation is now performed much more quickly.
+
+
+BUG FIXES
+
+ * fit_causl() uses inputted link functions.
+
+
+
 causl 0.9.10
 -------------------------------------------------------------------------------
 

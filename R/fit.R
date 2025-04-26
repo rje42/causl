@@ -27,8 +27,8 @@
 ##'   |   4|beta        |
 ##'   |   5|binomial    |
 ##'   |   6|lognormal   |
-##'   |  11|ordinal     |
 ##'   |  10|categorical |
+##'   |  11|ordinal     |
 ##'
 ##' `control` has the same arguments as the argument in `optim`, as well
 ##' as `sandwich`, a logical indicating if sandwich estimates of standard errors
@@ -216,7 +216,7 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
       # for (j in seq_along(other_args2$mms[-length(mms)+0:1])) {
       other_args2a$mm <- other_args2$mm[i,,drop=FALSE]
       # }
-      tmp <- do.call(grad, c(list(nll2, x=out$par), other_args2a))
+      tmp <- do.call(grad, c(list(nll2, x=out$par), other_args2a, method="simple"))
       gr2 <- gr2 + outer(tmp, tmp)
     }
 
@@ -228,29 +228,17 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   out$value = do.call(nll2, c(list(theta=out$par), other_args2))
   out$ll = -out$value
   out$grad = gr
-  out$FI = do.call(hessian, c(list(nll2, x=out$par), other_args2))
+  out$OI = do.call(hessian, c(list(nll2, x=out$par), other_args2))
 
-  ## get rid of standard error parameters for non-Gaussian models
-  # rm <- integer(0)
-  # if (fam_z != 1) {
-  #   rm <- wh[[4]]
-  #   out$grad <- out$grad[-rm]
-  #   out$FI <- out$FI[-rm, -rm, drop=FALSE]
-  # }
-  # if (fam_y != 1) {
-  #   rm <- wh[[2]]
-  #   out$grad <- out$grad[-rm]
-  #   out$FI <- out$FI[-rm, -rm, drop=FALSE]
-  # }
-
-  if (!any(is.na(out$FI)) && rcond(out$FI) > 1e-16) {
-    invFI <- solve.default(out$FI)
+  ## check that observed information is well conditioned
+  if (!any(is.na(out$OI)) && rcond(out$OI) > 1e-16) {
+    invOI <- solve.default(out$OI)
   }
   else {
-    invFI <- tryCatch(MASS::ginv(out$FI), error = function(e) NA)
+    invOI <- tryCatch(MASS::ginv(out$OI), error = function(e) NA)
   }
-  if (is.numeric(invFI)) {
-    out$se = sqrt(pmax(0, diag(invFI)))
+  if (is.numeric(invOI)) {
+    out$se = sqrt(pmax(0, diag(invOI)))
     # if (out$se[2] < 1e-3) stop("Error here")
   }
   else out$se <- NULL
@@ -258,7 +246,7 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   ## construct Sandwich estimates:
   if (sandwich) {
     if(!is.null(out$se)) {
-      out$sandwich <- invFI %*% gr2 %*% invFI
+      out$sandwich <- invOI %*% gr2 %*% invOI
       out$sandwich_se <- sqrt(diag(out$sandwich))
       # out$sandwich_se <- relist(out$sandwich_se, out$pars)
     }
@@ -272,42 +260,6 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   ## record values
   out <- ests_ses(out, beta_start2, full_form, kwd=kwd)
 
-  # ## record parameter values
-  # beta_out <- ses <- beta_start2$beta_m
-  # np <- sum(beta_out > 0)
-  # beta_out[beta_out > 0] <- out$par[seq_len(np)]
-  # ses[ses > 0] <- out$se[seq_len(np)]
-  # phi_out <- beta_start2$phi_m
-  # phi_out[phi_out > 0] <- out$par[-seq_len(np)]
-  # ses_phi[ses_phi > 0] <- out$se[-seq_len(np)]
-  #
-  # ## regroup estimates by variables
-  # out$pars <- vector(length=length(formulas), mode="list")
-  # for (i in seq_len(nf-1)) {
-  #   if (beta_start2$phi_m[i] == 1) out$pars[[i]] <- list(beta=beta_out[beta_start2$beta_m[,i] > 0,i], phi=phi_out[i])
-  #   else out$pars[[i]] <- list(beta=beta_out[beta_start2$beta_m[,i] > 0,i])
-  # }
-  # out$pars[[nf]] <- list(beta=beta_out[beta_start2$beta_m[,nf] > 0,nf])
-  # names(out$pars) <- lhs(formulas)
-
-  # ln <- length(unlist(out$pars))
-  # out$pars <- relist(out$par[seq_len(ln)], out$pars)
-  # for (i in seq_along(formulas)[-length(formulas)]) {
-  #   names(out$pars[[i]]$beta) <- colnames(mms[[i]])
-  # }
-  # out$pars$cop <- matrix(out$par[-seq_len(ln)], nrow=ncol(mms[[length(formulas)]]))
-  # rownames(out$pars$cop) <- colnames(mms[[length(formulas)]])
-  # sapply(combn(LHS, 2, simplify = FALSE),
-  #        function(x) paste(x,collapse=""))
-  # colnames(out$pars$cop) <- sapply(combn(LHS, 2, simplify = FALSE),
-  #                                  function(x) paste(x,collapse=""))
-  # if (ncol(out$pars$cop) > 3) {
-  #   M <- matrix(NA_character_, length(formulas)-1, length(formulas)-1)
-  #   M[upper.tri(M)] <- colnames(out$pars$cop)
-  #   colnames(out$pars$cop) <- t(M)[lower.tri(M)]
-  # }
-
-  # if (!is.null(out$se)) out$se <- relist(out$se, out$pars)
 
   out$mm = mm
   out$formulas = full_form
