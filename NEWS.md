@@ -3,9 +3,13 @@ causl 0.9.11
 
 NEW FEATURES
 
+ * Sandwich standard error estimation is now performed much more quickly.
+ 
+ * Added is_discrete() function for families.
+
  * fit_causl() now initializes correctly with respect to link functions.
  
- * Sandwich standard error estimation is now performed much more quickly.
+ * dfgmCopula() now has 'log' argument.
 
 
 BUG FIXES

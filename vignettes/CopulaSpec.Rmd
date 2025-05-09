@@ -1,0 +1,114 @@
+---
+title: "Copula Specification"
+author: "Robin Evans"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+There are several different ways of specifying the copula used in the `causl` 
+package.  This vignette gives an overview of them.
+
+```{r load, message=FALSE}
+library(causl)
+```
+
+# Multivariate Copulas
+
+The original way of specifying a copula is to use a multivariate one.  Typically
+this would be a Gaussian or t-copula.  
+
+Below we set up a typical model, specifying the formulas, families, and parameters
+for each variable.
+```{r setup_mv}
+forms <- list(list(Z1 ~ 1, Z2 ~ 1), X ~ Z1 + Z2, Y ~ X, ~ 1)
+fams <- list(c(1,1), 5, 1, 1)
+pars <- list(Z1 = list(beta=0, phi=1),
+             Z2 = list(beta=0, phi=1),
+             X = list(beta=c(-1,0.5,0.3)),
+             Y = list(beta=c(-0.5, 1), phi=1),
+             cop = list(beta=matrix(c(0.3, 0.5, 0.3), nrow=1)))
+```
+In this instance, the copula parameters should be specified as a matrix, with a
+column for each entry in the matrix, and a row for each parameter in the copula
+formula.  In the instance above, there is only an intercept, and so only one 
+row.  The columns are ordered as `Z1`-`Z2`, `Z1`-`Y`, `Z2`-`Y`, and in general
+are in colexicographic order (1-2, 1-3, 2-3, 1-4, 2-4, ...).
+
+```{r method_mv}
+cm <- causl_model(formulas = forms, family = fams, pars = pars, method = "inversion_mv")
+```
+Note that the method must be specified as `inversion_mv` to allow simulation 
+by the inversion method for a multivariate copula.  This does preclude the value
+of the copula from depending upon values that are themselves determined by any
+of the variables in the copula.  This is because we cannot simulate the copula
+until we have simulated those variables, but in turn we cannot simulate those 
+variables without those in the copula.  For example, in the model above, `X` 
+depends on `Z1` and `Z2`, so we cannot allow the copula to depend upon `X`, 
+because `X` itself depends upon `Z1` and `Z2`.  As we will see below, using the 
+rejection method _does_ allow this additional flexibility.
+
+```{r sim_mv, eval=FALSE}
+dat <- rfrugal(n=1e2, cm)
+```
+
+## The rejection method
+
+The approach originally suggested by Evans and Didelez (2024) was to simulate using 
+rejection sampling, and in this case it allows us to obtain samples even if 
+there is dependence of the copula on intermediate variables.  This is because 
+the dependence between `X` and the covariates is added _after_ first simulating 
+from the intervened model, and hence the copula can be chosen to depend upon `X`
+at that time.
+
+```{r sim_rj, eval=TRUE}
+cmr <- cm   # copy original model
+forms2 <- forms
+forms2[[4]] <- ~ X  # modify copula formula to include dependence upon X
+cmr <- modify.causl_model(cmr, formulas=forms2, method="rejection",
+                          pars = list(cop = list(beta = matrix(c(0.3,0,
+                                                                 0.5,0.3,
+                                                                 0.3,-0.2), nrow=2))))
+dat_rj <- rfrugal(n=1e2, causl_model = cmr)
+```
+
+# Pair-copulas
+
+An alternative, one which we consider to be the most flexible, is to specify 
+the model using _pair-copulas_; that is, to specify the dependence between `Y` 
+and `Z1` and `Z2`, we specify a bivariate copula between `Y` and `Z1`, and then 
+a conditional copula between `Y` and `Z2` given `Z1`.  This can be done by 
+replacing the `cop` entry in the parameters argument with a list of lists; the first level of lists
+should be indexed by the variable being parameterized (so `Y` in our case), and the second level by
+the variables that are being jointly modelled. 
+```{r mod_pc, eval=TRUE}
+cmp <- cmr
+cmp <- modify.causl_model(cmp, method = "inversion",
+                          pars = list(cop=list(
+                                 Y = list(Z1 = list(beta = c(0.5,-0.25)),
+                                          Z2 = list(beta = c(0.3,0.15))))) )
+# datr <- rfrugalParam(n=1e2, cmr)
+dat_pc <- rfrugal(n=1e2, cmp)
+```
+
+In this case, the only outcome is `Y`, and the two variables we would like to 
+specify the distribution conditional upon are `Z1` and `Z2`.  Hence, we have a 
+list with one entry called `Y`, which is itself a list with two entries called
+`Z1` and `Z2`.  If there were a second outcome, then the list would have length
+2, and the second entry would be a list with entries `Z1`, `Z2`, and `Y`.
+
+Note also that above we have not modified the family variable, so the two 
+bivariate copulas used are both Gaussian.  This is something that we could 
+change very easily.
+```{r fam_pc}
+cmp2 <- modify.causl_model(cmp, family = list(c(1,1), 5, 1, c(3,1)))  # use Clayton+Gaussian copulas
+dat_pc2 <- rfrugal(n=1e2, cmp2)
+```
+
+<!-- # Tricks -->
+
+<!-- There are various short-cuts that can be taken with the parameters, which users -->
+<!-- may or may not find useful. -->
