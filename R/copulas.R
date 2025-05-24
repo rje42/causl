@@ -76,7 +76,7 @@ rfgmCopula <- function(n, d=2, alpha)
 ##'
 ##' @param x samples on (0,1)
 ##' @param Sigma collection of matrices
-##' @param log logical: return log=density?
+##' @param log logical: return log-density?
 ##' @param use_cpp logical: use the C routine?
 ##' @param N optional integer for number of covariance matrices
 ##'
@@ -207,8 +207,10 @@ dtCop <- function(x, Sigma, df, log=FALSE, use_cpp=TRUE) {
 ##'
 ##' @describeIn copula_density bivariate FGM copula
 ##' @export
-dfgmCopula <- function(x, alpha) {
-  1 + alpha * (1 - 2 * x[,1]) * (1 - 2 * x[,2])
+dfgmCopula <- function(x, alpha, log=FALSE) {
+  out <- 1 + alpha * (1 - 2 * x[,1]) * (1 - 2 * x[,2])
+  if (log) return(log(out))
+  else return(out)
 }
 
 # ##' Distribution Function of a Bivariate Copula

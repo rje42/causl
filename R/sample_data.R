@@ -229,7 +229,7 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
   }
   ## get copula data and then modify distributions of Y and Z
   out[,output] <- sim_copula(out[,output], family=famCop,
-                             par = pars$cop, par2=pars$cop$par2, model_matrix=copMM)
+                             par = pars$cop, df=pars$cop$df, model_matrix=copMM)
   for (i in seq_along(LHS_Z)) {
     mms[[1]][[i]] <- model.matrix(formulas[[1]][[i]], data=out)
     out[[LHS_Z[i]]] <- rescale_var(out[[LHS_Z[i]]], X=mms[[1]][[i]],

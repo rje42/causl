@@ -13,7 +13,8 @@ fit_causl(
   cop_pars,
   use_cpp = TRUE,
   control = list(),
-  other_pars = list()
+  other_pars = list(),
+  method = "optim"
 )
 
 fitCausal(
@@ -30,11 +31,11 @@ fitCausal(
 \arguments{
 \item{dat}{data frame of observations}
 
-\item{formulas}{list of model formulae, for Y, for the Z variables, and
+\item{formulas}{list of model formulae, for outcome, covariates, and
 finally for the copula}
 
-\item{family}{families for the Y and Z distributions, and the copula. Should
-be the same length as \code{formulas}}
+\item{family}{families for variables and copula as above. Should be the
+same length as \code{formulas}, and in same order}
 
 \item{link}{link functions for each variable}
 
@@ -45,6 +46,8 @@ be the same length as \code{formulas}}
 \item{control}{list of parameters to be passed to \code{optim}}
 
 \item{other_pars}{list of other parameters to use (e.g. degrees of freedom for a t-distribution)}
+
+\item{method}{either \code{"optim"} or \code{"dissmann"}}
 
 \item{par2}{former name for \code{cop_pars} argument}
 
@@ -70,8 +73,8 @@ likelihood.
    4 \tab beta \cr
    5 \tab binomial \cr
    6 \tab lognormal \cr
-   11 \tab ordinal \cr
    10 \tab categorical \cr
+   11 \tab ordinal \cr
 }
 
 
@@ -83,8 +86,13 @@ for the left-hand side of formulae.
 Useful for altering are \code{trace} (1 shows steps of optimization) and
 \code{maxit} for the number of steps.
 
+\code{cop_pars} is currently just a numeric scalar, generally representing the
+degrees of freedom to use in a t-copula.
+
 The list \code{other_pars} should be named with the relevant variables, and
-each entry should be a named list containing the relevant parameters.
+each entry should be a named list containing the relevant parameters.  As
+an example, for a t-copula, the required parameter is the degrees of
+freedom, \code{df}.
 
 \strong{Warning} By default, none of the variables should be called \code{cop}, as
 this is reserved for the copula.  The reserved word can be changed using

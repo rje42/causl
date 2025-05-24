@@ -10,7 +10,7 @@
 ##' Gamma distributed, beta distributed or discrete respectively, and 11 for
 ##' ordinal variables.
 ##' `pars` should be a list with entries `beta` and
-##' `phi`, as well as possibly `par2`, `trunc` and `nlevel` if the family
+##' `phi`, as well as possibly `df`, `trunc` and `nlevel` if the family
 ##' is set to 2 or 5.
 ##' `U` should have the same length as `X` has rows, and
 ##' `X` should have the same number of columns as the length of
@@ -44,11 +44,11 @@ rescale_var <- function(U, X, pars, family=1, link) {
       else stop("invalid link function for log-normal distribution")
     }
     else if (family == 2) {
-      # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
+      # Y <- sqrt(phi)*qt(U, df=pars$df) + eta
 
-      if (link == "identity") Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
-      else if (link == "log") Y <- sqrt(phi)*qt(U, df=pars$par2) + exp(eta)
-      else if (link == "inverse") Y <- sqrt(phi)*qt(U, df=pars$par2) + 1/eta
+      if (link == "identity") Y <- sqrt(phi)*qt(U, df=pars$df) + eta
+      else if (link == "log") Y <- sqrt(phi)*qt(U, df=pars$df) + exp(eta)
+      else if (link == "inverse") Y <- sqrt(phi)*qt(U, df=pars$df) + 1/eta
       else stop("invalid link function for t-distribution")
     }
     else if (family == 3) {
@@ -71,7 +71,7 @@ rescale_var <- function(U, X, pars, family=1, link) {
     else if (family == 0 || family == 5) {
       if (link == "probit") Y <- 1*(eta + qnorm(U) > 0)
       else if (link == "logit") Y <- 1*(eta + qlogis(U) > 0)
-      else if (link == "log") Y <- 1*(eta - log(U) > 0)
+      else if (link == "log") Y <- 1*(eta - log(1-U) > 0)
       else stop("invalid link function for binomial distribution")
 
       # trunc <- pars$trunc
@@ -104,6 +104,7 @@ rescale_var <- function(U, X, pars, family=1, link) {
     if (family$name %in% c("binomial")) {
       if (link == "probit") mu <- 1*(eta + qnorm(U) > 0)
       else if (link == "logit") mu <- 1*(eta + qlogis(U) > 0)
+      else if (link == "log") mu <- 1*(eta - log(1-U) > 0)
       else stop("invalid link function for binomial distribution")
     }
 
@@ -132,13 +133,19 @@ rescaleVar <- function(U, X, pars, family=1, link) {
 ##' @param eta inner product of `X` and `beta`
 ##' @param link link function
 ##' @param family_nm family of distributions to use
+##' @param inverse should inverse of specified function be applied?  Defaults to true
 ##'
 ##' @return inner product `eta` transformed by inverse of link function
 ##'
 ##' @export
-link_apply <- function(eta, link, family_nm) {
+## MAKE THIS FUNCTION BETTER!
+link_apply <- function(eta, link, family_nm, inverse = TRUE) {
   if (is.function(link)) {
-    mu <- link(eta)
+    if (inverse) {
+      fs <- lapply(eta, function (x) function(y) link(y) - x)
+      mu <- sapply(fs, uniroot)
+    }
+    else mu <- link(eta)
   }
   else if (family_nm == "categorical") {
     if (link == "logit") mu <- theta_to_p_cat(eta)
@@ -148,12 +155,20 @@ link_apply <- function(eta, link, family_nm) {
     if (link == "logit") mu <- theta_to_p_ord(eta)
     else stop("Not a valid link function for ordinal variable")
   }
-  else {
+  else if (inverse) {
     if (link == "identity") mu <- eta
     else if (link == "log") mu <- exp(eta)
     else if (link == "inverse") mu <- 1/eta
     else if (link == "logit") mu <- plogis(eta)
     else if (link == "probit") mu <- pnorm(eta)
+    else stop("Not a valid link function")
+  }
+  else {
+    if (link == "identity") mu <- eta
+    else if (link == "log") mu <- log(eta)
+    else if (link == "inverse") mu <- 1/eta
+    else if (link == "logit") mu <- qlogis(eta)
+    else if (link == "probit") mu <- qnorm(eta)
     else stop("Not a valid link function")
   }
 
@@ -167,7 +182,6 @@ link_apply <- function(eta, link, family_nm) {
 ##' @param X model matrix of covariates
 ##' @param beta list of parameters (see details)
 ##' @param family variety of copula to use
-##' @param par2 additional parameter for some copulas
 ## @param link link function
 ##'
 ##' @details The variable to be transformed must be in the final column of
@@ -175,10 +189,9 @@ link_apply <- function(eta, link, family_nm) {
 ##'
 ##' `family` can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
 ##' Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. Gamma distributed,
-##' beta distributed or discrete respectively. `pars` should be a list
-##' with entries `beta` and `phi`, as well as possibly `par2` if
-##' \code{family=2}.
-##' `U` should have the same length as `X` has rows, and `X`
+##' beta distributed or discrete respectively. `beta` should contain regression
+##' parameters, `df` must be specified if \code{family=2}. `U` should have the
+##' same length as `X` has rows, and `X`
 ##' should have the same number of columns as the length of \code{pars$beta}.
 ##'
 ##' @return vector of rescaled quantiles
@@ -187,7 +200,7 @@ link_apply <- function(eta, link, family_nm) {
 ## @inherit glm_sim
 ##'
 ##' @export
-rescale_cop <- function(U, X, beta, family=1, par2) {
+rescale_cop <- function(U, X, beta, family=1, df) {
 
   if (!is.matrix(U)) stop("'U' should be a matrix")
   if (!is.matrix(X)) stop("'X' should be a matrix")
@@ -206,8 +219,9 @@ rescale_cop <- function(U, X, beta, family=1, par2) {
   }
   else if (family == 2) {
     # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
+    df <- pars$
     param <- 2*expit(eta) - 1
-    Y <- cVCopula(U, copula = tCopula, param = param, par2=par2, inverse=TRUE)
+    Y <- cVCopula(U, copula = tCopula, param = param, par2=df, inverse=TRUE)
   }
   else if (family == 3) {
     param <- exp(eta) - 1
@@ -235,9 +249,9 @@ rescale_cop <- function(U, X, beta, family=1, par2) {
 
 ##' @describeIn rescale_cop Old name, now deprecated
 ##' @export
-rescaleCop <- function(U, X, beta, family=1, par2) {
+rescaleCop <- function(U, X, beta, family=1, df) {
   deprecate_soft("0.8.0", "rescaleCop()", "rescale_cop()")
-  rescale_cop(U, X, beta, family=family, par2)
+  rescale_cop(U, X, beta, family=family, df=df)
 }
 
 ##' Simulate copula values
@@ -245,7 +259,7 @@ rescaleCop <- function(U, X, beta, family=1, par2) {
 ##' @param dat data frame with empty columns
 ##' @param family numeric indicator of copula type
 ##' @param par mandatory parameters
-##' @param par2 optional parameters
+##' @param df optional parameters
 ##' @param model_matrix design matrix for covariates
 ##'
 ##' @details Returns data frame containing columns `y`
@@ -259,13 +273,13 @@ rescaleCop <- function(U, X, beta, family=1, par2) {
 ##' simulated values.
 ##'
 ##' @export
-sim_copula <- function(dat, family, par, par2, model_matrix) {
+sim_copula <- function(dat, family, par, df, model_matrix) {
 
   ## if more than one family given, must be a vine copula
   if (length(family) > 1) {
     if (choose(ncol(dat), 2) != length(family)) stop("family for copula has length > 1 but not equal to number of pairs of variables")
 
-    dat <- sim_vinecop(dat, family=family, par=par$beta, par2=par2,
+    dat <- sim_vinecop(dat, family=family, par=par$beta, df=df,
                        model_matrix=model_matrix)
     return(dat)
   }
@@ -324,7 +338,7 @@ sim_copula <- function(dat, family, par, par2, model_matrix) {
       Sigma <- t(Sigma)
       Sigma[upper.tri(Sigma)] <- cors[1,]
 
-      dat[] <- rtCop(N, Sigma=Sigma, df=par2)
+      dat[] <- rtCop(N, Sigma=Sigma, df=df)
     }
     else {
       Sigma <- array(diag(nrow = d), dim=c(d,d,N))
@@ -333,7 +347,7 @@ sim_copula <- function(dat, family, par, par2, model_matrix) {
       Sigma <- aperm(Sigma, c(2,1,3))
       Sigma[upper.tri(Sigma[,,1])] <- t(cors)
 
-      dat[] <- rtCop(N, Sigma = Sigma, df=par2)
+      dat[] <- rtCop(N, Sigma = Sigma, df=df)
     }
   }
   else if (family == 11) dat[] <- causl::rfgmCopula(N, d=2, cors)
@@ -365,16 +379,16 @@ sim_copula <- function(dat, family, par, par2, model_matrix) {
 
 ##' @describeIn sim_copula Old name, now deprecated
 ##' @export
-sim_CopVal <- function(dat, family, par, par2, model_matrix) {
+sim_CopVal <- function(dat, family, par, df, model_matrix) {
   deprecate_soft("0.8.0", "sim_CopVal()", "sim_copula()")
-  sim_copula(dat, family, par, par2, model_matrix)
+  sim_copula(dat, family, par, df, model_matrix)
 }
 
 
 # #' @describeIn glm_sim Old name
 # #' @inherit glm_sim
-# sim_glm <- function (family, eta, phi, par2, link) {
-#   glm_sim(family, eta, phi, other_pars=list(par2=par2), link=link)
+# sim_glm <- function (family, eta, phi, df, link) {
+#   glm_sim(family, eta, phi, other_pars=list(df=df), link=link)
 # }
 
 ##' Simulate from a GLM
@@ -439,7 +453,12 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
 
     pars <- list(mu=mu)
     if ("phi" %in% family$pars) pars <- c(pars, list(phi=phi))
-    if ("par2" %in% family$pars) pars <- c(pars, list(par2=other_pars$par2))
+    if (!missing(other_pars)) {
+      pars <- c(pars, other_pars[names(other_pars) %in% family$pars])
+    }
+
+    if (!setequal(names(pars), family$pars)) stop("Parameters do not match")
+    # if ("df" %in% family$pars) pars <- c(pars, list(df=other_pars$df))
 
     x <- do.call(family$rdist, c(list(n=n), pars))
     if (quantiles &&
@@ -465,15 +484,15 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
       }
     }
     else if (family == 2) {
-      par2 <- other_pars$par2
+      df <- other_pars$df
 
       if (link=="identity") mu <- eta
       else if (link=="inverse") mu <- 1/eta
       else if (link=="log") mu <- exp(eta)
       else stop("Not a valid link function for the t-distribution")
 
-      x <- rt(n, df=par2)*sqrt(phi) + mu
-      qx <- pt((x - mu)/sqrt(phi), df=par2)
+      x <- rt(n, df=df)*sqrt(phi) + mu
+      qx <- pt((x - mu)/sqrt(phi), df=df)
     }
     else if (family == 3) {
       if (link=="log") mu <- exp(eta)

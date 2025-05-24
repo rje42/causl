@@ -66,14 +66,14 @@ ll_frugal <- function (pars, dat, formulas, family, link, kwd="cop") {
   ## attach truncation values as an attribute of the model matrix
   attr(mm, "trunc") <- trunc
 
-  ## set secondary parameter to 4 if in a t-Copula model
-  if (missing(par2)) {
-    if (fam_cop == 2) {
-      par2 <- 4
-      message("par2 set to 4\n")
-    }
-    else par2 = 0
-  }
+  # ## set secondary parameter to 4 if in a t-Copula model
+  # if (missing(df)) {
+  #   if (fam_cop == 2) {
+  #     df <- 4
+  #     message("df set to 4\n")
+  #   }
+  #   else df <- 0
+  # }
 
   msk <- masks(forms, family = unlist(family[c(1,3)]), wh = full_form$wh, LHS=LHS)
   prs <- msk
@@ -90,7 +90,7 @@ ll_frugal <- function (pars, dat, formulas, family, link, kwd="cop") {
   args <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
                beta = prs$beta, phi = prs$phi,
                inCop = seq_along(inCop),
-               fam_cop=fam_cop, fam=family[-length(family)], par2=par2,
+               fam_cop=fam_cop, fam=family[-length(family)], par2=df,
                use_cpp=TRUE,
                link = link)
   llg <- do.call(ll, args)

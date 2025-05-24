@@ -4,7 +4,7 @@
 \alias{link_apply}
 \title{Helper function to apply link function}
 \usage{
-link_apply(eta, link, family_nm)
+link_apply(eta, link, family_nm, inverse = TRUE)
 }
 \arguments{
 \item{eta}{inner product of \code{X} and \code{beta}}
@@ -12,6 +12,8 @@ link_apply(eta, link, family_nm)
 \item{link}{link function}
 
 \item{family_nm}{family of distributions to use}
+
+\item{inverse}{should inverse of specified function be applied?  Defaults to true}
 }
 \value{
 inner product \code{eta} transformed by inverse of link function

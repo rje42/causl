@@ -5,9 +5,9 @@
 \alias{rescaleCop}
 \title{Rescale quantiles to conditional copula}
 \usage{
-rescale_cop(U, X, beta, family = 1, par2)
+rescale_cop(U, X, beta, family = 1, df)
 
-rescaleCop(U, X, beta, family = 1, par2)
+rescaleCop(U, X, beta, family = 1, df)
 }
 \arguments{
 \item{U}{matrix of quantiles}
@@ -17,8 +17,6 @@ rescaleCop(U, X, beta, family = 1, par2)
 \item{beta}{list of parameters (see details)}
 
 \item{family}{variety of copula to use}
-
-\item{par2}{additional parameter for some copulas}
 }
 \value{
 vector of rescaled quantiles
@@ -32,10 +30,9 @@ The variable to be transformed must be in the final column of
 
 \code{family} can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
 Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. Gamma distributed,
-beta distributed or discrete respectively. \code{pars} should be a list
-with entries \code{beta} and \code{phi}, as well as possibly \code{par2} if
-\code{family=2}.
-\code{U} should have the same length as \code{X} has rows, and \code{X}
+beta distributed or discrete respectively. \code{beta} should contain regression
+parameters, \code{df} must be specified if \code{family=2}. \code{U} should have the
+same length as \code{X} has rows, and \code{X}
 should have the same number of columns as the length of \code{pars$beta}.
 }
 \section{Functions}{

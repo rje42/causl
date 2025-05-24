@@ -4,7 +4,7 @@
 \alias{get_X_density}
 \title{Get density of treatments}
 \usage{
-get_X_density(dat, eta, phi, qden, family, link, par2, log = FALSE)
+get_X_density(dat, eta, phi, qden, family, link, other_par, log = FALSE)
 }
 \arguments{
 \item{dat}{data frame of variables to change conditional distribution of}
@@ -19,9 +19,11 @@ get_X_density(dat, eta, phi, qden, family, link, par2, log = FALSE)
 
 \item{link}{link functions for GLMs}
 
-\item{par2}{vector of degrees of freedom}
+\item{other_par}{other parameters for family}
 
 \item{log}{logical: should log-density be returned?}
+
+\item{par2}{vector of degrees of freedom}
 }
 \value{
 a numeric vector of weights

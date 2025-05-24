@@ -45,7 +45,7 @@ get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, l
 
 
   ## get matrix form for parameters
-  msks <- initializeParams2(formulas=forms_X, family=fam_X, full_form=full_form,
+  msks <- initializeParams2(family=fam_X, full_form=full_form,
                             only_masks=TRUE, nc=0, inc_cop=FALSE)
   beta <- beta_m <- msks$beta_m
   phi <- phi_m <- msks$phi_m
@@ -72,7 +72,7 @@ get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, l
     mm <- model.matrix(full_form$formula, ZX)
     eta <- mm %*% beta
 
-    out <- get_X_density(dat = ZX2, eta = eta, phi = phi, par2=0*phi,
+    out <- get_X_density(dat = ZX2, eta = eta, phi = phi,
                          qden = qden, family=fam_X, link = link)
 
     -out

@@ -15,9 +15,8 @@
 ##' @details The number of columns of `beta` should be the number of columns
 ##' in `dat` plus the number required to parameterize the copula.  The first
 ##' few columns and the entries in `phi` are assumed to be in the order of
-##' those in `dat`.  If the \eqn{i}th
-##' family for a variable does not require a dispersion parameter then the value of
-##' `phi[i]` is ignored.
+##' those in `dat`.  If the \eqn{i}th family for a variable does not require a
+##' dispersion parameter then the value of `phi[i]` is ignored.
 ##'
 ## @importFrom Matrix Matrix
 ##'
@@ -39,24 +38,42 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
                tol=c(sd=sqrt(.Machine$double.eps), quan=sqrt(.Machine$double.eps))) {
 
   if (missing(inCop)) inCop <- seq_along(dat)
+  nc <- length(inCop)
+  nv <- length(phi)
+  new_fams <- is.list(family)
 
-  if (missing(link)) {
-    fams <- family_vals[match(family, family_vals$val),2]
-    link <- sapply(fams, function(x) links_list[[x]][1])
-  }
+  # if (missing(link)) {
+  #   link <- character(nc)
+  #   if (is.list(family)) {
+  #     if (all(sapply(is, family, "causal_family"))) {
+  #       link <- sapply(family, function (x) x$link)
+  #     }
+  #     else stop("Mixture of")
+  #   }
+  #   else {
+  #     fams <- family_vals[match(family, family_vals$val),2]
+  #     link <- sapply(fams, function(x) links_list[[x]][1])
+  #   }
+  # }
 
   if (any(phi < 0)) return(-Inf)
 
-  nv <- length(phi)
-  nc <- length(inCop)
   if (length(family) != nc) stop(paste0("family should have length ", nc))
   else if (nv != nc) stop(paste0("phi should have length ", nv))
 
   if (fam_cop == 2 && any(cop_pars <= 0)) stop("degrees of freedom must be positive for t-copula")
 
+
   ## number of discrete variables
-  family[family == 0] <- 5
-  ndisc <- sum(family == 5)
+  if (new_fams) {
+    wh_disc <- sapply(family, is_discrete)
+    ndisc <- sum(wh_disc)
+  }
+  else {
+    family[family == 0] <- 5
+    wh_disc <- family != 5
+    ndisc <- sum(family == 5)
+  }
   ## compute etas for each variable
   eta <- mm %*% beta
 
@@ -65,21 +82,33 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
   # if (length(family) < nc) family <- rep_len(family, nc)
 
   ## get univariate densities
-  for (i in which(family != 5)) {
-    if (family[i] == 2) {
-      vr_nm <- names(dat)[i]
-      tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], other_pars = other_pars[[vr_nm]], family=family[i], link=link[i])
+  for (i in which(!wh_disc)) {
+    if (new_fams) {
+      ## using new family specification, so separate link not needed
+      if(family[[i]]$name == "t") {
+        ## check that t-distribution have their extra parameters
+        vr_nm <- names(dat)[i]
+        tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], other_pars = other_pars[[vr_nm]], family=family[[i]])
+      }
+      else tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], family=family[[i]])
     }
-    else tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], family=family[i], link=link[i])
-
+    else {
+      ## using numeric family specification, so separate link is needed
+      if(family[[i]] == 2) {
+        ## check that t-distribution have their extra parameters
+        vr_nm <- names(dat)[i]
+        tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], other_pars = other_pars[[vr_nm]], family=family[[i]], link=link[i])
+      }
+      else tmp <- glm_dens(dat[,i], eta[,i], phi=phi[i], family=family[[i]], link=link[i])
+    }
     log_den[,i] <- tmp$ld
     dat_u[,i] <- pmax(pmin(tmp$u,1-tol[["quan"]]),tol[["quan"]])
   }
   # wh_trunc = 0
   ## deal with discrete variables separately
-  for (i in which(family == 5)) {
+  for (i in which(wh_disc)) {
     # wh_trunc <- wh_trunc + 1
-    tmp <- glm_dens(dat[,i], eta[,i], family=family[i])
+    tmp <- glm_dens(dat[,i], eta[,i], family=family[[i]])
     log_den[,i] <- tmp$ld
     # log_den[,i] <- 0 #### CHANGED HERE XI
     dat_u[,i] <- tmp$u
@@ -112,7 +141,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
     if (ncv > 2 || fam_cop <= 2) {
       Sigma <- rep(diag(ncv), length(par[[1]]))
       dim(Sigma) <- c(ncv,ncv,length(par[[1]]))
-      k = 1
+      k <- 1
       for (j in seq_len(ncv)[-1]) for (i in seq_len(j-1)) {
         Sigma[i,j,] <- Sigma[j,i,] <- par[[k]]
         k <- k+1
@@ -120,7 +149,7 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
 
       ## deal with Gaussian and t-copulas
       if (fam_cop == 1) {
-        if (any(family == 5 | family == 0)) {
+        if (ndisc > 0) {
           # new_ord <- order(family[inCop])
           dat_u2 <- dat_u[,inCop,drop=FALSE]#[,new_ord,drop=FALSE]
           # Sigma <- Sigma[new_ord,new_ord,,drop=FALSE]
@@ -157,15 +186,17 @@ ll <- function(dat, mm, beta, phi, inCop, fam_cop=1,
     else stop("should have that nc is an integer >= 2")
   }
   else {
-    cop <- log(causl::dfgmCopula(dat_u[,1], dat_u[,2], alpha=par[[1]]))
+    cop <- dfgmCopula(dat_u, alpha=par[[1]], log=TRUE)
   }
 
-  if (exclude_Z == FALSE) {
-    out <- cop + rowSums(log_den)
-
-  } else{
+  ## obtain conditional log-likelihood depending upon whether should exclude
+  ## Z variables or not
+  if (exclude_Z) {
     wh_y <- which(colnames(dat) == outcome)
     out <- cop + log_den[,wh_y]
+  }
+  else {
+    out <- cop + rowSums(log_den)
   }
 
   out

@@ -80,6 +80,7 @@ get_family <- function (val) {
 ##' @export
 gaussian_causl_fam <- function (link) {
   if (missing(link)) link <- "identity"
+  else if (!(link %in% c("identity", "inverse", "log"))) stop(paste0("Link ", link, " not valid for gaussian family"))
 
   ## write functions
   dens <- function (x, mu, phi, log=FALSE) dnorm(x, mean=mu, sd=sqrt(phi), log=log)
@@ -101,24 +102,25 @@ gaussian_causl_fam <- function (link) {
 ##' @export
 t_causl_fam <- function (link) {
   if (missing(link)) link <- "identity"
+  else if (!(link %in% c("identity", "inverse", "log"))) stop(paste0("Link ", link, " not valid for t family"))
 
   ## write functions
-  dens <- function (x, mu, phi, par2, log=FALSE) {
-    out <- dt((x-mu)/sqrt(phi), df=par2, log=log)
+  dens <- function (x, mu, phi, df, log=FALSE) {
+    out <- dt((x-mu)/sqrt(phi), df=df, log=log)
     if (log) out <- out - log(phi)/2
     else out <- out/sqrt(phi)
 
     return(out)
   }
-  quan <- function (p, mu, phi, par2) qt(p, df=par2)*sqrt(phi) + mu
-  sim <- function (n, mu, phi, par2) rt(n, df=par2)*sqrt(phi) + mu
-  probs <- function (x, mu, phi, par2) pt((x-mu)/sqrt(phi), df=par2)
+  quan <- function (p, mu, phi, df) qt(p, df=df)*sqrt(phi) + mu
+  sim <- function (n, mu, phi, df) rt(n, df=df)*sqrt(phi) + mu
+  probs <- function (x, mu, phi, df) pt((x-mu)/sqrt(phi), df=df)
 
-  default <- function (theta) list(x=0, mu=0, phi=theta[1], par2=theta[2])
+  default <- function (theta) list(x=0, mu=0, phi=theta[1], df=theta[2])
 
   ## define family
   out <- list(name="t", ddist=dens, qdist=quan, rdist=sim, pdist=probs,
-              pars=c("mu", "phi", "par2"), default=default, link=link)
+              pars=c("mu", "phi", "df"), default=default, link=link)
   class(out) <- "causl_family"
 
   return(out)
@@ -128,6 +130,7 @@ t_causl_fam <- function (link) {
 ##' @export
 Gamma_causl_fam <- function (link) {
   if (missing(link)) link <- "log"
+  else if (!(link %in% c("identity", "inverse", "log"))) stop(paste0("Link ", link, " not valid for Gamma family"))
 
   ## write functions
   dens <- function (x, mu, phi, log=FALSE) dgamma(x, rate=1/(mu*phi),
@@ -150,6 +153,7 @@ Gamma_causl_fam <- function (link) {
 ##' @export
 binomial_causl_fam <- function (link) {
   if (missing(link)) link <- "logit"
+  else if (!(link %in% c("logit", "probit", "log"))) stop(paste0("Link ", link, " not valid for binomial family"))
 
   ## write functions
   dens <- function (x, mu, log=FALSE) dbinom(x, size=1, prob=mu, log=log)
@@ -171,6 +175,7 @@ binomial_causl_fam <- function (link) {
 ##' @export
 beta_causl_fam <- function (link) {
   if (missing(link)) link <- "logit"
+  else if (!(link %in% c("logit", "probit"))) stop(paste0("Link ", link, " not valid for beta family"))
 
   ## write functions
   dens <- function (x, mu, phi, log=FALSE) dbeta(x, shape1=1+phi*mu,
@@ -225,6 +230,7 @@ beta_causl_fam <- function (link) {
 ##' @export
 categorical_causl_fam <- function (link) {
   if (missing(link)) link <- "logit"
+  else if (!(link %in% c("logit"))) stop(paste0("Link ", link, " not valid for categorical family"))
 
   set_mu_matrix <- function (mu, len) {
     if (is.matrix(mu)) {
@@ -314,6 +320,7 @@ categorical_causl_fam <- function (link) {
 ##' @export
 ordinal_causl_fam <- function (link) {
   if (missing(link)) link <- "logit"
+  else if (!(link %in% c("logit"))) stop(paste0("Link ", link, " not valid for ordinal family"))
 
   set_mu_matrix <- function (mu, len) {
     if (is.matrix(mu)) {
@@ -394,13 +401,21 @@ ordinal_causl_fam <- function (link) {
   return(out)
 }
 
-##' Check if family is categorical
+## MAKE THESE VECTORIZED
+##' Check properties of family variables
 ##'
 ##' @param x a family, either numerical, a name, or a `causl_family` object
 ##'
-##' @details Returns a logical indicating if the object is the input object
-##' represents a categorical or ordinal variable.  If it cannot represent a
-##' family then `NA` is returned.
+##' @details If the specific function does represent any family then `NA` is
+##' returned.
+##' @name family_checks
+NULL
+
+
+##' @describeIn family_checks Check if family is categorical
+##'
+##' @details `is_categorical` returns a logical indicating if the object is the
+##' input object represents a categorical or ordinal variable.
 ##'
 ##' @export
 is_categorical <- function (x) {
@@ -410,6 +425,21 @@ is_categorical <- function (x) {
   else if (is(x, "causl_family")) return(x$name %in% c("categorical", "ordinal"))
   else return(NA)
 }
+
+##' @describeIn family_checks Check if family is discrete
+##'
+##' @details `is_discrete` returns a logical indicating if the object is the
+##' input object represents a discrete random variable.
+##'
+##' @export
+is_discrete <- function (x) {
+  if (is.numeric(x)) return(x %in% c(0,5,10:11))
+  else if (is.character(x)) return(x %in% c("binomial", "categorical", "ordinal"))
+  else if (is(x[[1]], "causl_family")) return(sapply(x, function(y) y$name) %in% c("binomial", "categorical", "ordinal"))
+  else if (is(x, "causl_family")) return(x$name %in% c("binomial", "categorical", "ordinal"))
+  else return(NA)
+}
+
 
 ##' @describeIn theta_to_p_cat for ordinal variables
 theta_to_p_ord <- function (theta) {
@@ -491,4 +521,30 @@ link.causl_family <- function (x, ...) {
 ##' @export
 link.causl_copula <- function (x, ...) {
   return(x$link)
+}
+
+##' Insert/remove extra list level for `causl_family` objects
+##' @param x list to insert level into
+##' @param target_class class to insert/remove level above
+insert_lev <- function (x, target_class="causl_family") {
+  len <- length(x)
+
+  for (i in which(sapply(x, function(y) any(target_class %in% class(y))))) {
+    x[[i]] <- list(x[[i]])
+  }
+
+  return(x)
+}
+
+##' @describeIn insert_lev remove a level of listing
+rmv_lev <- function (x, target_class="causl_family") {
+  len <- length(x)
+  if (len == 0 || !is.list(x)) return(x)
+
+  wh <- sapply(x, function(y) !any(target_class %in% class(y)))
+  for (i in rev(which(wh))) {
+    x <- c(x[seq_len(i-1)], x[[i]], x[seq_len(len-i)+i])
+  }
+
+  return(x)
 }

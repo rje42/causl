@@ -11,14 +11,14 @@ dGaussCop(x, Sigma, log = FALSE, use_cpp = TRUE, N)
 
 dtCop(x, Sigma, df, log = FALSE, use_cpp = TRUE)
 
-dfgmCopula(x, alpha)
+dfgmCopula(x, alpha, log = FALSE)
 }
 \arguments{
 \item{x}{samples on (0,1)}
 
 \item{Sigma}{collection of matrices}
 
-\item{log}{logical: return log=density?}
+\item{log}{logical: return log-density?}
 
 \item{use_cpp}{logical: use the C routine?}
 

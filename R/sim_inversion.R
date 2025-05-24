@@ -84,9 +84,9 @@ sim_inversion <- function (out, proc_inputs) {
         else warning(paste0("Missing entries for ", vnm))
       }
       eta <- MM %*% pars[[vnm]]$beta
-      oth_pars <- pars[[vnm]]
       curr_phi <- pars[[vnm]]$phi
-      tmp <- glm_sim(family=curr_fam, eta=eta, phi=curr_phi, other_pars=pars[[vnm]], link=curr_link)
+      oth_pars <- pars[[vnm]][!(names(pars[[vnm]]) %in% c("beta", "phi"))]
+      tmp <- glm_sim(family=curr_fam, eta=eta, phi=curr_phi, other_pars=oth_pars, link=curr_link)
       if (vnm %in% LHS_Z) quantiles[[vnm]] <- attr(tmp, "quantile")
       attr(tmp, "quantile") <- NULL
       out[[vnm]] <- tmp
@@ -140,7 +140,7 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles,
     ## rescale quantiles for pair-copula
     qs <- cbind(quantiles[[LHS_cop[[i]]]], qY)
     qY <- rescale_cop(qs, X=X, beta=pars[[2]][[i]]$beta, family=family[[2]][[i]],
-                      par2=pars[[2]][[i]]$par2) #, link=link[[2]][j])
+                      df=pars[[2]][[i]]$df) #, link=link[[2]][j])
     ##
     if (max(qY) > 1 - tol) {
       warning(paste0("Quantiles numerically 1, reducing by ", tol))
