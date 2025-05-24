@@ -1,68 +1,7 @@
-# initializeParams <- function(dat, formulas, family, init, LHS, wh) {
-#
-#   d <- length(formulas) - 1
-#   # fam_y <- family[1]
-#   # fam_z <- family[1+seq_len(d)]
-#   fam_cop <- last(family)
-#
-#   ## initialization of parameters
-#   beta_start = rep(0, last(unlist(last(wh))))
-#
-#   ## get parameters for y variable
-#   # if (fam_y <= 2) {
-#   #   if (init) {
-#   #     form <- update.formula(forms[[1]], paste0(". ~ . + ", paste(LHS[-1], collapse=" + ")))
-#   #     lm_y <- summary(lm(form, data=dat))
-#   #     beta_start[wh[[1]]] <- lm_y$coefficients[wh[[1]],1]
-#   #     beta_start[wh[[2]]] <- lm_y$sigma
-#   #   }
-#   #   else beta_start[wh[[2]]] = sd(dat[[LHS[1]]])
-#   # }
-#   # else if (fam_y == 3) {
-#   #   glm_y <- glm(forms[[1]], family = Gamma(link = "log"),
-#   #                data = dat)
-#   #   beta_start[wh[[2]]] = summary(glm_y)$dispersion
-#   # }
-#   # else stop("fam_y must be 1, 2 or 3")
-#
-#   if (init) lm_z <- vector(mode="list", length=d)
-#
-#   ## get parameters for z variable(s)
-#   for (i in seq_len(d)) {
-#     if (family[i] <= 2 || family[i] == 5) {
-#       if (init) {
-#         lm_z[[i]] <- summary(lm(formulas[[i]], data=dat))
-#         beta_start[wh[[2*i - 1]]] <- lm_z[[i]]$coefficients[,1]
-#         beta_start[wh[[2*i]]] <- lm_z[[i]]$sigma
-#       }
-#       else beta_start[wh[[2*i]]] = sd(dat[[LHS[i]]])
-#     }
-#     else if (family[i] == 3) {
-#       if (init) {
-#         lm_z[[i]] <- glm(formulas[[i]], family = Gamma(link = "log"),
-#                    data = dat)
-#         beta_start[wh[[2*i - 1]]] = lm_z[[i]]$residuals
-#         beta_start[wh[[2*i]]] = summary(lm_z[[i]])$dispersion
-#       }
-#       else beta_start[wh[[2*i]]] = sd(dat[[LHS[i]]])
-#     }
-#     else stop("fam_z must be 1, 2, 3 or 5")
-#   }
-#
-#   if (init && fam_cop <= 2) {
-#     resids <- lapply(lm_z, function(x) x$residuals)
-#     tmp <- cor(do.call(data.frame, resids))
-#     tmp <- tmp[upper.tri(tmp)]
-#     for (i in seq_len(choose(d,2))) {
-#       beta_start[wh[[2*d + i]][1]] <- logit((tmp[i]+1)/2)
-#     }
-#   }
-#
-#   return(beta_start)
-# }
+initializeParams2 <- function(dat, full_form, family=rep(1,nv), link, init=FALSE,
+                              kwd, notInCop, inc_cop=TRUE, nc, only_masks=FALSE) {
 
-initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
-                              full_form, kwd, notInCop, inc_cop=TRUE, nc, only_masks=FALSE) {
+  formulas <- full_form$reforms
 
   # d <- ncol(dat)
   # fam_y <- family[1]
@@ -134,16 +73,36 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
   for (i in seq_along(phi)) {
     beta_m[wh[[i]],i] <- 1
 
+    brk <- FALSE
+
     if (!only_masks && init) {
-      fam <- switch(family[i], "1"=gaussian, "2"=gaussian, "3"=Gamma,
-                    stop("family should be Gaussian, t or Gamma"))
-      # mod_fit <- survey::svyglm(formula=formulas[[i]], family=do.call(fam, list(link=link[[i]])), design=survey::svydesign(~1, data=dat,weights=ipw))
-      mod_fit <- glm(formula=formulas[[i]], data=dat, family=do.call(fam, list(link=link[[i]])))
-      beta[wh[[i]],i] <- c(mod_fit$coef[1], mod_fit$coef[-1]/2)
-      if (family[i] < 5) {
-        phi[i] <- summary(mod_fit)$dispersion
-        phi_m[i] <- 1
+      if (is.numeric(family)) {
+        fam <- switch(family[i], "1"=gaussian, "3"=Gamma, {
+          message(paste0("family for '", LHS[[i]] ,"'not Gaussian or Gamma, so skipping initialization"))
+          beta[1, i] <- eval(as.name(link[i]))(mean(dat[[LHS[i]]]))
+          brk <- TRUE
+          break
+        })
+        # cfo <- get_family(family[i])  # causal family object
+        # mod_fit <- survey::svyglm(formula=formulas[[i]], family=do.call(fam, list(link=link[[i]])), design=survey::svydesign(~1, data=dat,weights=ipw))
+        mod_fit <- glm(formula=formulas[[i]], data=dat, family=do.call(fam, list(link=link[[i]])))
       }
+      else {
+        if ("phi" %in% family[[i]]$pars) phi_m[i] <- 1
+
+        if (family[[i]]$name %in% c("gaussian", "Gamma")) {
+          mod_fit <- glm(formula=formulas[[i]], data=dat, family=do.call(eval(as.name(family[[i]]$name)), list(link=link[[i]])))
+          phi[i] <- summary(mod_fit)$dispersion
+        }
+        else {
+          message(paste0("family for '", LHS[[i]] ,"'not Gaussian or Gamma, so skipping initialization"))
+          beta[1, i] <- eval(as.name(family[[i]]$link))(mean(dat[[LHS[i]]]))
+          phi[i] <- 1
+          brk <- TRUE
+          break
+        }
+      }
+      if (!brk) beta[wh[[i]],i] <- c(mod_fit$coef[1], mod_fit$coef[-1]/2)
       next
     }
     if (only_masks) {
@@ -151,23 +110,31 @@ initializeParams2 <- function(dat, formulas, family=rep(1,nv), link, init=FALSE,
     }
     else {
       ## pick mean and sd...
-      if (family[i] <= 2) {
-        if (link[i] == "identity") beta[1,i] <- mean(dat[[LHS[i]]])
-        else if (link[i] == "inverse") beta[1,i] <- 1/mean(dat[[LHS[i]]])
-        else if (link[i] == "log") beta[1,i] <- log(exp(mean(dat[[LHS[i]]])))
+      if (is.numeric(family)) {
+        ## apply for numeric families
+        if (family[i] <= 2) {
+          if (link[i] == "identity") beta[1,i] <- mean(dat[[LHS[i]]])
+          else if (link[i] == "inverse") beta[1,i] <- 1/mean(dat[[LHS[i]]])
+          else if (link[i] == "log") beta[1,i] <- log(mean(dat[[LHS[i]]]))
 
-        phi[i] <- var(dat[[LHS[i]]])
-        phi_m[i] <- 1
-      }
-      else if (family[i] == 3) {
-        if (link[i] == "identity") beta[1,i] <- mean(dat[[LHS[i]]])
-        else if (link[i] == "inverse") beta[1,i] <- 1/mean(dat[[LHS[i]]])
-        else if (link[i] == "log") beta[1,i] <- log(exp(mean(dat[[LHS[i]]])))
+          phi[i] <- var(dat[[LHS[i]]])
+          phi_m[i] <- 1
+        }
+        else if (family[i] == 3) {
+          if (link[i] == "identity") beta[1,i] <- mean(dat[[LHS[i]]])
+          else if (link[i] == "inverse") beta[1,i] <- 1/mean(dat[[LHS[i]]])
+          else if (link[i] == "log") beta[1,i] <- log(mean(dat[[LHS[i]]]))
 
-        phi[i] <- var(dat[[LHS[i]]])
-        phi_m[i] <- 1
+          phi[i] <- var(dat[[LHS[i]]])
+          phi_m[i] <- 1
+        }
+        else phi[i] <- NA
       }
-      else phi[i] <- NA
+      else {
+        if ("phi" %in% family[[i]]$pars) phi_m[i] <- 1
+        beta[1,i] <- link_apply(mean(dat[[LHS[i]]]), link = family[[i]]$link, family[[i]]$name, inverse = FALSE)
+        phi[i] <- var(dat[[LHS[i]]])
+      }
     }
   }
 

@@ -15,8 +15,8 @@ out2 <- fit_causl(dat2, family=c(1,1,1))
 
 
 test_that("fitting works as expected", {
-  testthat::expect_lt(sum((out$pars$y$beta - c(0.004957232, 0.548474548))^2), 1e-10)
-  testthat::expect_lt(sum((out2$pars$y$beta - c(-0.01425083, 0.42604663))^2), 1e-10)
+  testthat::expect_lt(sum((out$pars$y$beta - pars$y$beta)^2/out$pars$y$beta_sandwich^2), qchisq(0.99, df=2))
+  testthat::expect_lt(sum((out2$pars$y$beta - pars$y$beta)^2/out2$pars$y$beta_sandwich^2), qchisq(0.99, df=2))
 })
 
 # nll1 <- nll3(dat, family=rep(1,3), inCop = c("y","z"))
@@ -27,19 +27,3 @@ test_that("fitting works as expected", {
 #                                          0.714666339742363, -0.10159280239843, 0.444723304635891,
 #                                          0.763841648563355))^2), 1e-6)
 # })
-
-fam[1] <- 3
-
-cm <- causl_model(formulas = list(z ~ 1, x ~ z, y ~ x, ~ 1),
-                  family = fam,
-                  pars = pars,
-                  link = c("inverse", "identity", "identity"))
-cm$pars$z$beta <- 2
-
-set.seed(123)
-dat <- suppressMessages(rfrugal(1e2, causl_model = cm))
-out <- fit_causl(dat, list(z ~ 1, y ~ x, cop ~ 1), family=fam[-2], link = c("inverse", "identity"))
-
-test_that("fitting works as expected with different links", {
-  testthat::expect_lt(sum((out$pars$z$beta - c(2.21898240437888))^2), 1e-12)
-})

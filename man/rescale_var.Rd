@@ -31,7 +31,7 @@ Rescale quantiles to arbitrary random variable.
 Gamma distributed, beta distributed or discrete respectively, and 11 for
 ordinal variables.
 \code{pars} should be a list with entries \code{beta} and
-\code{phi}, as well as possibly \code{par2}, \code{trunc} and \code{nlevel} if the family
+\code{phi}, as well as possibly \code{df}, \code{trunc} and \code{nlevel} if the family
 is set to 2 or 5.
 \code{U} should have the same length as \code{X} has rows, and
 \code{X} should have the same number of columns as the length of

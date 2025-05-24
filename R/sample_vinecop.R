@@ -35,14 +35,14 @@ links_cop <- function (family) {
 ##' @param dat data frame to be filled in
 ##' @param family family to simulate from
 ##' @param par matrix of parameters
-##' @param par2 extra parameters for t-copula
+##' @param df extra parameters for t-copula
 ##' @param model_matrix design matrix for covariates
 ##' @param link link functions for parameters (currently unused)
 ##'
 ##' @return A data frame of the same dimensions as `dat`.
 ##'
 ##' @export
-sim_vinecop <- function (dat, family, par, par2=NULL, model_matrix, link) {
+sim_vinecop <- function (dat, family, par, df=NULL, model_matrix, link) {
 
   k <- ncol(dat)
   if (length(family) != choose(k, 2)) stop("invalid family vector")
@@ -66,10 +66,10 @@ sim_vinecop <- function (dat, family, par, par2=NULL, model_matrix, link) {
   }
 
   # set up vine model
-  if (missing(par2) && any(family == 2)) stop("Must specify degrees of freedom for t-copula")
+  if (missing(df) && any(family == 2)) stop("Must specify degrees of freedom for t-copula")
   else if (any(family == 2)) {
     par2_mat <- matrix(0, k, k)
-    par2_mat[lower.tri(par2_mat)] <- par2
+    par2_mat[lower.tri(par2_mat)] <- df
   }
   else par2_mat <- matrix(0, k, k)
 

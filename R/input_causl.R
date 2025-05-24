@@ -7,7 +7,7 @@
 ##'
 ##' @details Function that processes and checks the validity of the main arguments
 ##' used for simulating data.  The `control` argument only requires values useful
-##' for obtatining the empirical (conditional) quantiles of pre-specified data.
+##' for obtaining the empirical (conditional) quantiles of pre-specified data.
 ##'
 process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inversion", control=list()) {
 
@@ -23,9 +23,6 @@ process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inve
   LHS_X <- lhs(formulas[[2]])
   LHS_Y <- lhs(formulas[[3]])
 
-  ## process family variable inputs
-  family <- process_family(family=family, dims=dims)
-
   ### change to use the names supplied by each family
 
   ## useful variable summaries
@@ -35,6 +32,15 @@ process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inve
   if ((is.null(dat) && any(duplicated(vars))) ||
       any(duplicated(c(names(dat), vars)))) stop("Repeated variable names not allowed")
   LHSs <- list(LHS_Z, LHS_X, LHS_Y)
+
+  tmp <- process_family_link(family=family, link=link, dims=dims)
+  family <- tmp$family; link <- tmp$link
+  # ## process family variable inputs
+  # family <- process_family(family=family, dims=dims, link=link)
+  #
+  # ## set up link functions
+  # link <- lapply(family[1:3], function(y) sapply(y, function(x) x$link))
+  # link <- link_setup(link, family[1:3], vars=LHSs)
 
   ## check univariate parameter values are appropriate
   if (!missing(pars)) {
@@ -84,9 +90,7 @@ process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inve
 
   if (!exists("quantiles")) quantiles <- NULL
 
-  ## set up link functions
-  link <- link_setup(link, family[1:3], vars=LHSs)
-
+  ## set up causl_model object
   caus_mod <- list(formulas=formulas, family=family, pars=pars, link=link,
                    dat=dat, LHSs=list(LHS_Z=LHS_Z, LHS_X=LHS_X, LHS_Y=LHS_Y),
                    quantiles=quantiles, kwd=kwd, dim=dims[1:3], vars=vars, #output=output,
@@ -123,7 +127,7 @@ process_formulas <- function (formulas, len=4) {
 ##'
 ##'
 ##' @export
-process_family <- function (family, dims, func_return=get_family) {
+process_family <- function (family, dims, link=link, func_return=get_family) {
 
   if (missing(family)) {
     ## assume everything is Gaussian
@@ -147,7 +151,7 @@ process_family <- function (family, dims, func_return=get_family) {
     }
     if (!all(lens[seq_len(nU)] == dims[seq_len(nU)])) stop("Mismatch in family and formulae specifications")
   }
-  else if (length(family) == nU+1) {
+  else if (length(family) == nU+1) {  ## always true given dfn of nU
     if (sum(dims[seq_len(nU)]) > nU) stop("Mismatch in family and formulae specification")
     family <- as.list(family)
     lens <- rep(1, nU+1)
@@ -157,36 +161,64 @@ process_family <- function (family, dims, func_return=get_family) {
   ## deal with family names and causl_fam functions
   for (i in seq_len(nU)) {
     if (lens[i] > 0) {
-      if (is.character(family[[i]])) {
-        fams <- unlist(family[[i]])
-        family[[i]] <- lapply(fams, function(x) func_return(x)())
-        # family[[i]] <- lapply(fams, function(x) get_family(x)())
-      }
-      else if (is.numeric(family[[i]])) {
-        next
-      }
-      else if (is.list(family[[i]])) {
-        if (all(rapply(family[[i]], is.character))) {
-          family[[i]] <- unlist(family[[i]])
-          if (length(family[[i]]) != lens[i]) stop("Incorrect number of families specified")
-          family[[i]] <- lapply(family[[i]], function(x) func_return(x)())
-        }
-        else if (all(rapply(family[[i]], is.numeric))) {
-          family[[i]] <- unlist(family[[i]])
-          if (length(family[[i]]) != lens[i]) stop("Incorrect number of families specified")
-        }
-        else if (all(sapply(family[[i]], function(x) is(x, "causl_family")))) {
-          next
-        }
-        else stop("Not a valid family specification")
-      }
-      else stop("Not a valid family specification")
+      if (missing(link)) family[[i]] <- fam_chk(family[[i]], lens[i], func_return = func_return)
+      else family[[i]] <- fam_chk(family[[i]], lens[i], link[[i]], func_return = func_return)
     }
   }
 
   ## check copula families are valid
   # if (!all(unlist(family[1:3]) %in% family_vals$val)) stop("Invalid family specification")
   if (!all(unlist(family[[nU+1]]) %in% copula_vals$val)) stop("Invalid copula specification")
+
+  return(family)
+}
+
+## Subroutine to check
+fam_chk <- function (family, len, link, func_return=get_family) {
+  if (is.character(family)) {
+    family <- as.list(family)
+    num <- suppressWarnings(sapply(family, function(x) !is.na(as.numeric(x))))
+    if (any(num)) family[num] <- lapply(family[num], as.numeric)
+    family <- lapply(family, function(x) func_return(x))
+    if (missing(link)) family <- lapply(family, function(x) x())
+    else family <- mapply(function(x, y) x(link=y), family, link, SIMPLIFY = FALSE)
+  }
+  else if (is.numeric(family)) {
+    family <- lapply(family, function(x) func_return(x))
+    if (missing(link)) family <- lapply(family, function(x) x())
+    else family <- mapply(function(x, y) x(link=y), family, link, SIMPLIFY = FALSE)
+  }
+  else if (is.list(family)) {
+    if (all(rapply(family, is.character))) {
+      family <- unlist(family)
+      if (length(family) != len) stop("Incorrect number of character families specified")
+      family <- lapply(family, function(x) func_return(x))
+      if (missing(link)) family <- lapply(family, function(x) x())
+      else family <- mapply(function(x, y) x(link=y), family, link, SIMPLIFY = FALSE)
+    }
+    else if (all(rapply(family, is.numeric))) {
+      family <- unlist(family)
+      if (length(family) != len) stop("Incorrect number of numeric families specified")
+      family <- lapply(family, function(x) func_return(x)())
+    }
+    else if (any(sapply(family, is.character)) || any(sapply(family, is.numeric))) {
+      wh_c <- sapply(family, is.character)
+      if (any(wh_c)) {
+        family <- lapply(family[wh_c], function(x) func_return(x))
+        if (missing(link)) family[wh_c] <- lapply(family[wh_c], function(x) x())
+        else family[wh_c] <- lapply(family[wh_c], function(x) x(link=link))
+      }
+      wh_n <- sapply(family, is.numeric)
+      if (any(wh_n)) {
+        family[wh_n] <- lapply(family[wh_n], function(x) func_return(x)())
+        if (missing(link)) family[wh_n] <- lapply(family[wh_n], function(x) x())
+        else family[wh_n] <- lapply(family[wh_n], function(x) x(link=link))
+      }
+    }
+
+    if (!all(sapply(family, function(x) is(x, "causl_family")))) stop("Not a valid family specification (1)")
+  }
+  else stop("Not a valid family specification (not list)")
 
   return(family)
 }
@@ -353,6 +385,7 @@ gen_dummy_dat <- function (family, pars, dat, LHSs, dims) {
   }
   nv <- length(nms)
 
+  ## set up data frame for dummy data
   out <- as.data.frame(rep(list(NA), nv))
   names(out) <- nms
 
@@ -364,11 +397,13 @@ gen_dummy_dat <- function (family, pars, dat, LHSs, dims) {
   for (i in seq_along(LHSs)) for (j in seq_len(dims[[i]])) {
     if (i > 1 && exists("strt")) {
       vnms <- paste0(LHSs[[i]][j], "_", seq_len(T)-1-strt)
-      if (!is_categorical(family[[i]][j])) out[vnms] <- 0
+      if (is(family[[i]][[j]], "causl_fam") && !is_categorical(family[[i]][[j]])) out[vnms] <- 0
+      else if (!is_categorical(family[[i]][j])) out[vnms] <- 0
       else out[vnms] <- factor(x=1L, levels=seq_len(pars[[LHSs[[i]][j]]]$nlevel))
     }
     else {
-      if (!is_categorical(family[[i]][j])) out[[LHSs[[i]][j]]] <- 0
+      if (is(family[[i]][[j]], "causl_fam") && !is_categorical(family[[i]][[j]])) out[LHSs[[i]][j]] <- 0
+      else if (!is_categorical(family[[i]][j])) out[LHSs[[i]][j]] <- 0
       else out[[LHSs[[i]][j]]] <- factor(x=1L, levels=seq_len(pars[[LHSs[[i]][j]]]$nlevel))
     }
   }

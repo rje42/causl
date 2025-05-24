@@ -14,6 +14,8 @@
 link_setup <- function(link, family, vars, sources=links_list,
                        fam_list=list(family_vals)) {
 
+  # if (!is.list(family)) family <- as.list(family)
+
   if (!missing(vars)) {
     if (!all(lengths(vars) == lengths(family))) stop("length of variable names vector does not match number of families provided")
     if (!missing(link) && isTRUE(any(!(names(unlist(link)) %in% unlist(vars))))) stop("Link named for variable not in the model")
@@ -57,7 +59,7 @@ link_setup <- function(link, family, vars, sources=links_list,
 
   tmp <- unlist(lk_lsts)
 
-
+  ## if no names provided,
   if (is.null(names(unlist(link)))) {
     if (!all(lengths(family) == lengths(link))) stop("If no names provided, lengths of 'link' must match those of 'family'")
     ## if lengths the same, assume in same position as family variables

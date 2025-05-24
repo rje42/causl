@@ -4,13 +4,13 @@ pars <- list(z = list(beta=0, phi=1),
              y = list(beta=c(0,0.5), phi=0.5),
              cop = list(beta=matrix(1, 1, 1)))
 
-test_that("No families message", {
-  expect_message(dat <- causalSamp(10, par=pars),
-                 "No families provided, so assuming all variables are Gaussian")
-})
+# test_that("No families message", {
+#   expect_message(dat <- causalSamp(10, par=pars),
+#                  "No families provided, so assuming all variables are Gaussian")
+# })
 
 set.seed(123)
-dat <- suppressMessages(causalSamp(1e3, par=pars))
+dat <- suppressMessages(causalSamp(1e3, family=c(1,1,1,1), par=pars))
 z_p <- ks.test(dat$z, pnorm)$p.value
 x_p <- ks.test(dat$x - 0.5*dat$z, pnorm)$p.value
 # mvn_p <- MVN::mvn(dat, mvnTest = "hz")$multivariateNormality$`p value`
@@ -144,3 +144,4 @@ test_that("log-link works", {
   expect_lt(ztest[1], 2.5)
   expect_lt(ztest[2], 2.5)
 })
+

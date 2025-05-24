@@ -1,16 +1,17 @@
 ##' Fit multivariate copula regression model
 ##'
 ##' @param dat data frame of observations
-##' @param formulas list of model formulae, for Y, for the Z variables, and
+##' @param formulas list of model formulae, for outcome, covariates, and
 ##' finally for the copula
-##' @param family families for the Y and Z distributions, and the copula. Should
-##' be the same length as `formulas`
+##' @param family families for variables and copula as above. Should be the
+##' same length as `formulas`, and in same order
 ##' @param link link functions for each variable
 ##' @param cop_pars additional parameters for copula if required
 ##' @param use_cpp logical: should C++ routines be used?
 ## @param init should linear models be used to initialize starting point?
 ##' @param control list of parameters to be passed to `optim`
 ##' @param other_pars list of other parameters to use (e.g. degrees of freedom for a t-distribution)
+##' @param method either `"optim"` or `"dissmann"`
 ##'
 ##' @details `formulas` is list of three or more formulae giving predictors of
 ##' y-margin, z-margin(s) and interaction parameters.  Fit is by maximum
@@ -38,8 +39,13 @@
 ##' Useful for altering are `trace` (1 shows steps of optimization) and
 ##' `maxit` for the number of steps.
 ##'
+##' `cop_pars` is currently just a numeric scalar, generally representing the
+##' degrees of freedom to use in a t-copula.
+##'
 ##' The list `other_pars` should be named with the relevant variables, and
-##' each entry should be a named list containing the relevant parameters.
+##' each entry should be a named list containing the relevant parameters.  As
+##' an example, for a t-copula, the required parameter is the degrees of
+##' freedom, `df`.
 ##'
 ##' **Warning** By default, none of the variables should be called `cop`, as
 ##' this is reserved for the copula.  The reserved word can be changed using
@@ -50,7 +56,7 @@
 ##' @export
 fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
                       family=rep(1,length(formulas)), link, cop_pars, use_cpp=TRUE,
-                      control=list(), other_pars=list()) {
+                      control=list(), other_pars=list(), method = "optim") {
 
   # get control parameters for optim or use defaults
   con <- list(sandwich = TRUE, method = "BFGS", newton = FALSE, cop="cop", trace = 0, fnscale = 1, maxit = 10000L,
@@ -61,43 +67,61 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   con[matches[!is.na(matches)]] = control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ", paste(names(control[is.na(matches)]), sep = ", "))
 
-  ## ensure copula keyword is not a variable name
-  sandwich <- con$sandwich
-  kwd <- con$cop
-  if (kwd %in% names(dat)) stop(paste("Must not have a variable named '", kwd, "'", sep=""))
-  newton <- con$newton
-  method <- con$method
-  con <- con[-c(1:4)]
+  # ## get more new versions of family variables
+  # if (is.atomic(family)) {
+  #   fam <- list(family[-length(family)], last(family))
+  # }
+  # dim_fm <- lengths(fam[-length(fam)])
+  # fam <- process_family(fam[-length(fam)], dims = dim_fm)
+  # fam <- unlist(fam, recursive = FALSE)
 
   ## may need to fix this to allow more flexibility in copula
   d <- length(formulas) - 1
-  if (length(family) != length(formulas)) {
-    stop("Should be a family variable for each formula")
-  }
+  # if (sum(dim_fm) != d) {
+  #   stop("Should be a family variable for each formula")
+  # }
+
+  fam <- fam_chk(family[seq_len(d)], d)
+  new_fams <- is.list(fam)
+  fam <- insert_lev(fam, target_class="causl_family")
+  fam[[length(fam)+1]] <- family[[d+1]]
 
   ## tidy up the formulae
-  forms <- tidy_formulas(formulas, kwd=kwd)
+  forms <- tidy_formulas(formulas, kwd=con$cop)
   fam_cop <- last(family)
-  link <- link_setup(link, family = family[-length(family)])
+  if (!new_fams) link <- link_setup(link, family = fam[-length(fam)])
+  else {
+    if (!missing(link)) warning("Links should not be specified separately from 'causl_family' objects. 'link' argument will be ignored")
+    fam <- rmv_lev(fam, target_class="causl_family")
+    link <- sapply(fam[-length(fam)], `[[`, "link")
+  }
   LHS <- lhs(forms[-length(forms)])
 
-  ## put discrete variables at the end
-  if (any(family[-length(forms)] %in% c(0,5))) {
-    tmp <- process_discrete_dens(dat = dat, family = family[-length(forms)],
-                                 LHSs=LHS)
-    trunc <- tmp$trunc
-    forms <- forms[c(tmp$order, length(forms))]
-    LHS <- LHS[tmp$order]
-    family <- c(tmp$family, last(family))
-    link <- link[tmp$order]
+  if (fam_cop == 0) method <- "dissmann"
+
+  if (method == "optim") {
+    ## put discrete variables at the end
+    if (any(sapply(family[-length(forms)], is_discrete))) {
+      tmp <- process_discrete_dens(dat = dat, family = family[-length(forms)],
+                                   LHSs=LHS)
+      trunc <- tmp$trunc
+      forms <- forms[c(tmp$order, length(forms))]
+      link <- link[tmp$order]
+      LHS <- LHS[tmp$order]
+      fam <- fam[c(tmp$order, length(forms))]
+      family <- c(tmp$family, last(family))
+      if (!new_fams) link <- link[tmp$order]
+    }
+    else trunc <- list()
   }
-  else trunc <- list()
 
   ## get a joint formula
   full_form <- merge_formulas(forms)
   mm <- model.matrix(full_form$formula, data=dat)
   # wh <- full_form$wh
-  # dat[full_form$formula]
+
+  ## get list of interactions already parameterized
+  frm_excl <- form_excl(formulas, LHS = LHS)
 
   ## handle missingness cleanly
   if (nrow(mm) < nrow(dat)) {
@@ -110,162 +134,16 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   ## attach truncation values as an attribute of the model matrix
   attr(mm, "trunc") <- trunc
 
-  ## set secondary parameter to 4 if in a t-Copula model
-  if (missing(cop_pars)) {
-    if (fam_cop == 2) {
-      cop_pars <- 4
-      message("degrees of freedom set to 4\n")
-    }
-    else cop_pars = 0
+  if (method == "optim") {
+    out <- fit_optim(dat=dat, full_form=full_form, family=fam, fam_cop=fam_cop,
+                     link=link, mm=mm, cop_pars=cop_pars, LHS=LHS,
+                     other_pars=other_pars, control=con, use_cpp=use_cpp)
+  }
+  else if (method == "dissmann") {
+
   }
 
-
-  ## fitting code
-  ## get some intitial parameter values
-  beta_start2 <- initializeParams2(dat, formulas=forms, family=family, link=link,
-                                   full_form=full_form, kwd=kwd)
-  theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
-  # theta_st <- c(0,0,-0.4,0.3,0.5,0.5,1,1,1,1)
-
-  ## other arguments to nll2()
-  other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
-                      beta = beta_start2$beta_m, phi = beta_start2$phi_m,
-                      inCop = seq_along(beta_start2$phi_m),
-                      fam_cop=fam_cop, fam=family[-length(family)], cop_pars=cop_pars,
-                      use_cpp=use_cpp, link = link, other_pars = other_pars)
-
-  ## get some intitial parameter values
-  beta_start2 <- initializeParams2(dat[, LHS, drop=FALSE], formulas=forms, family=family, link=link,
-                                   full_form=full_form, kwd=kwd)
-  theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
-
-
-  ## parameters to
-  maxit <- con$maxit
-  conv <- FALSE
-  # if (!is.null(con$start)) out2 <- list(par = start)
-  # else
-    out2 <- list(par = theta_st)
-  con <- con[names(con) != 'start']
-
-  while (!conv) {
-    con$maxit <- min(maxit, 5e3)
-    out <- do.call(optim, c(list(fn=nll2, par=out2$par), other_args2, list(method="Nelder-Mead", control=con)))
-    con$maxit <- min(max(maxit - 5e3, 1e3), maxit)
-    out2 <- tryCatch(do.call(optim, c(list(fn=nll2, par=out$par), other_args2, list(method="BFGS", control=con))),
-                    warning=function(e) NA, error=function(e) NA)
-    if (!isTRUE(is.na(out2))) {
-      out <- out2
-      conv  <- TRUE
-    }
-    else out2 <- list(par = out$par)
-  }
-  curr_val = out$value
-  if (out$convergence != 0) {
-    cat("Error in convergence of optim\n")
-    # return(out)
-  }
-  if (sandwich || newton) gr <- do.call(grad, c(list(nll2, x=out$par), other_args2))
-  else gr <- NULL
-
-  ## finish with Newton's method if so required
-  it = 0
-
-  if (newton) {
-    if (con$trace > 0) {
-      cat("Newton's method, iteration: ")
-    }
-
-    while (it == 0 || (max(abs(gr)) > 1e-05 && it < 100)) {
-      if (con$trace > 0) printCount(it+1)
-      Hess <- do.call(hessian, c(list(nll2, x = out$par),
-                                 other_args2))
-      if (rcond(Hess) > 1e-16) iHess <- solve.default(Hess)
-      else iHess <- MASS::ginv(Hess)
-
-      new = out$par - c(iHess %*% gr)
-      new_val <- do.call(nll2, c(list(theta = new), other_args2))
-      if (is.na(new_val)) {
-        cat("Newton's algorithm gives NA value, exiting\n")
-        break
-      }
-      else if (curr_val < new_val) {
-        cat("Newton's algorithm failed, exiting\n")
-        break
-      }
-      else {
-        out$par = new
-        curr_val = new_val
-      }
-      gr = do.call(grad, c(list(nll2, x = out$par), other_args2))
-      it = it + 1
-    }
-    if (con$trace > 0) {
-      cat(" - done\n")
-    }
-  }
-
-  ## if sandwich == TRUE then compute sandwich standard errors
-  if (sandwich) {
-    if (con$trace > 0) cat("Computing gradients for sandwich estimates...")
-    other_args2a <- other_args2
-    gr2 <- matrix(0, nrow=length(gr), ncol=length(gr))
-
-    for (i in seq_len(nrow(dat))) {
-      other_args2a$dat <- other_args2$dat[i,]
-      # for (j in seq_along(other_args2$mms[-length(mms)+0:1])) {
-      other_args2a$mm <- other_args2$mm[i,,drop=FALSE]
-      # }
-      tmp <- do.call(grad, c(list(nll2, x=out$par), other_args2a, method="simple"))
-      gr2 <- gr2 + outer(tmp, tmp)
-    }
-
-    if (con$trace > 0) cat("done\n")
-  }
-  # ## construct output
-  out$counts = c(out$counts, newton_its = it)
-
-  out$value = do.call(nll2, c(list(theta=out$par), other_args2))
-  out$ll = -out$value
-  out$grad = gr
-  out$OI = do.call(hessian, c(list(nll2, x=out$par), other_args2))
-
-  ## check that observed information is well conditioned
-  if (!any(is.na(out$OI)) && rcond(out$OI) > 1e-16) {
-    invOI <- solve.default(out$OI)
-  }
-  else {
-    invOI <- tryCatch(MASS::ginv(out$OI), error = function(e) NA)
-  }
-  if (is.numeric(invOI)) {
-    out$se = sqrt(pmax(0, diag(invOI)))
-    # if (out$se[2] < 1e-3) stop("Error here")
-  }
-  else out$se <- NULL
-
-  ## construct Sandwich estimates:
-  if (sandwich) {
-    if(!is.null(out$se)) {
-      out$sandwich <- invOI %*% gr2 %*% invOI
-      out$sandwich_se <- sqrt(diag(out$sandwich))
-      # out$sandwich_se <- relist(out$sandwich_se, out$pars)
-    }
-    else {
-      out$sandwich <- out$sandwich_se <- NULL
-    }
-    if (con$trace > 0) cat("done\n")
-  }
-  else out$sandwich <- out$sandwich_se <- NULL
-
-  ## record values
-  out <- ests_ses(out, beta_start2, full_form, kwd=kwd)
-
-
-  out$mm = mm
-  out$formulas = full_form
-  class(out) = "cop_fit"
-
-  out
+  return(out)
 }
 
 ##' @describeIn fit_causl old name

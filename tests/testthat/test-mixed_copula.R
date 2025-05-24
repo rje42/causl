@@ -40,3 +40,4 @@ test_that("fitting works", {
   expect_lt(abs(out$pars$Z$phi - 1), 2.5*out$pars$Z$phi_sandwich)
   expect_lt(coperr, qchisq(0.99, df=2))
 })
+
