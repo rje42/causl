@@ -25,7 +25,7 @@ links_cop <- function (family) {
           Gumbel="log1m",   # 4
           Frank="log1p",   # 5
           Joe="identity", # 6
-          NULL, NULL, NULL, NULL,
+          "7"=NULL, "8"=NULL, "9"=NULL, "10"=NULL,
           FGM="logit2"  # 11
   )
 }
