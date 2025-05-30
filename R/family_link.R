@@ -36,7 +36,7 @@ process_family_link <- function (family, link, dims, func_return=get_family) {
   if (missing(link) || is.null(link)) {
     link <- vector("list", nU)
     for (i in seq_len(nU)) {
-      link <- character(length(family[[i]]))
+      link[[i]] <- character(length(family[[i]]))
       if (length(family[[i]]) > 0) {
         if (is(family[[i]][[1]], "causl_family")) link[[i]] <- sapply(family[[i]], function(x) x$link)
         else if (is.numeric(family[[i]])) {

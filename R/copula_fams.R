@@ -27,16 +27,16 @@ link_name <- function (x) {
   else return("NA")
 }
 
-##' @describeIn causl_copula getter copula family
+##' @describeIn causl_copula get copula family function
 ##' @param family_index integer representing copula family
 ##' @export
-get_copula <- function(family_index, link = NULL){
+get_copula <- function(family_index, link) {
   if(family_index == 1){
-    if(is.null(link)) return(gaussian_causl_cop())
+    if(missing(link)) return(gaussian_causl_cop())
     else return(gaussian_causl_cop(link))
   }
   else if(family_index == 2){
-    if(is.null(link)) return(t_causl_cop())
+    if(missing(link)) return(t_causl_cop())
     else return(t_causl_cop(link))
   }
   else if (family_index > 2 & family_index < 10) stop("Not implemented yet")

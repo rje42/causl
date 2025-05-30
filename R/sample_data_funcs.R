@@ -454,7 +454,7 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
     pars <- list(mu=mu)
     if ("phi" %in% family$pars) pars <- c(pars, list(phi=phi))
     if (!missing(other_pars)) {
-      pars <- c(pars, other_pars[names(other_pars) %in% family$pars])
+      pars <- c(pars, other_pars[names(other_pars) %in% setdiff(family$pars, names(pars))])
     }
 
     if (!setequal(names(pars), family$pars)) stop("Parameters do not match")

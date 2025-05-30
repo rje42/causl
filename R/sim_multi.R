@@ -70,7 +70,7 @@ sim_multi <- function (out, proc_inputs) {
   MM <- model.matrix(delete.response(formulas[[4]][[1]]), out)
 
   # write function to get copula
-  cop <- get_copula(famCopSingle, NULL)
+  cop <- get_copula(famCopSingle)
   us <- sim_cop(cop, beta_mat, NULL, MM)
   #us <- sim_vinecop(empty_init,fam,
   #                  beta_mat,model_matrix = MM)

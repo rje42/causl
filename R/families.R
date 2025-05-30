@@ -72,7 +72,7 @@ get_family <- function (val) {
   fmly <- family_vals[fm,]$family
   if (is.numeric(val) && val > 5) stop("No function defined yet for this family")
 
-  get(paste0(fmly, "_causl_fam"))
+  return(get(paste0(fmly, "_causl_fam")))
 }
 
 ##' @describeIn get_family Gaussian distribution family
