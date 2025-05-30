@@ -92,11 +92,3 @@ arma::vec dGcop_sig(arma::mat const &x,
   return exp(out);
 }
 
-
-/*** R
-N <- 100; p <- 3
-x <- matrix(rnorm(N*p), N, p)
-M <- rWishart(N, df=10, Sigma=diag(p))
-M <- unlist(apply(M, 3, function(x) list(x/sqrt(diag(x)*rep(diag(x), each=nrow(x))))), recursive = FALSE)
-dmvnrm_arma(x, M, TRUE)
-*/
