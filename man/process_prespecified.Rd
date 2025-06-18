@@ -39,5 +39,6 @@ in the symmetric interval around the rank of width \eqn{k/n}.
 \code{nlevs} is used to classify discrete vs continuous variables.  If a variable
 has more than this number of distinct values, it is considered to be
 continuous.  \code{cor_thresh} is used to determine when the correlation is small
-enough that it need not be modelled.
+enough that it need not be modelled.  \code{tol} is for classifying which ranks
+are sufficiently close together to add noise as a group.
 }

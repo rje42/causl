@@ -13,9 +13,9 @@ link_setup(
 )
 }
 \arguments{
-\item{link}{input given to \code{msm_samp()} or \code{causalSamp()}}
+\item{link}{input from \code{causl_model} object or similar}
 
-\item{family}{the list of families for \code{Z},\code{X} and \code{Y} variables}
+\item{family}{the list of families for random variables}
 
 \item{vars}{a list of vectors of variable names with the same structure as \code{family}}
 
@@ -24,5 +24,6 @@ link_setup(
 \item{fam_list}{list of data frames in the same format as \code{family_vals}}
 }
 \description{
-Set up link functions
+\code{family} and \code{vars} should have the same structure if \code{vars} is
+specified.
 }
