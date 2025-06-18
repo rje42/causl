@@ -1,2 +1,4 @@
 ^python$
 ^Trouble\_Shooting\.md$
+^.*\.Rproj$
+^\.Rproj\.user$
