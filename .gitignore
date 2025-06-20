@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+src/*.o
+src/*.so
+src/*.dll
+vignettes/*_cache/
+R/other/
+.DS_Store
+vignettes/.DS_Store
+scratch/

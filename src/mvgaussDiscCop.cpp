@@ -337,7 +337,7 @@ arma::vec dGDcop(arma::mat const &x,
     // Rcpp::Rcout << "tmp2:\n" << tmp2 << std::endl;
 
     for (uword i = 0; i < n; i++) {
-      Rprintf("(i,j)=(%i,%i)...length(tmp) = %li...x2(i,j) = %0d", i, j, tmp.length(), x2(i,j));
+      Rprintf("(i,j)=(%i,%i)...length(tmp) = %li...x2(i,j) = %f", i, j, tmp.length(), x2(i,j));
       lower(i,j) = (tmp2(x2(i,j)) + condmn(i,j))/sqrt(sigma1cov(j,j));
       upper(i,j) = (tmp2(x2(i,j)+1) + condmn(i,j))/sqrt(sigma1cov(j,j));
       infin(i,j) = 2 - 2*std::isinf(lower(i,j)) - std::isinf(upper(i,j));

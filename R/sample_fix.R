@@ -78,7 +78,6 @@ get_max_weights <- function (pars, forms_X, fam_X, qden, fam_Z, LHS_Z, ranges, l
     -out
   }
 
-  # # if (length(ranges) > 1) rg <- lapply(purrr::transpose(ranges), unlist)
   # if (length(ranges) > 1) rg <-
   # else if (length(ranges) == 1) rg <- list(ranges[[1]][1],ranges[[1]][2])
   # else rg <- list(numeric(0), numeric(0))

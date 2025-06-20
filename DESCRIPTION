@@ -23,7 +23,8 @@ Imports: copula,
   Rcpp,
   stats
 LinkingTo: Rcpp, RcppArmadillo, mvtnorm
-Suggests: 
+Suggests:
+    aciccomp2016,
     abind,
     kableExtra,
     knitr,
@@ -31,5 +32,7 @@ Suggests:
     survey,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
+Remotes:
+  aciccomp2016=vdorie/aciccomp/2016
 NeedsCompilation: yes
 Config/testthat/edition: 3
