@@ -1,0 +1,10 @@
+.Rhistory
+.DS_Store
+vignettes/DS_Store
+.Rproj.user/
+scratch/
+src/*.o
+src/*.dll
+src/*.so
+R/other/
+vignettes/*_cache/
