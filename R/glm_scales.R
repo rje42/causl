@@ -68,7 +68,7 @@ glm_dens <- function (x, eta, phi, other_pars, family=1, link) {
 
     pars <- list(mu=mu)
     if ("phi" %in% family$pars) pars <- c(pars, list(phi=phi))
-    if ("par2" %in% family$pars) pars <- c(pars, list(par2=other_pars$par2))
+    if ("df" %in% family$pars) pars <- c(pars, list(df=other_pars$df))
 
     lp <- do.call(family$ddist, c(list(x=x, log=TRUE), pars))
     u <- do.call(family$pdist, c(list(x=x), pars))
@@ -91,7 +91,7 @@ glm_dens <- function (x, eta, phi, other_pars, family=1, link) {
       else if (link=="inverse") mu <- 1/eta
       else if (link=="log") mu <- exp(eta)
       else stop("Not a valid link function for t-distribution")
-      df <- other_pars$par2
+      df <- other_pars$df
 
       lp <- dt((x - mu)/sqrt(phi), df=df, log=TRUE) - log(sqrt(phi))
       u <- pt((x - mu)/sqrt(phi), df=df)

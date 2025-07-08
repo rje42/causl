@@ -19,7 +19,7 @@ process_inputs(
 
 process_formulas(formulas, len = 4)
 
-process_family(family, dims, func_return = get_family)
+process_family(family, dims, link = link, func_return = get_family)
 }
 \arguments{
 \item{formulas}{list of lists of formulas}
@@ -50,7 +50,7 @@ Process formulas, families and parameters
 \details{
 Function that processes and checks the validity of the main arguments
 used for simulating data.  The \code{control} argument only requires values useful
-for obtatining the empirical (conditional) quantiles of pre-specified data.
+for obtaining the empirical (conditional) quantiles of pre-specified data.
 
 For \code{causl} we use the \code{get_family()} function to process character based
 arguments, but we allow for other functions to be used in packages that

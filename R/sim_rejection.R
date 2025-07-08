@@ -171,9 +171,11 @@ gen_X_values <- function (n, famX, pars, LHS_X, dX, sim=TRUE) {
 ##' @param eta list (or matrix) of linear forms
 ##' @param phi vector of dispersion coefficients
 ##' @param par2 vector of degrees of freedom
+##' @param other_par other parameters for family
 ##' @param log logical: should log-density be returned?
 ##'
-get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
+get_X_density <- function (dat, eta, phi, qden, family, link, other_par,
+                           log=FALSE) {
 
   wts <- rep(1, nrow(dat))
 
@@ -183,11 +185,12 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
     for (i in seq_len(ncol(dat))) {
       mu <- link_apply(eta[[i]], link[i], family_nm = family[[i]]$name)
 
-      pars <- list()
+      pars <- list(mu = mu)
       if ("phi" %in% family[[i]]$pars) pars <- c(pars, list(phi=phi))
-      if ("par2" %in% family[[i]]$pars) pars <- c(pars, list(par2=par2))
+      pars <- c(pars, other_par[[i]])
+      # if ("df" %in% family[[i]]$pars) pars <- c(pars, list(df=other_par[[i]]$df))
 
-      wts <- wts*do.call(family[[i]]$ddist, c(list(x=dat[,i], mu=mu), pars))
+      wts <- wts*do.call(family[[i]]$ddist, c(list(x=dat[,i]), pars))
       if (is.numeric(qden[[i]])) wts <- wts/qden[[i]]
       else wts <- wts/qden[[i]](dat[,i])
     }
@@ -219,17 +222,17 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
         fam <- get_family(i)
         dens <- fam()$ddist
 
-        if (is.numeric(qden[[i]])) wts <- wts*dens(dat[,i], mu=mu, phi=phi[i], par2=pars[[i]]$par2)/qden[[i]]
-        else wts <- wts*dens(dat[,i], mu=mu, phi=phi[i], par2=pars[[i]]$par2)/qden[[i]](dat[,i])
+        if (is.numeric(qden[[i]])) wts <- wts*dens(dat[,i], mu=mu, phi=phi[i], df=pars[[i]]$df)/qden[[i]]
+        else wts <- wts*dens(dat[,i], mu=mu, phi=phi[i], df=pars[[i]]$df)/qden[[i]](dat[,i])
 
-        # if (is.numeric(qden[[i]])) wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]])
-        # else wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$par2)/(sqrt(phi[i])*qden[[i]](dat[,i]))
+        # if (is.numeric(qden[[i]])) wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$df)/(sqrt(phi[i])*qden[[i]])
+        # else wts <- wts*dt((dat[,i] - mu)/sqrt(phi[i]), df=pars[[i]]$df)/(sqrt(phi[i])*qden[[i]](dat[,i]))
       }
       else if (family[i] == 3) {
         if (link[i] == "identity") mu <- eta[[i]]
         else if (link[i] == "log") mu <- exp(eta[[i]])
         else if (link[i] == "inverse") mu <- 1/eta[[i]]
-        else stop("not a valid link function for t-distribution")
+        else stop("not a valid link function for Gamma distribution")
 
         fam <- get_family(i)
         dens <- fam()$ddist
@@ -247,7 +250,7 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
       else if (family[i] == 5) {
         if (link[i] == "probit") mu <- qnorm(eta[[i]])
         else if (link[i] == "logit") mu <- expit(eta[[i]])
-        else stop("invalid link function for binomial distribution")
+        else stop("not a valid link function for binomial distribution")
 
         if (is.numeric(qden[[i]])) wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]]
         else wts <- wts*dbinom(dat[,i], prob=mu, size=1)/qden[[i]](dat[,i])
@@ -255,7 +258,7 @@ get_X_density <- function (dat, eta, phi, qden, family, link, par2, log=FALSE) {
       else if (family[i] == 6) {
         if (link[i] == "identity") lmu <- eta[[i]]
         else if (link[i] == "identity") lmu <- log(eta[[i]] - phi/2)
-        else stop("invalid link function for log-normal distribution")
+        else stop("not a valid link function for log-normal distribution")
         if (is.numeric(qden[[i]])) wts <- wts*dnorm(log(dat[,i]), mean=lmu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]])
         else wts <- wts*dnorm(log(dat[,i]), mean=lmu, sd=sqrt(phi[i]))/(dat[,i]*qden[[i]](dat[,i]))
       }
@@ -296,15 +299,35 @@ rejectionWeights <- function (dat, mms,# formula,
 
   nms <- names(dat)
 
-  ## collect phi and par2 parameters
-  phi <- par2 <- numeric(d)
-  for (i in which(family %in% c(1:3,6))) {
-    phi[i] <- pars[[nms[i]]]$phi
-    if (family[i] == 2) par2[i] <- pars[[nms[i]]]$par2
+  ## collect phi and any other parameters
+  phi <- numeric(d)
+  other_par <- vector(mode = "list", length=d)
+
+  if (is.numeric(family)) {
+    for (i in seq_len(d)) {
+      whB <- match("beta", names(pars[[nms[i]]]), nomatch = 0L)
+      if (family %in% c(1:3,6)) {
+        phi[i] <- pars[[nms[i]]]$phi
+        whP <- match("phi", names(pars[[nms[i]]]), nomatch = 0L)
+      }
+
+      if (length(c(whB, whP)) > 0) other_par <- pars[[nms[i]]][-c(whB, whP)]
+      else other_par <- pars[[nms[i]]]
+
+      # if (family[i] == 2) df[i] <- pars[[nms[i]]]$df
+    }
   }
+  else if (is(family[[1]], "causl_family")) {
+    for (i in seq_len(d)) {
+      prs <- pars[[nms[i]]]
+      if ("phi" %in% family[[i]]$pars) phi[i] <- prs$phi
+      other_par[[i]] <- prs[!(names(prs) %in% c("beta", "phi"))]
+    }
+  }
+  else stop("'family' should be a valid numeric vector or list of causl_family objects")
 
   wts <- get_X_density(dat, eta=eta, phi=phi, qden=qden, family=family,
-                       link=link, par2=par2)
+                       link=link, other_par=other_par)
 
   if (any(is.na(wts))) stop("Problem with weights")
 
@@ -417,7 +440,7 @@ sim_rejection <- function (out, proc_inputs, careful) {
     }
     ## get copula data and then modify distributions of Y and Z
     out[!OK,output] <- sim_copula(out[!OK,output,drop=FALSE], family=famCop,
-                                  par = pars$cop, par2=pars$cop$par2, model_matrix=copMM)
+                                  par = pars$cop, df=pars$cop$df, model_matrix=copMM)
     if (careful) OB <- rep(FALSE, nr)
 
     for (i in seq_along(LHS_Z)) {

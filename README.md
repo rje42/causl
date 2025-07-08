@@ -64,4 +64,4 @@ Note that, by default, we use the log link for the Gamma distribution.
 
 Evans, R.J. and Didelez, V. Parameterizing and simulating from causal
 models (with discussion). *Journal of the Royal Statistical Society,
-Series B* (to appear), 2024.
+Series B*, 86 (3): 535-568, 2024.

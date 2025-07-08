@@ -1,11 +1,7 @@
 ---
 title: "Families, link functions and parameters"
+output: html_document
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Families, link functions and parameters}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +17,7 @@ library(causl)
 The list of built-in families can be obtained by calling `family_vals`.  This
 shows the name of each family, and the value that can be used to obtain it when
 calling functions.  
-```{r family_vals, include=TRUE}
+```{family_vals, include=TRUE}
 family_vals$val
 ```
 The parameterizations for these families are based on 

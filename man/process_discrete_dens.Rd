@@ -9,8 +9,8 @@ process_discrete_dens(dat, family, LHSs)
 \arguments{
 \item{dat}{data frame of observations}
 
-\item{family}{families for the Y and Z distributions, and the copula. Should
-be the same length as \code{formulas}}
+\item{family}{families for variables and copula as above. Should be the
+same length as \code{formulas}, and in same order}
 
 \item{LHSs}{left-hand sides from \code{formulas}}
 }

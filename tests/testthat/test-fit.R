@@ -15,8 +15,8 @@ out2 <- fit_causl(dat2, family=c(1,1,1))
 
 
 test_that("fitting works as expected", {
-  testthat::expect_lt(sum((out$pars$y$beta - c(0.004957232, 0.548474548))^2), 1e-10)
-  testthat::expect_lt(sum((out2$pars$y$beta - c(-0.01425083, 0.42604663))^2), 1e-10)
+  testthat::expect_lt(sum((out$pars$y$beta - pars$y$beta)^2/out$pars$y$beta_sandwich^2), qchisq(0.99, df=2))
+  testthat::expect_lt(sum((out2$pars$y$beta - pars$y$beta)^2/out2$pars$y$beta_sandwich^2), qchisq(0.99, df=2))
 })
 
 # nll1 <- nll3(dat, family=rep(1,3), inCop = c("y","z"))

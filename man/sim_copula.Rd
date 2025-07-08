@@ -5,9 +5,9 @@
 \alias{sim_CopVal}
 \title{Simulate copula values}
 \usage{
-sim_copula(dat, family, par, par2, model_matrix)
+sim_copula(dat, family, par, df, model_matrix)
 
-sim_CopVal(dat, family, par, par2, model_matrix)
+sim_CopVal(dat, family, par, df, model_matrix)
 }
 \arguments{
 \item{dat}{data frame with empty columns}
@@ -16,7 +16,7 @@ sim_CopVal(dat, family, par, par2, model_matrix)
 
 \item{par}{mandatory parameters}
 
-\item{par2}{optional parameters}
+\item{df}{optional parameters}
 
 \item{model_matrix}{design matrix for covariates}
 }

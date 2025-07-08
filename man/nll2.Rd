@@ -49,7 +49,6 @@ Negative log-likelihood
 The number of columns of \code{beta} should be the number of columns
 in \code{dat} plus the number required to parameterize the copula.  The first
 few columns and the entries in \code{phi} are assumed to be in the order of
-those in \code{dat}.  If the \eqn{i}th
-family for a variable does not require a dispersion parameter then the value of
-\code{phi[i]} is ignored.
+those in \code{dat}.  If the \eqn{i}th family for a variable does not require a
+dispersion parameter then the value of \code{phi[i]} is ignored.
 }
