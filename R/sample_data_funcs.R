@@ -213,9 +213,9 @@ rescale_cop <- function(U, X, beta, family=1, df, cdf = FALSE) {
   if (family == 1) {
     # if (link == "tanh")
     param <- 2*expit(eta) - 1
-    # browser()
-    # Y <- cVCopula(U, copula = normalCopula, param = param, inverse=TRUE)
-    Y <- pnorm(qnorm(U[,2])*sqrt(1-param^2)+param*qnorm(U[,1]))
+    # option 2 faster, but need better functionality for inverse and cdf
+    Y <- cVCopula_fast(U, copula = normalCopula, param = param, cdf = cdf,inverse=TRUE)
+    #Y <- pnorm(qnorm(U[,2])*sqrt(1-param^2)+param*qnorm(U[,1]))
   }
   else if (family == 2) {
     # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
@@ -561,7 +561,8 @@ glm_sim <- function (family, eta, phi, other_pars, link, quantiles=TRUE) {
   else stop("family input should be an integer or 'causl_family' function")
 
   ## return quantile
-  if (is.numeric(family) || !(family$name %in% c("categorical","ordinal"))) {
+  if ((is.numeric(family) || !(family$name %in% c("categorical","ordinal"))) 
+      & is.null(attr(x, "quantile"))) {
     if (quantiles) attr(x, "quantile") <- qx
   }
 
