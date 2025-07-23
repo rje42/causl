@@ -420,7 +420,7 @@ cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
 ##' @param cdf should we evaluate the cdf copula, not the conditional?
 ##'
 ##' @details Should have \code{nrow(U) = length(param)}.
-##' @importFrom copula cCopula
+##' @importFrom copula cCopula pCopula
 ##'
 cVCopula_fast <- function(U, copula, param, par2 = NULL, inverse = FALSE, cdf = FALSE) {
   n <- nrow(U)
