@@ -422,7 +422,7 @@ cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
 ##' @details Should have \code{nrow(U) = length(param)}.
 ##' @importFrom copula cCopula pCopula
 ##'
-cVCopula_fast <- function(U, copula, param, par2 = NULL, inverse = FALSE, cdf = FALSE) {
+cVCopula_fast <- function(U, copula, param, par2 = NULL, inverse = TRUE, cdf = FALSE) {
   n <- nrow(U)
   if (length(param) == 1L) {
     param <- rep_len(param, n)

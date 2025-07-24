@@ -15,9 +15,10 @@ modify(x, ...)
 Generic for modify
 }
 \examples{
-cm <- causl_model(formulas = list(Z ~ 1, Y ~ 1, ~ 1),
-                  family = list(3, 1, 1),
+cm <- causl_model(formulas = list(Z ~ 1, X~ Z, Y ~ 1, ~ 1),
+                  family = list(3, 1, 1, 1),
                   pars = list(Z = list(beta = 1, phi = 1),
+                              X = list(beta = c(0.5, 1)),
                               Y = list(beta = 0, phi = 1),
                               cop = list(beta = 1)))
 modify(cm, pars = list(cop = list(beta = 1.5)))

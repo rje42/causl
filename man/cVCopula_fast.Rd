@@ -5,7 +5,7 @@
 \title{A faster Vectorized conditional copula function
 where we don't build redudendant copulas if unique(eta) is small}
 \usage{
-cVCopula_fast(U, copula, param, par2 = NULL, inverse = FALSE, cdf = FALSE)
+cVCopula_fast(U, copula, param, par2 = NULL, inverse = TRUE, cdf = FALSE)
 }
 \arguments{
 \item{U}{matrix of quantiles}

@@ -10,3 +10,5 @@ R/other/
 .DS_Store
 vignettes/.DS_Store
 scratch/
+/doc/
+/Meta/

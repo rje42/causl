@@ -5,7 +5,7 @@
 \alias{rescaleCop}
 \title{Rescale quantiles to conditional copula}
 \usage{
-rescale_cop(U, X, beta, family = 1, df, cdf = FALSE)
+rescale_cop(U, X, beta, family = 1, df, inv = TRUE, cdf = FALSE)
 
 rescaleCop(U, X, beta, family = 1, df)
 }

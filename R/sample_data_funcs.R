@@ -200,7 +200,7 @@ link_apply <- function(eta, link, family_nm, inverse = TRUE) {
 ## @inherit glm_sim
 ##'
 ##' @export
-rescale_cop <- function(U, X, beta, family=1, df, cdf = FALSE) {
+rescale_cop <- function(U, X, beta, family=1, df, inv = TRUE, cdf = FALSE) {
 
   if (!is.matrix(U)) stop("'U' should be a matrix")
   if (!is.matrix(X)) stop("'X' should be a matrix")
@@ -214,30 +214,36 @@ rescale_cop <- function(U, X, beta, family=1, df, cdf = FALSE) {
     # if (link == "tanh")
     param <- 2*expit(eta) - 1
     # option 2 faster, but need better functionality for inverse and cdf
-    Y <- cVCopula_fast(U, copula = normalCopula, param = param, cdf = cdf,inverse=TRUE)
-    #Y <- pnorm(qnorm(U[,2])*sqrt(1-param^2)+param*qnorm(U[,1]))
+    if (inv) {
+      Y <- pnorm(qnorm(U[,2]) * sqrt(1 - param^2) + param * qnorm(U[,1]))
+    } else if (cdf) {
+      Y <- cVCopula_fast(U, copula = normalCopula, param = param, cdf=TRUE, inverse=inv)
+    } else {
+      Y <- pnorm( (qnorm(U[,2]) - param * qnorm(U[,1])) / sqrt(1-param^2) )
+    }
+    
   }
   else if (family == 2) {
     # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
 
     param <- 2*expit(eta) - 1
-    Y <- cVCopula_fast(U, copula = tCopula, param = param, par2=df, cdf=cdf, inverse=TRUE)
+    Y <- cVCopula_fast(U, copula = tCopula, param = param, par2=df, cdf=cdf, inverse=inv)
   }
   else if (family == 3) {
     param <- exp(eta) - 1
-    Y <- cVCopula_fast(U, copula = claytonCopula, param = param, cdf=cdf, inverse=TRUE)
+    Y <- cVCopula_fast(U, copula = claytonCopula, param = param, cdf=cdf, inverse=inv)
   }
   else if (family == 4) {
     param <- exp(eta) + 1
-    Y <- cVCopula_fast(U, copula = gumbelCopula, param = param, cdf=cdf, inverse=TRUE)
+    Y <- cVCopula_fast(U, copula = gumbelCopula, param = param, cdf=cdf, inverse=inv)
   }
   else if (family == 5) {
     param <- eta
-    Y <- cVCopula_fast(U, copula = frankCopula, param = param, cdf=cdf, inverse=TRUE)
+    Y <- cVCopula_fast(U, copula = frankCopula, param = param, cdf=cdf, inverse=inv)
   }
   else if (family == 6) {
     param <- exp(eta) + 1
-    Y <- cVCopula_fast(U, copula = joeCopula, param = param, cdf=cdf, inverse=TRUE)
+    Y <- cVCopula_fast(U, copula = joeCopula, param = param, cdf=cdf, inverse=inv)
   }
   else stop("family must be between 0 and 5")
 

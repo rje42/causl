@@ -97,7 +97,7 @@ pars <- list(z=list(beta=0, phi=1),
              x=list(beta=c(0,0.5), phi=1),
              y=list(beta=c(0,0.5), phi=0.5),
              cop=list(beta=1))
-causalSamp(100, pars = pars)
+causalSamp(100, family = rep(1,4), pars = pars)
 
 
 }

@@ -4,17 +4,7 @@
 \alias{modify.causl_model}
 \title{Modify \code{causl_model} object}
 \usage{
-modify.causl_model(
-  x,
-  over = FALSE,
-  formulas,
-  family,
-  pars,
-  link,
-  dat,
-  method,
-  kwd
-)
+\method{modify}{causl_model}(x, over = FALSE, formulas, family, pars, link, dat, method, kwd)
 }
 \arguments{
 \item{x}{an object of class \code{causl_model}}

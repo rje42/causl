@@ -175,7 +175,7 @@ Now we can suitably modify our earlier example:
 ```{r params_sqrt}
 fams <- list(1, poisson_causl_fam(link="sqrt"), 1, 1)
 pars$X$beta <- c(0.9, 0.05)
-cm_sq <- modify.causl_model(cm, family=fams, pars=pars)
+cm_sq <- modify(cm, family=fams, pars=pars)
 
 set.seed(124)
 dat <- rfrugal(1e3, causl_model = cm_sq, control=list(quiet=TRUE))

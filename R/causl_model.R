@@ -45,9 +45,10 @@ print.causl_model <- function (x, ...) {
 ##' @param ... other arguments
 ##'
 ##' @examples
-##' cm <- causl_model(formulas = list(Z ~ 1, Y ~ 1, ~ 1),
-##'                   family = list(3, 1, 1),
+##' cm <- causl_model(formulas = list(Z ~ 1, X~ Z, Y ~ 1, ~ 1),
+##'                   family = list(3, 1, 1, 1),
 ##'                   pars = list(Z = list(beta = 1, phi = 1),
+##'                               X = list(beta = c(0.5, 1)),
 ##'                               Y = list(beta = 0, phi = 1),
 ##'                               cop = list(beta = 1)))
 ##' modify(cm, pars = list(cop = list(beta = 1.5)))
@@ -55,9 +56,9 @@ print.causl_model <- function (x, ...) {
 ##'
 ##' @export
 modify <- function (x, ...) {
-  NextMethod("modify")
+  UseMethod("modify")
 }
-
+##' @export
 modify.default <- function (x, ...) {
   args <- list(...)
   for (i in seq_along(args)) x[[names(args)[i]]] <- args[[i]]
@@ -75,7 +76,7 @@ modify.default <- function (x, ...) {
 ##'
 ##' This function can be used to modify
 ##'
-##' @export
+#' @exportS3Method modify causl_model
 modify.causl_model <- function (x, over=FALSE, formulas, family, pars, link, dat, method,
                                 kwd) {
   if (!is(x, "causl_model")) stop("Must include an object of class 'causl_model'")
