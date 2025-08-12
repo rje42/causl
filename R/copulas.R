@@ -378,34 +378,63 @@ dGaussDiscCop <- function(x, m, Sigma, eta, log=FALSE, use_cpp=TRUE) {
   out
 }
 
-##' Vectorized conditional copula function
+
+##' A faster Vectorized conditional copula function
+##' where we don't build redudendant copulas if unique(eta) is small
 ##'
 ##' @param U matrix of quantiles
 ##' @param copula family of copula to use
 ##' @param param vector of parameters
 ##' @param par2 Degrees of freedom for t-copula
 ##' @param inverse should inverse CDF be returned?
+##' @param cdf should we evaluate the cdf copula, not the conditional?
 ##'
 ##' @details Should have \code{nrow(U) = length(param)}.
-##' @importFrom copula cCopula
+##' @importFrom copula cCopula pCopula
 ##'
-cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
-  ## check param has right length
-  if (length(param) != nrow(U)) {
-    if (length(param) == 1) param <- rep_len(param, nrow(U))
-    else stop("'param' should have single entry or one for each row of 'U'")
+cVCopula <- function(U, copula, param, 
+                     par2 = NULL, inverse = FALSE, cdf = FALSE) {
+  n <- nrow(U)
+  if (length(param) == 1L) {
+    param <- rep_len(param, n)
+  } else if (length(param) != n) {
+    stop("'param' should have single entry or one for each row of 'U'")
   }
-  ## get list of copulas
-  if (missing(par2)) {
-    cops <- lapply(param, copula)
+  
+  # Get unique parameters and index groups
+  param_char <- as.character(param)
+  uniq_params <- unique(param_char)
+  group_indices <- split(seq_len(n), param_char)
+  
+  # Build copula objects for each unique parameter
+  copula_objs <- if (is.null(par2)) {
+    lapply(as.numeric(uniq_params), copula)
   } else {
-    cops <- lapply(param, function(x) copula(x, df=par2))
+    lapply(as.numeric(uniq_params), function(x) copula(x, df = par2))
   }
-
-  splU <- apply(U, 1, FUN = function(x) x, simplify = FALSE)
-  out <- mapply(function (x,y) cCopula(x,y,inverse=inverse), splU, cops)
-
-  if (is.matrix(out)) out <- t(out)
-
+  names(copula_objs) <- uniq_params
+  
+  # Preallocate output matrix
+  if(cdf){
+    out <- matrix(NA_real_, nrow = n, ncol = 1)
+  }else{
+    out <- matrix(NA_real_, nrow = n, ncol = ncol(U))
+  }
+  
+  # Batch apply cCopula for each unique copula
+  for (key in uniq_params) {
+    idx <- group_indices[[key]]
+    cop <- copula_objs[[key]]
+    if(cdf){
+      out[idx,] <- pCopula(U[idx, , drop = FALSE], cop)
+    }else{
+      out[idx, ] <- cCopula(U[idx, , drop = FALSE], cop, inverse = inverse)
+    }
+    
+  }
+  
   return(out)
 }
+
+
+

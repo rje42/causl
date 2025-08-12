@@ -158,7 +158,12 @@ binomial_causl_fam <- function (link) {
   ## write functions
   dens <- function (x, mu, log=FALSE) dbinom(x, size=1, prob=mu, log=log)
   quan <- function (p, mu) qbinom(p, size=1, prob=mu)
-  sim <- function (n, mu) rbinom(n, size=1, prob=mu)
+  sim <- function (n, mu){
+    qx <- runif(n, 0,1)
+    x <- qbinom(qx, size = 1, prob = mu)
+    attr(x, "quantiles") <- qx
+    return(x)
+  }
   probs <- function (x, mu) pbinom(x, size=1, prob=mu)
 
   default <- function(theta) list(x=1, mu=0.5, p=0.5)

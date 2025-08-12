@@ -2,3 +2,5 @@
 ^Trouble\_Shooting\.md$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^doc$
+^Meta$

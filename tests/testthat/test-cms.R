@@ -18,3 +18,4 @@ test_that("causl_model() behaves as expected", {
   expect_error(causl_model(forms, fam[-4], pars), regexp = "Should be a family entry for each set of formulas")
 })
 
+

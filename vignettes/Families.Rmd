@@ -2,6 +2,10 @@
 title: "Families, link functions and parameters"
 output: html_document
 date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Families}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}

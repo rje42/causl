@@ -25,6 +25,7 @@ As always, we begin by loading the package.
 ```{r load, include=TRUE, message=FALSE}
 library(causl)
 library(survey)
+library(dplyr)
 ```
 
 ## Simulate Data
