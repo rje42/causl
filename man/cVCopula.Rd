@@ -2,9 +2,10 @@
 % Please edit documentation in R/copulas.R
 \name{cVCopula}
 \alias{cVCopula}
-\title{Vectorized conditional copula function}
+\title{A faster Vectorized conditional copula function
+where we don't build redudendant copulas if unique(eta) is small}
 \usage{
-cVCopula(U, copula, param, par2, inverse = FALSE)
+cVCopula(U, copula, param, par2 = NULL, inverse = FALSE, cdf = FALSE)
 }
 \arguments{
 \item{U}{matrix of quantiles}
@@ -16,9 +17,12 @@ cVCopula(U, copula, param, par2, inverse = FALSE)
 \item{par2}{Degrees of freedom for t-copula}
 
 \item{inverse}{should inverse CDF be returned?}
+
+\item{cdf}{should we evaluate the cdf copula, not the conditional?}
 }
 \description{
-Vectorized conditional copula function
+A faster Vectorized conditional copula function
+where we don't build redudendant copulas if unique(eta) is small
 }
 \details{
 Should have \code{nrow(U) = length(param)}.

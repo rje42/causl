@@ -217,7 +217,7 @@ rescale_cop <- function(U, X, beta, family=1, df, inv = TRUE, cdf = FALSE) {
     if (inv) {
       Y <- pnorm(qnorm(U[,2]) * sqrt(1 - param^2) + param * qnorm(U[,1]))
     } else if (cdf) {
-      Y <- cVCopula_fast(U, copula = normalCopula, param = param, cdf=TRUE, inverse=inv)
+      Y <- cVCopula(U, copula = normalCopula, param = param, cdf=TRUE, inverse=inv)
     } else {
       Y <- pnorm( (qnorm(U[,2]) - param * qnorm(U[,1])) / sqrt(1-param^2) )
     }
@@ -227,23 +227,23 @@ rescale_cop <- function(U, X, beta, family=1, df, inv = TRUE, cdf = FALSE) {
     # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
 
     param <- 2*expit(eta) - 1
-    Y <- cVCopula_fast(U, copula = tCopula, param = param, par2=df, cdf=cdf, inverse=inv)
+    Y <- cVCopula(U, copula = tCopula, param = param, par2=df, cdf=cdf, inverse=inv)
   }
   else if (family == 3) {
     param <- exp(eta) - 1
-    Y <- cVCopula_fast(U, copula = claytonCopula, param = param, cdf=cdf, inverse=inv)
+    Y <- cVCopulat(U, copula = claytonCopula, param = param, cdf=cdf, inverse=inv)
   }
   else if (family == 4) {
     param <- exp(eta) + 1
-    Y <- cVCopula_fast(U, copula = gumbelCopula, param = param, cdf=cdf, inverse=inv)
+    Y <- cVCopula(U, copula = gumbelCopula, param = param, cdf=cdf, inverse=inv)
   }
   else if (family == 5) {
     param <- eta
-    Y <- cVCopula_fast(U, copula = frankCopula, param = param, cdf=cdf, inverse=inv)
+    Y <- cVCopula(U, copula = frankCopula, param = param, cdf=cdf, inverse=inv)
   }
   else if (family == 6) {
     param <- exp(eta) + 1
-    Y <- cVCopula_fast(U, copula = joeCopula, param = param, cdf=cdf, inverse=inv)
+    Y <- cVCopula(U, copula = joeCopula, param = param, cdf=cdf, inverse=inv)
   }
   else stop("family must be between 0 and 5")
 

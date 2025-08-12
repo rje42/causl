@@ -378,37 +378,7 @@ dGaussDiscCop <- function(x, m, Sigma, eta, log=FALSE, use_cpp=TRUE) {
   out
 }
 
-##' Vectorized conditional copula function
-##'
-##' @param U matrix of quantiles
-##' @param copula family of copula to use
-##' @param param vector of parameters
-##' @param par2 Degrees of freedom for t-copula
-##' @param inverse should inverse CDF be returned?
-##'
-##' @details Should have \code{nrow(U) = length(param)}.
-##' @importFrom copula cCopula
-##'
-cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
-  ## check param has right length
-  if (length(param) != nrow(U)) {
-    if (length(param) == 1) param <- rep_len(param, nrow(U))
-    else stop("'param' should have single entry or one for each row of 'U'")
-  }
-  ## get list of copulas
-  if (missing(par2)) {
-    cops <- lapply(param, copula)
-  } else {
-    cops <- lapply(param, function(x) copula(x, df=par2))
-  }
 
-  splU <- apply(U, 1, FUN = function(x) x, simplify = FALSE)
-  out <- mapply(function (x,y) cCopula(x,y,inverse=inverse), splU, cops)
-
-  if (is.matrix(out)) out <- t(out)
-
-  return(out)
-}
 ##' A faster Vectorized conditional copula function
 ##' where we don't build redudendant copulas if unique(eta) is small
 ##'
@@ -422,7 +392,8 @@ cVCopula <- function (U, copula, param, par2, inverse=FALSE) {
 ##' @details Should have \code{nrow(U) = length(param)}.
 ##' @importFrom copula cCopula pCopula
 ##'
-cVCopula_fast <- function(U, copula, param, par2 = NULL, inverse = TRUE, cdf = FALSE) {
+cVCopula <- function(U, copula, param, 
+                     par2 = NULL, inverse = FALSE, cdf = FALSE) {
   n <- nrow(U)
   if (length(param) == 1L) {
     param <- rep_len(param, n)
