@@ -136,11 +136,15 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles,
   for (i in rev(seq_along(formulas[[2]]))) {
     X <- model.matrix(formulas[[2]][[i]], data=dat)
     # eta <- X %*% pars[[2]][[i]]$beta
-
+    # specify correlation \tau instead of beta if marginal copula
+    tau <- "tau" %in% names(pars[[2]])
+    if(tau && ncol(X) > 1){
+      stop("Not allowed to specify correlation tau unless marginal copula.")
+    }
     ## rescale quantiles for pair-copula
     qs <- cbind(quantiles[[LHS_cop[[i]]]], qY)
-    qY <- rescale_cop(qs, X=X, beta=pars[[2]][[i]]$beta, family=family[[2]][[i]],
-                      df=pars[[2]][[i]]$df) #, link=link[[2]][j])
+    qY <- rescale_cop(qs, X=X, par=pars[[2]][[i]], family=family[[2]][[i]],
+                      df=pars[[2]][[i]]$df)
     ##
     if (max(qY) > 1 - tol) {
       warning(paste0("Quantiles numerically 1, reducing by ", tol))

@@ -73,7 +73,6 @@ process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inve
     # nC <- length(wh_q)
 
     ## put some validation code in here for inversion method
-
     if (method == "inversion") {
       tmp <- pair_copula_setup(formulas=formulas[[4]], family=family[[4]],
                                pars=pars[[kwd]], LHSs=LHSs, quans=wh_q, ord=ord)
@@ -638,11 +637,14 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
         stop("Shouldn't get here")
       }
     }
-    else if (!all(sapply(pars, is.list))) {
-      ## put some code in here to correct fact that some pairs aren't represented
+    else {
+      # so both ways agree on parameterization
+      if(purrr::pluck_depth(pars) != 4){stop("Most likely forgot to format copula model correctly.")}
     }
+    # else if (!all(sapply(pars, is.list))) {
+    #   ## put some code in here to correct fact that some pairs aren't represented
+    # }
   }
-
   return(list(formulas=formulas, family=family, pars=pars))
 }
 
