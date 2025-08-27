@@ -49,9 +49,6 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="../articles/AMR-Comparison.html">Illustrating Estimator AMR</a>
-    </li>
-    <li>
       <a href="../articles/Comparison.html">Comparison of Methods</a>
     </li>
     <li>
@@ -108,7 +105,7 @@ Correlation</h1>
                         <h4 data-toc-skip class="author">Chase
 Mathis</h4>
             
-            <h4 data-toc-skip class="date">2025-08-26</h4>
+            <h4 data-toc-skip class="date">2025-08-27</h4>
       
 
       <div class="hidden name"><code>Simple-Copula-Parametrization.Rmd</code></div>
@@ -117,39 +114,50 @@ Mathis</h4>
 
     
     
-<p>The standard way we choose to parametrize copula dependence structure
-is similar to the way we parametrize the other structures. For instance,
-we return to the following example:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><mi>Z</mi></mtd><mtd columnalign="left" style="text-align: left"><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mspace width="0.278em"></mspace><msubsup><mi>σ</mi><mi>z</mi><mn>2</mn></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mi>X</mi><mo>∣</mo><mi>Z</mi><mo>=</mo><mi>z</mi></mtd><mtd columnalign="left" style="text-align: left"><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>μ</mi><mi>x</mi></msub><mo>,</mo><mspace width="0.278em"></mspace><msubsup><mi>σ</mi><mi>x</mi><mn>2</mn></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mi>Y</mi><mo>∣</mo><mo>do</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>X</mi><mo>=</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd><mtd columnalign="left" style="text-align: left"><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><msub><mi>μ</mi><mi>y</mi></msub><mo>,</mo><mspace width="0.278em"></mspace><msubsup><mi>σ</mi><mi>y</mi><mn>2</mn></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{align*}
-Z &amp;\sim N(0, \; \sigma_z^2)\\
-X \mid Z=z &amp;\sim N(\mu_x, \; \sigma_x^2)\\
-Y \mid \operatorname{do}(X=x) &amp;\sim N(\mu_y, \; \sigma_y^2)
-\end{align*}</annotation></semantics></math></p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">causl</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Loading required package: rje</span></span></code></pre>
+<pre><code><span><span class="co">## Loading required package: VineCopula</span></span></code></pre>
+<p>The standard way we choose to parametrize copula dependence structure
+is similar to the way we parametrize the other causal structures. We
+specify a variable is a link function of a linear combination of other
+variables.</p>
+<p>For instance, we return to the following example:
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><mi>Z</mi></mtd><mtd columnalign="left" style="text-align: left"><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0</mn><mo>,</mo><mspace width="0.278em"></mspace><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mi>X</mi><mo>∣</mo><mi>Z</mi><mo>=</mo><mi>z</mi></mtd><mtd columnalign="left" style="text-align: left"><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0.5</mn><mo>×</mo><mi>z</mi><mo>,</mo><mspace width="0.278em"></mspace><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mi>Y</mi><mo>∣</mo><mo>do</mo><mrow><mo stretchy="true" form="prefix">(</mo><mi>X</mi><mo>=</mo><mi>x</mi><mo stretchy="true" form="postfix">)</mo></mrow></mtd><mtd columnalign="left" style="text-align: left"><mo>∼</mo><mi>N</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>0.3</mn><mo>×</mo><mi>x</mi><mo>,</mo><mspace width="0.278em"></mspace><mn>1</mn><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{align*}
+Z &amp;\sim N(0, \; 1)\\
+X \mid Z=z &amp;\sim N(0.5\times z, \; 1)\\
+Y \mid \operatorname{do}(X=x) &amp;\sim N(0.3\times x, \; 1)
+\end{align*}</annotation></semantics></math></p>
+<p>The formulas and family variables are familiar.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">formulas</span><span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">z</span><span class="op">~</span><span class="fl">1</span>, <span class="va">x</span><span class="op">~</span><span class="va">z</span>, <span class="va">y</span><span class="op">~</span><span class="va">x</span>, <span class="op">~</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">family</span><span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">4</span><span class="op">)</span></span></code></pre></div>
-<p>The formulas and family variables are familiar. When defining the
-<code>pars</code> variable we replace the familiar <code>beta</code> in
-the cop entry to a <code>tau</code>. If the user specifies a
+<p>When defining the <code>pars</code> variable we replace the familiar
+<code>beta</code> in the cop entry to a <code>tau</code>. If the user
+specifies a
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>,
 the program will convert the specified Kendall’s
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>
 to the correct parameter so that the copula between the outcome and
-confounder has a kendall correlation of
+confounder has a Kendall correlation of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>.
 This is a simpler way to encode the dependence information as
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>τ</mi><mo>∈</mo><mrow><mo stretchy="true" form="prefix">[</mo><mi>−</mi><mn>1</mn><mo>,</mo><mn>1</mn><mo stretchy="true" form="postfix">]</mo></mrow></mrow><annotation encoding="application/x-tex">\tau \in [-1,1]</annotation></semantics></math>
-and easiser to interpret. The code looks like.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+and easier to interpret. The code looks like.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fl">0</span>, phi<span class="op">=</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>             x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0.5</span><span class="op">)</span>, phi<span class="op">=</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>             y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>,<span class="fl">0.3</span><span class="op">)</span>, phi<span class="op">=</span><span class="fl">1</span><span class="op">)</span>,</span>
-<span>             cop <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>y<span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>tau <span class="op">=</span> <span class="fl">0.25</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span>             cop <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>y<span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>tau <span class="op">=</span> <span class="fl">0.25</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="co"># NOTE tau argument</span></span></code></pre></div>
 <p>We note that we define the dependence between y and z to be
 uncoditional on the treatment x. This assumption is necessary for
 specifying Kendall’s
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>τ</mi><annotation encoding="application/x-tex">\tau</annotation></semantics></math>.
 (Is it?)</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/causl_model.html">causl_model</a></span><span class="op">(</span>formulas <span class="op">=</span> <span class="va">formulas</span>, family <span class="op">=</span> <span class="va">family</span>, pars <span class="op">=</span> <span class="va">pars</span><span class="op">)</span></span>
+<span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rfrugal.html">rfrugal</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10000</span>, causl_model <span class="op">=</span> <span class="va">cm</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">## Inversion method selected: using pair-copula parameterization</span></span></code></pre>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

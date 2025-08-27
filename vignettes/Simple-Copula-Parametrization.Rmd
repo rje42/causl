@@ -4,40 +4,52 @@ author: "Chase Mathis"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Copulas & Correlations}
+  %\VignetteIndexEntry{Specifying Copula Models through Correlation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+```{r load causl}
+library(causl)
+```
 
 The standard way we choose to parametrize copula dependence structure is 
-similar to the way we parametrize the other structures. For instance, we return 
+similar to the way we parametrize the other causal structures. We specify
+a variable is a link function of a linear combination of other variables. 
+
+For instance, we return 
 to the following example: \begin{align*}
-Z &\sim N(0, \; \sigma_z^2)\\
-X \mid Z=z &\sim N(\mu_x, \; \sigma_x^2)\\
-Y \mid \operatorname{do}(X=x) &\sim N(\mu_y, \; \sigma_y^2)
+Z &\sim N(0, \; 1)\\
+X \mid Z=z &\sim N(0.5\times z, \; 1)\\
+Y \mid \operatorname{do}(X=x) &\sim N(0.3\times x, \; 1)
 \end{align*}
 
-
+The formulas and family variables are familiar. 
 ```{r forms and fams}
 formulas=list(z~1, x~z, y~x, ~1)
 family=rep(1,4)
 ```
 
-The formulas and family variables are familiar. When defining the `pars` variable
+When defining the `pars` variable
 we replace the familiar `beta` in the cop entry to a `tau`. If the user specifies
 a $\tau$, the program will convert the specified Kendall's $\tau$ to the correct
 parameter so that the copula between the outcome and confounder has a 
-kendall correlation of $\tau$. This is a simpler way to encode the dependence information
-as $\tau \in [-1,1]$ and easiser to interpret. The code looks like.
+Kendall correlation of $\tau$. This is a simpler way to encode the dependence information
+as $\tau \in [-1,1]$ and easier to interpret. The code looks like.
 
 ```{r pars}
 pars <- list(z = list(beta = 0, phi=1),
              x = list(beta = c(0,0.5), phi=1),
              y = list(beta = c(0,0.3), phi=1),
-             cop = list(y= list(z = list(tau = 0.25))))
+             cop = list(y= list(z = list(tau = 0.25)))) # NOTE tau argument
 ```
 
 We note that we define the dependence between y and z to be uncoditional 
 on the treatment x. This assumption is necessary for specifying Kendall's $\tau$.
 (Is it?)
+
+```{r}
+cm <- causl_model(formulas = formulas, family = family, pars = pars)
+dat <- rfrugal(n = 10000, causl_model = cm)
+```
+
 

@@ -205,15 +205,16 @@ rescale_cop <- function(U, X, par, family=1, df,
   if (!is.matrix(U)) stop("'U' should be a matrix")
   if (!is.matrix(X)) stop("'X' should be a matrix")
   if (nrow(U) != nrow(X)) stop("'U' and 'X' should have same number of rows")
-  if("beta" %in% names(par)){
+  if ("beta" %in% names(par)) {
     beta <- par[["beta"]]
     ## get linear component
     eta <- X %*% beta
     param_made <- FALSE
     }
-  if("tau" %in% names(par)){
+  if ("tau" %in% names(par)) {
     tau <- par[["tau"]]
-    param <- matrix(BiCopTau2Par(family, tau, check.taus = TRUE), ncol = 1, nrow = nrow(U))
+    param <- matrix(BiCopTau2Par(family, tau, check.taus = TRUE), 
+                    ncol = 1, nrow = nrow(U))
     param_made <- TRUE
     }
 
@@ -221,7 +222,7 @@ rescale_cop <- function(U, X, par, family=1, df,
   ## make U normal, t or gamma
   if (family == 1) {
     # if (link == "tanh")
-    if(!param_made){param <- 2*expit(eta) - 1}
+    if (!param_made) {param <- 2*expit(eta) - 1}
     # option 2 faster, but need better functionality for inverse and cdf
     if (inv) {
       Y <- pnorm(qnorm(U[,2]) * sqrt(1 - param^2) + param * qnorm(U[,1]))
@@ -235,23 +236,23 @@ rescale_cop <- function(U, X, par, family=1, df,
   else if (family == 2) {
     # Y <- sqrt(phi)*qt(U, df=pars$par2) + eta
 
-    if(!param_made){param <- 2*expit(eta) - 1}
+    if (!param_made) {param <- 2*expit(eta) - 1}
     Y <- cVCopula(U, copula = tCopula, param = param, par2=df, cdf=cdf, inverse=inv)
   }
   else if (family == 3) {
-    if(!param_made){param <- exp(eta) - 1}
-    Y <- cVCopulat(U, copula = claytonCopula, param = param, cdf=cdf, inverse=inv)
+    if (!param_made) {param <- exp(eta) - 1}
+    Y <- cVCopula(U, copula = claytonCopula, param = param, cdf=cdf, inverse=inv)
   }
   else if (family == 4) {
-    if(!param_made){param <- exp(eta) + 1}
+    if (!param_made) {param <- exp(eta) + 1}
     Y <- cVCopula(U, copula = gumbelCopula, param = param, cdf=cdf, inverse=inv)
   }
   else if (family == 5) {
-    if(!param_made){param <- eta}
+    if (!param_made) {param <- eta}
     Y <- cVCopula(U, copula = frankCopula, param = param, cdf=cdf, inverse=inv)
   }
   else if (family == 6) {
-    if(!param_made){param <- exp(eta) + 1}
+    if (!param_made) {param <- exp(eta) + 1}
     Y <- cVCopula(U, copula = joeCopula, param = param, cdf=cdf, inverse=inv)
   }
   else stop("family must be between 0 and 5")
