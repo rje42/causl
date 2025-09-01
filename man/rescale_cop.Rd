@@ -5,7 +5,7 @@
 \alias{rescaleCop}
 \title{Rescale quantiles to conditional copula}
 \usage{
-rescale_cop(U, X, beta, family = 1, df, inverse = TRUE, cdf = FALSE)
+rescale_cop(U, X, family = 1, pars, df, inverse = TRUE, cdf = FALSE)
 
 rescaleCop(U, X, beta, family = 1, df)
 }
@@ -14,8 +14,6 @@ rescaleCop(U, X, beta, family = 1, df)
 
 \item{X}{model matrix of covariates}
 
-\item{beta}{list of parameters (see details)}
-
 \item{family}{variety of copula to use}
 
 \item{df}{degrees of freedom for t-Copula}
@@ -23,6 +21,8 @@ rescaleCop(U, X, beta, family = 1, df)
 \item{inverse}{should inverse CDF be returned?}
 
 \item{cdf}{should we evaluate the CDF copula, not the conditional?}
+
+\item{par}{named list of parameters (see details)}
 }
 \value{
 vector of rescaled quantiles
@@ -36,8 +36,9 @@ The variable to be transformed must be in the final column of
 
 \code{family} can be 1 for Gaussian, 2 for t, 3 for Clayton, 4 for
 Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. Gamma distributed,
-beta distributed or discrete respectively. \code{beta} should contain regression
-parameters, \code{df} must be specified if \code{family=2}. \code{U} should have the
+beta distributed or discrete respectively. \code{pars} should contain either
+regression parameters (labelled as \code{beta}) or a constant rank correlation
+\code{tau}; \code{df} must be specified if \code{family = 2}. \code{U} should have the
 same length as \code{X} has rows, and \code{X}
 should have the same number of columns as the length of \code{pars$beta}.
 }
