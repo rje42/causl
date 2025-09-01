@@ -5,7 +5,7 @@
 \alias{rescaleCop}
 \title{Rescale quantiles to conditional copula}
 \usage{
-rescale_cop(U, X, beta, family = 1, df, inv = TRUE, cdf = FALSE)
+rescale_cop(U, X, beta, family = 1, df, inverse = TRUE, cdf = FALSE)
 
 rescaleCop(U, X, beta, family = 1, df)
 }
@@ -17,6 +17,12 @@ rescaleCop(U, X, beta, family = 1, df)
 \item{beta}{list of parameters (see details)}
 
 \item{family}{variety of copula to use}
+
+\item{df}{degrees of freedom for t-Copula}
+
+\item{inverse}{should inverse CDF be returned?}
+
+\item{cdf}{should we evaluate the CDF copula, not the conditional?}
 }
 \value{
 vector of rescaled quantiles

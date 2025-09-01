@@ -25,8 +25,8 @@ dGcop_sig <- function(x, sigma, logd = FALSE) {
     .Call(`_causl_dGcop_sig`, x, sigma, logd)
 }
 
-dGDcop <- function(x, sigma, trunc, logd = FALSE) {
-    .Call(`_causl_dGDcop`, x, sigma, trunc, logd)
+dGDcop <- function(x, sigma, trunc, logd = FALSE, debug = FALSE) {
+    .Call(`_causl_dGDcop`, x, sigma, trunc, logd, debug)
 }
 
 dGDcop_sig <- function(x, sigma, trunc, logd = FALSE) {

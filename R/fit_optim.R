@@ -1,7 +1,12 @@
 ##' Fit using maximum likelihood estimation
 ##'
+##' @param full_form full formula with all variables on right-hand side
+##' @param fam_cop the family of the copula
+##' @param mm model matrix
+##' @param LHSs character string of left hand sides of formula
+##'
 ##' @inheritParams fit_causl
-fit_optim <- function (dat, full_form, family, fam_cop, link, mm, cop_pars, LHS,
+fit_optim <- function (dat, full_form, family, fam_cop, link, mm, cop_pars, LHSs,
                        other_pars, control, use_cpp) {
 
   ## ensure copula keyword is not a variable name
@@ -22,13 +27,13 @@ fit_optim <- function (dat, full_form, family, fam_cop, link, mm, cop_pars, LHS,
   }
 
   ## obtain LHSs if not supplied
-  if (missing(LHS)) {
-    LHS <- lhs(full_form$reforms)
+  if (missing(LHSs)) {
+    LHSs <- lhs(full_form$reforms)
   }
 
   ## fitting code
   ## get some intitial parameter values
-  beta_start2 <- initializeParams2(dat[, LHS, drop=FALSE], full_form=full_form,
+  beta_start2 <- initializeParams2(dat[, LHSs, drop=FALSE], full_form=full_form,
                                    family=family, link=link, kwd=kwd)
   theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
 
@@ -37,7 +42,7 @@ fit_optim <- function (dat, full_form, family, fam_cop, link, mm, cop_pars, LHS,
   # theta_st <- c(beta_start2$beta[beta_start2$beta_m > 0], beta_start2$phi[beta_start2$phi_m > 0])
 
   ## other arguments to nll2()
-  other_args2 <- list(dat=dat[, LHS, drop=FALSE], mm=mm,
+  other_args2 <- list(dat=dat[, LHSs, drop=FALSE], mm=mm,
                       beta = beta_start2$beta_m, phi = beta_start2$phi_m,
                       inCop = seq_along(beta_start2$phi_m),
                       fam_cop=fam_cop, fam=family[-length(family)], cop_pars=cop_pars,

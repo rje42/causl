@@ -260,7 +260,8 @@ arma::mat SchurC(const arma::mat C, const arma::mat A,
 arma::vec dGDcop(arma::mat const &x,
                  arma::mat const &sigma,
                  Rcpp::List trunc,
-                 bool const logd = false) {
+                 bool const logd = false,
+                 bool const debug = false) {
 
   uword q = trunc.length();
   if (q == 0) return(dGcop(x, sigma, logd));
@@ -271,19 +272,19 @@ arma::vec dGDcop(arma::mat const &x,
   arma::rowvec z;
   uword const p = sigma.n_rows - trunc.length();
 
-  Rprintf("%i %i %i\n", p, sigma.n_rows, sigma.n_cols);
+  if (debug) Rprintf("%i %i %i\n", p, sigma.n_rows, sigma.n_cols);
 
   arma::mat sigma0 = sigma.submat(0,0,p-1,p-1);
   arma::mat sigma1 = sigma.submat(p,p,sigma.n_rows-1, sigma.n_cols-1);
   arma::mat sigma10 = sigma.submat(p,0,sigma.n_rows-1, p-1);
 
-  Rprintf("%i %i %i\n", sigma0.n_elem, sigma1.n_elem, sigma10.n_elem);
+  if (debug) Rprintf("%i %i %i\n", sigma0.n_elem, sigma1.n_elem, sigma10.n_elem);
 
   arma::mat sigma1_0 = SchurC(sigma1, sigma0, sigma10);
   arma::mat sigma1cov = sigma1_0.cols(0,q-1);
   arma::mat sigma1mn = sigma1_0.cols(q,sigma1_0.n_cols-1);
 
-  Rprintf("%i %i %i\n", sigma1_0.n_elem, sigma1cov.n_elem, sigma1mn.n_elem);
+  if (debug) Rprintf("%i %i %i\n", sigma1_0.n_elem, sigma1cov.n_elem, sigma1mn.n_elem);
 
 
   // double const constants = -(double)d/2.0 * log2pi;
@@ -298,22 +299,24 @@ arma::vec dGDcop(arma::mat const &x,
   arma::mat const rooti = arma::inv(trimatu(arma::chol(sigma0)));
   double const rootisum = arma::sum(log(rooti.diag()));
 
-  Rprintf("%3e\n", rootisum);
+  if (debug) Rprintf("%3e\n", rootisum);
 
   // separate out continuous from discrete components
   for (uword i = 0; i < n; i++) {
     z = x.row(i);
     inplace_tri_mat_mult(z, rooti);
-    Rprintf("%3e %3e\n", z(0), z(1));
+    if (debug) Rprintf("%3e %3e\n", z(0), z(1));
     out(i) = rootisum - 0.5 * (arma::dot(z, z) - arma::dot(x.row(i), x.row(i)));
   }
-  Rprintf("n = %i, p = %i, q = %i, x.n_rows = %i, x.n_cols = %i\n", n, p, q, x.n_rows, x.n_cols);
+  if (debug) Rprintf("n = %i, p = %i, q = %i, x.n_rows = %i, x.n_cols = %i\n", n, p, q, x.n_rows, x.n_cols);
   arma::mat condmn = x.cols(0,p-1) * sigma1mn.t();
   arma::mat x2 = x.cols(p,x.n_cols-1);
   // x2 = x2 - condmn;  // this is the discrete part, with continuous mean subtracted
 
-  Rprintf("x2.n_rows = %i, x2.n_cols = %i\n", x2.n_rows, x2.n_cols);
-  Rprintf("x2(0,0) = %1.1e\n", x2(0,0));
+  if (debug) {
+    Rprintf("x2.n_rows = %i, x2.n_cols = %i\n", x2.n_rows, x2.n_cols);
+    Rprintf("x2(0,0) = %1.1e\n", x2(0,0));
+  }
 
 
   // arma::mat wh = arma::zeros(n,q);
@@ -322,14 +325,12 @@ arma::vec dGDcop(arma::mat const &x,
   arma::mat upper(n,q), lower(n,q);
   Rcpp::IntegerMatrix infin(n,q);
 
-  Rprintf("here...");
-
-  Rprintf("q = %i, trunc.length() = %li\n", q, trunc.length());
+  if (debug) Rprintf("q = %i, trunc.length() = %li\n", q, trunc.length());
 
   for (uword j = 0; j < q; j++) {
-    Rprintf("j = %i\n", j);
+    if (debug) Rprintf("j = %i\n", j);
     Rcpp::NumericVector tmp = trunc[j];
-    Rprintf("tmp.length() = %li, tmp(0) = %2e, tmp(1) = %2e\n", tmp.length(), tmp(0), tmp(1));
+    if (debug) Rprintf("tmp.length() = %li, tmp(0) = %2e, tmp(1) = %2e\n", tmp.length(), tmp(0), tmp(1));
 
     Rcpp::NumericVector tmp2 = Rcpp::cumsum(tmp);
     tmp2.push_front(0);
@@ -337,7 +338,7 @@ arma::vec dGDcop(arma::mat const &x,
     // Rcpp::Rcout << "tmp2:\n" << tmp2 << std::endl;
 
     for (uword i = 0; i < n; i++) {
-      Rprintf("(i,j)=(%i,%i)...length(tmp) = %li...x2(i,j) = %0d", i, j, tmp.length(), x2(i,j));
+      if (debug) Rprintf("(i,j)=(%i,%i)...length(tmp) = %li...x2(i,j) = %0f", i, j, tmp.length(), x2(i,j));
       lower(i,j) = (tmp2(x2(i,j)) + condmn(i,j))/sqrt(sigma1cov(j,j));
       upper(i,j) = (tmp2(x2(i,j)+1) + condmn(i,j))/sqrt(sigma1cov(j,j));
       infin(i,j) = 2 - 2*std::isinf(lower(i,j)) - std::isinf(upper(i,j));
@@ -350,19 +351,20 @@ arma::vec dGDcop(arma::mat const &x,
   lower.print();
   upper.print();
   // infin.print();
-  Rcpp::Rcout << "infin:\n" << infin << std::endl;
-
-  Rprintf("1...");
+  if (debug) {
+    Rcpp::Rcout << "infin:\n" << infin << std::endl;
+    Rprintf("1...");
+  }
 
   arma::mat correl1cov(q, q, arma::fill::eye);
 
-  Rprintf("2...");
+  if (debug) Rprintf("2...");
 
   for (uword i = 0; i < q-1; i++) for (uword j = i+1; j < q; j++) {
     correl1cov(i,j) = correl1cov(j,i) = sigma1cov(i,j)/sqrt(sigma1cov(i,i)*sigma1cov(j,j));
   }
 
-  Rprintf("3...");
+  if (debug) Rprintf("3...");
 
   // arma::mat cDec = arma::chol(sigma1cov);
   double *tmp = new double[q*(q-1)/2];

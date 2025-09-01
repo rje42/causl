@@ -170,7 +170,6 @@ gen_X_values <- function (n, famX, pars, LHS_X, dX, sim=TRUE) {
 ##' @inherit rejectionWeights
 ##' @param eta list (or matrix) of linear forms
 ##' @param phi vector of dispersion coefficients
-##' @param par2 vector of degrees of freedom
 ##' @param other_par other parameters for family
 ##' @param log logical: should log-density be returned?
 ##'

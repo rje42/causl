@@ -4,3 +4,5 @@
 ^\.Rproj\.user$
 ^doc$
 ^Meta$
+scratch
+R/other
