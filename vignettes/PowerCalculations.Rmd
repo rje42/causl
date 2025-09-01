@@ -1,0 +1,110 @@
+---
+title: "Inversion Tutorial"
+author: "Chase Mathis"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Power Calculations}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r load libraries}
+library(causl)
+library(dplyr)
+library(ggplot2)
+```
+
+All of these parts of the model will stay the same when we do our power calculations.
+
+```{r define static model}
+formulas <- list(list(C ~ 1,
+                      Z ~ C),
+         X ~ Z + C,
+         Y ~ X + C,
+         list(Y = list(Z ~1)))
+family <- list(c(5,1),5,1,1) # binomial, normal, binomial, normal, normal
+link <- list(list("logit", "identity"), "logit", "identity")
+pars <- list(C = list(beta=0),
+             Z = list(beta = c(-1/2,0.25), phi=0.5),
+             X = list(beta = c(0,1/2,1/10)),
+             cop = list(Y = list(Z = list(beta=0.8472979), 
+                                 C = list(beta = 0)))) 
+```
+
+However, our causal effect will change as we plot our power curve. 
+
+
+Create a function to estimate power for a specific causal effect and alpha = 0.05
+```{r}
+monte_carlo_sims <- 1e3
+estimate_power <- function(causal_effect, n = 1e3, alpha = 0.05){
+  pars[["Y"]] <- list(beta = c(0, causal_effect, 0.2), phi = 1)
+  cm <- causl_model(formulas = formulas, family = family, 
+                    link = link, pars = pars)
+  pvals <- numeric(length = monte_carlo_sims)
+  covered <- numeric(length = monte_carlo_sims)
+  for(i in seq(monte_carlo_sims)){
+    dat <- rfrugal(n, causl_model  = cm)
+    wts <- ipw::ipwpoint(exposure = X, family = "binomial", link = "logit",
+                         numerator = ~C, denominator = ~C +Z,
+                         data = dat)$ipw.weights
+    sumMod <- summary(lm(Y ~ X + C, weights = wts, data = dat))
+    pvals[i] <- sumMod$coefficients[2,4]
+    covered[i] <-  (abs(sumMod$coefficients[2,1] - causal_effect) / sumMod$coefficients[2,2]) < 2
+  }
+  return(list(pvals = pvals, covered = covered, n = n, causal_effect = causal_effect))
+}
+
+causal_effects <- seq(0.05, 0.25, length.out = 10)
+ns <- c(2e2, 4e2, 6e2, 8e2, 1e3)
+grid <- expand.grid(causal_effect = causal_effects, n = ns)
+
+
+```
+
+```{r, eval=FALSE}
+# takes a long time to run. Change eval=TRUE to run.
+res <- apply(grid, 1, \(x) estimate_power(x[1], x[2]))
+res2 <- lapply(res, \(x) list(pvals = x$pvals, covered = x$covered, 
+                             n = x$n, causal_effect = x$causal_effect))
+
+
+```
+
+
+```{r, eval=FALSE}
+# takes a long time to run. Change eval=TRUE to run.
+power <- sapply(res, function(x) mean(x$pvals < 0.05))
+coverage <- sapply(res, function(x) mean(x$covered))
+ns <- sapply(res, function(x) x$n)
+causal_effects <- sapply(res, function(x) x$causal_effect)
+results <- data.frame(
+  causal_effect = causal_effects,
+  power = power,
+  coverage = coverage,
+  ns = factor(ns),
+  causal_effects = causal_effects
+)
+results |> 
+  ggplot(aes(x = causal_effects, y = power, color = ns)) + 
+  geom_line() +
+  geom_point() + 
+  labs(
+    x = "Causal Effect",
+    y = "Power = 1 - Type II error Rate",
+    title = "Power by (n) and causal effect"
+  )
+
+results |> 
+  ggplot(aes(x = causal_effect, y = coverage, color = ns)) + 
+    geom_line() +
+  geom_point() + 
+  ylim(c(0,1)) + 
+  labs(
+    x = "Causal Effect",
+    y = "Coverage",
+    title = "2 Standard Error Coverage by (n) and causal effect"
+  )
+  
+```

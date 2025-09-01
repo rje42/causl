@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .Rhistory
 .DS_Store
 vignettes/DS_Store
@@ -8,3 +9,19 @@ src/*.dll
 src/*.so
 R/other/
 vignettes/*_cache/
+=======
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+src/*.o
+src/*.so
+src/*.dll
+vignettes/*_cache/
+R/other/
+.DS_Store
+vignettes/.DS_Store
+scratch/
+/doc/
+/Meta/
+>>>>>>> a0acf

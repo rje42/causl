@@ -9,7 +9,7 @@
 \alias{sim_cop}
 \title{Copula family functions}
 \usage{
-get_copula(family_index, link = NULL)
+get_copula(family_index, link)
 
 gaussian_causl_cop(link)
 
@@ -54,7 +54,7 @@ The \code{copula_fam} functions return a list that contains, for each valid fami
 }
 \section{Functions}{
 \itemize{
-\item \code{get_copula()}: getter copula family
+\item \code{get_copula()}: get copula family function
 
 \item \code{gaussian_causl_cop()}: Gaussian copula family
 

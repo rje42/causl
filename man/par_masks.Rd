@@ -5,8 +5,6 @@
 \title{Get parameter masks for regression parameters}
 \usage{
 par_masks(formulas, family = rep(1, nv), full_form)
-
-par_masks(formulas, family = rep(1, nv), full_form)
 }
 \arguments{
 \item{formulas}{formulas to create mask for}
@@ -16,7 +14,5 @@ par_masks(formulas, family = rep(1, nv), full_form)
 \item{full_form}{(optionally) merged list of \code{formulas}}
 }
 \description{
-Get parameter masks for regression parameters
-
 Get parameter masks for regression parameters
 }

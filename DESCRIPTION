@@ -1,11 +1,13 @@
 Package: causl
 Type: Package
 Title: Methods for Specifying, Simulating from and Fitting Causal Models
-Version: 0.10.0.9001
+Version: 0.10.2.9000
 Authors@R: c(
   person("Robin", "Evans", , "evans@stats.ox.ac.uk", role = c("aut", "cre")),
-  person("Xi", "Lin", , "xi.lin@stx.ox.ac.uk", role = c("aut")))
-Description: Model multivariate distributions using causal parameters.
+  person("Xi", "Lin", , "xi.lin@stx.ox.ac.uk", role = c("aut")),
+  person("Chase", "Mathis", , "cmathis@berkeley.edu", role = c("aut")))
+Description: Model and simulate from multivariate distributions using marginal 
+    causal parameters.
 License: GPL-2
 LazyData: TRUE
 RoxygenNote: 7.3.2
@@ -17,19 +19,25 @@ Depends: R (>= 3.5.0),
 Imports: copula, 
   lifecycle,
   numDeriv,
+  purrr,
   MASS,
   methods,
   mvtnorm,
   Rcpp,
   stats
 LinkingTo: Rcpp, RcppArmadillo, mvtnorm
-Suggests: 
+Suggests:
+    aciccomp2016,
     abind,
     kableExtra,
     knitr,
     rmarkdown,
     survey,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    dplyr,
+    ggplot2
 VignetteBuilder: knitr
+Remotes:
+  aciccomp2016=vdorie/aciccomp/2016
 NeedsCompilation: yes
 Config/testthat/edition: 3

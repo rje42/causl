@@ -4,24 +4,12 @@
 \alias{modify.causl_model}
 \title{Modify \code{causl_model} object}
 \usage{
-modify.causl_model(
-  x,
-  over = FALSE,
-  formulas,
-  family,
-  pars,
-  link,
-  dat,
-  method,
-  kwd
-)
+\method{modify}{causl_model}(x, over = FALSE, formulas, family, pars, link, dat, method, kwd, ...)
 }
 \arguments{
 \item{x}{an object of class \code{causl_model}}
 
-\item{over}{logical: should components be added/modified or entirely over-written?
-
-This function can be used to modify}
+\item{over}{logical: should components be added/modified or entirely over-written?}
 
 \item{formulas}{list of lists of formulas}
 
@@ -36,7 +24,22 @@ This function can be used to modify}
 \item{method}{either \code{"inversion"} (the default), \code{"inversion_mv"}, or \code{"rejection"}}
 
 \item{kwd}{word used for copula formula and parameters}
+
+\item{...}{other arguments (not used)
+
+This function can be used to modify a \code{causl_model} object.}
 }
 \description{
 Change one or more components of a \code{causl_model} object.
+}
+\examples{
+cm <- causl_model(formulas = list(Z ~ 1, X~ Z, Y ~ 1, ~ 1),
+                  family = list(3, 1, 1, 1),
+                  pars = list(Z = list(beta = 1, phi = 1),
+                              X = list(beta = c(0.5, 1)),
+                              Y = list(beta = 0, phi = 1),
+                              cop = list(beta = 1)))
+modify(cm, pars = list(cop = list(beta = 1.5)))
+cm$pars
+
 }

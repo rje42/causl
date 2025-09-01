@@ -67,7 +67,7 @@ pars <- list(a = list(beta = 0, phi=1),
              c = list(beta = c(0,0.3), phi=1),
              cop = list(beta = matrix(c(0.5,0.25), ncol=1)))
 set.seed(124)
-dat2 <- causalSamp(1e3, formulas=list(a ~ 1, b ~ a, c ~ b,  ~ b), pars=pars)
+dat2 <- causalSamp(1e3, formulas=list(a ~ 1, b ~ a, c ~ b,  ~ b), family = rep(1, 4), pars=pars)
 pairs(dat2)
 ```
 
@@ -105,7 +105,7 @@ simulate with
 ```{r gammaY}
 forms <- list(Z ~ 1, X ~ Z, Y ~ X, ~ 1)
 fams <- c(2, 5, 3, 1)
-pars <- list(Z = list(beta = 0, phi=1, par2=4),
+pars <- list(Z = list(beta = 0, phi=1, df=4),
              X = list(beta = c(0,0.5)),
              Y = list(beta = c(1,-0.3), phi=2),
              cop = list(beta = 1))
@@ -114,5 +114,5 @@ dat <- rfrugalParam(1e3, formulas=forms, family=fams, pars=pars)
 ```
 Then we can perform maximum likelihood estimation on this data:
 ```{r fit_gammaY}
-(out <- fit_causl(dat, formulas = forms[-2], family = fams[-2], other_pars=list(Z=list(par2=4L))))
+(out <- fit_causl(dat, formulas = forms[-2], family = fams[-2], other_pars=list(Z=list(df=4L))))
 ```

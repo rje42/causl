@@ -1,0 +1,91 @@
+---
+title: "Heterogeneous TEs"
+author: "Robin Evans"
+date: "`r Sys.Date()`"
+output: html_document
+vignette: >
+  %\VignetteIndexEntry{Heterogeneous treatment effects}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Heterogeneous treatment effects
+
+Heterogeneous treatment effects (HTEs) are most often thought of as effects that
+vary in response to some (measured or unmeasured) random variable.  Since this
+package is largely concerned with the marginal average treatment effect (ATE),
+explicitly modelling an HTE is not something we would normally do.  However, we
+can imitate this in the following way.
+
+Suppose that we wish to have two groups of individuals, one with a high ATE
+and one with a lower (or null) ATE.  We could achieve this by setting 
+$Y \mid do(T=t), C=c$ to have a mean of the form $\beta t + \alpha t c$, meaning 
+that the group for whom $C=0$ have ATE $\beta$, and the group for $C=1$ have
+ATE $\alpha+\beta$.  More generally, if $C$ were continuous and had zero mean, 
+we would have a distribution of treatment effects centred around $\beta$ but 
+including an arbitrary range of values.  We could then decide whether $C$ should
+be included in the output or not.
+
+One crucial point is that the variable $C$ should **not** be included in the
+copula, as this will mean that the causal effect will not be what was intended
+given the formula and parameters for $Y$.
+
+### Example
+
+```{r HTE, message=FALSE}
+library(causl)
+forms <- list(Z ~ 1,
+              list(X ~ Z, C ~ 1),
+              Y ~ X*C,
+              ~ 1)
+fams <- list(1, c(5, 5), 1, 1)
+pars <- list(Z = list(beta=0, phi=1),
+             X = list(beta=c(-0.5,0.75)),
+             C = list(beta=0),
+             Y = list(beta=c(0,1,0,0.5), phi=1), # so causal effects are 1 if C=0 and 1.5 if C=1
+             cop = list(beta = 0.5))
+dat <- rfrugalParam(n=1e4, formulas=forms, family = fams, pars=pars)
+```
+
+Now we can check that our simulation has worked as intended.
+```{r ps}
+modX <- glm(X ~ Z, family=binomial, data=dat)
+ps <- fitted(modX)
+wt <- dat$X/ps + (1-dat$X)/(1-ps)
+lm(Y ~ X*C, data=dat, weights = wt)
+```
+Indeed we see that the estimates match our intention.  If we do not observe
+$C$, then we find that our estimate is just the average of 1 and 1.5:
+```{r ps2}
+lm(Y ~ X, data=dat, weights = wt)
+```
+
+### Continuous case
+
+We can also consider the case where $C$ is continuous:
+
+```{r cc}
+fams <- list(1, c(5, 1), 1, 1)  # now C is gaussian
+pars <- list(Z = list(beta=0, phi=1),
+             X = list(beta=c(-0.5,0.75)),
+             C = list(beta=0, phi=1),   # give dispersion parameters
+             Y = list(beta=c(0,1,0,0.5), phi=1), # causal effects are 1 on average
+             cop = list(beta = 0.5))
+dat_cc <- rfrugalParam(n=1e4, formulas=forms, family = fams, pars=pars)
+```
+
+We can then check again that the data are as intended.
+```{r ps3}
+modX <- glm(X ~ Z, family=binomial, data=dat_cc)
+ps <- fitted(modX)
+wt <- dat_cc$X/ps + (1-dat_cc$X)/(1-ps)
+lm(Y ~ X*C, data=dat_cc, weights = wt)
+```
+This time we expect our ATE to be 1 as well:
+```{r ps4}
+lm(Y ~ X, data=dat_cc, weights = wt)
+```

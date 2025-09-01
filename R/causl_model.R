@@ -16,7 +16,6 @@
 causl_model <- function (formulas, family, pars, link, dat=NULL, method="inversion",
                          kwd="cop", control=list()) {
 
-
   out <- process_inputs(formulas=formulas, family=family, pars=pars,
                         link=link, dat=dat, kwd=kwd, method=method)
 
@@ -44,20 +43,14 @@ print.causl_model <- function (x, ...) {
 ##' @param x object to be modified
 ##' @param ... other arguments
 ##'
-##' @examples
-##' cm <- causl_model(formulas = list(Z ~ 1, Y ~ 1, ~ 1),
-##'                   family = list(3, 1, 1),
-##'                   pars = list(Z = list(beta = 1, phi = 1),
-##'                               Y = list(beta = 0, phi = 1),
-##'                               cop = list(beta = 1)))
-##' modify(cm, pars = list(cop = list(beta = 1.5)))
-##' cm$pars
+##' @seealso [modify.causl_model()]
 ##'
 ##' @export
 modify <- function (x, ...) {
-  NextMethod("modify")
+  UseMethod("modify")
 }
-
+##' @describeIn modify default method
+##' @export
 modify.default <- function (x, ...) {
   args <- list(...)
   for (i in seq_along(args)) x[[names(args)[i]]] <- args[[i]]
@@ -72,12 +65,23 @@ modify.default <- function (x, ...) {
 ##' @inheritParams causl_model
 ##' @param x an object of class `causl_model`
 ##' @param over logical: should components be added/modified or entirely over-written?
+##' @param ... other arguments (not used)
 ##'
-##' This function can be used to modify
+##' This function can be used to modify a `causl_model` object.
 ##'
-##' @export
+##' @examples
+##' cm <- causl_model(formulas = list(Z ~ 1, X~ Z, Y ~ 1, ~ 1),
+##'                   family = list(3, 1, 1, 1),
+##'                   pars = list(Z = list(beta = 1, phi = 1),
+##'                               X = list(beta = c(0.5, 1)),
+##'                               Y = list(beta = 0, phi = 1),
+##'                               cop = list(beta = 1)))
+##' modify(cm, pars = list(cop = list(beta = 1.5)))
+##' cm$pars
+##'
+#' @exportS3Method modify causl_model
 modify.causl_model <- function (x, over=FALSE, formulas, family, pars, link, dat, method,
-                                kwd) {
+                                kwd, ...) {
   if (!is(x, "causl_model")) stop("Must include an object of class 'causl_model'")
 
   if (missing(formulas) && missing(family) && missing(pars) && missing(link) &&

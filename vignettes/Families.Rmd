@@ -1,7 +1,12 @@
 ---
 title: "Families, link functions and parameters"
-output: html_document
+author: "Robin Evans"
 date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Families}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
