@@ -5,7 +5,7 @@
 \alias{rescaleCop}
 \title{Rescale quantiles to conditional copula}
 \usage{
-rescale_cop(U, X, par, family = 1, df, inv = TRUE, cdf = FALSE)
+rescale_cop(U, X, beta, family = 1, df, inv = TRUE, cdf = FALSE)
 
 rescaleCop(U, X, beta, family = 1, df)
 }
@@ -14,9 +14,9 @@ rescaleCop(U, X, beta, family = 1, df)
 
 \item{X}{model matrix of covariates}
 
-\item{family}{variety of copula to use}
-
 \item{beta}{list of parameters (see details)}
+
+\item{family}{variety of copula to use}
 }
 \value{
 vector of rescaled quantiles
