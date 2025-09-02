@@ -1,0 +1,9 @@
+^python$
+^Trouble\_Shooting\.md$
+^.*\.Rproj$
+^\.Rproj\.user$
+^doc$
+^Meta$
+scratch
+R/other
+^docs$

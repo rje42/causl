@@ -22,8 +22,6 @@ get_X_density(dat, eta, phi, qden, family, link, other_par, log = FALSE)
 \item{other_par}{other parameters for family}
 
 \item{log}{logical: should log-density be returned?}
-
-\item{par2}{vector of degrees of freedom}
 }
 \value{
 a numeric vector of weights

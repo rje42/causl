@@ -120,8 +120,8 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
   mm <- model.matrix(full_form$formula, data=dat)
   # wh <- full_form$wh
 
-  ## get list of interactions already parameterized
-  frm_excl <- form_excl(formulas, LHS = LHS)
+  # ## get list of interactions already parameterized
+  # frm_excl <- form_excl(formulas, LHS = LHS)
 
   ## handle missingness cleanly
   if (nrow(mm) < nrow(dat)) {

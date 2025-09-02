@@ -5,20 +5,20 @@ NEW FEATURES
 
  * Sandwich standard error estimation is now performed much more quickly.
  
- * Added is_discrete() function for families.
+ * Added `is_discrete()` function for families.
 
- * fit_causl() now initializes correctly with respect to link functions.
+ * `fit_causl()` now initializes correctly with respect to link functions.
  
- * dfgmCopula() now has 'log' argument.
+ * `dfgmCopula()` now has `log` argument.
  
- * 'par2' now renamed 'df' for t-distributions and copulas.
+ * `par2` now renamed `df` for t-distributions and copulas.
  
- * 'process_family()' and 'link_setup()' replaced by 'process_family_link()'.
+ * `process_family()` and `link_setup()` replaced by `process_family_link()`.
 
 
 BUG FIXES
 
- * fit_causl() uses inputted link functions.
+ * `fit_causl()` uses inputted link functions.
 
 
 

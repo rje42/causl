@@ -180,7 +180,7 @@ link_apply <- function(eta, link, family_nm, inverse = TRUE) {
 ##'
 ##' @param U matrix of quantiles
 ##' @param X model matrix of covariates
-##' @param par named list of parameters (see details)
+##' @param pars named list of parameters (see details)
 ##' @param df degrees of freedom for t-Copula
 ##' @inheritParams cVCopula
 ##' @param family variety of copula to use
@@ -208,15 +208,15 @@ rescale_cop <- function(U, X, family = 1, pars, df, inverse = TRUE, cdf = FALSE)
   if (!is.matrix(X)) stop("'X' should be a matrix")
   if (nrow(U) != nrow(X)) stop("'U' and 'X' should have same number of rows")
 
-  ##
-  if ("beta" %in% names(par)) {
-    beta <- par[["beta"]]
+  ## decide which parameterization is present
+  if ("beta" %in% names(pars)) {
+    beta <- pars[["beta"]]
     ## get linear component
     eta <- X %*% beta
     param_made <- FALSE
   }
-  else if ("tau" %in% names(par)) {
-    tau <- par[["tau"]]
+  else if ("tau" %in% names(pars)) {
+    tau <- pars[["tau"]]
     param <- matrix(BiCopTau2Par(family, tau, check.taus = TRUE),
                     ncol = 1, nrow = nrow(U))
     param_made <- TRUE
@@ -226,37 +226,36 @@ rescale_cop <- function(U, X, family = 1, pars, df, inverse = TRUE, cdf = FALSE)
   ## make U normal, t or gamma
   if (family == 1) {
     # if (link == "tanh")
-    if (!param_made) {param <- 2*expit(eta) - 1}
+    if (!param_made) param <- 2*expit(eta) - 1
     # option 2 faster, but need better functionality for inverse and cdf
     if (inverse) {
       Y <- pnorm(qnorm(U[,2]) * sqrt(1 - param^2) + param * qnorm(U[,1]))
     } else if (cdf) {
       Y <- cVCopula(U, copula = normalCopula, param = param, cdf = TRUE, inverse = inverse)
     } else {
-      Y <- pnorm( (qnorm(U[,2]) - param * qnorm(U[,1])) / sqrt(1-param^2) )
+      Y <- pnorm( (qnorm(U[,2]) - param * qnorm(U[,1])) / sqrt(1 - param^2) )
     }
-
   }
   else if (family == 2) {
     # Y <- sqrt(phi)*qt(U, df = pars$par2) + eta
 
-    if (!param_made) {param <- 2*expit(eta) - 1}
+    if (!param_made) param <- 2*expit(eta) - 1
     Y <- cVCopula(U, copula = tCopula, param = param, par2 = df, cdf = cdf, inverse = inverse)
   }
   else if (family == 3) {
-    if (!param_made) {param <- exp(eta) - 1}
+    if (!param_made) param <- exp(eta) - 1
     Y <- cVCopula(U, copula = claytonCopula, param = param, cdf = cdf, inverse = inverse)
   }
   else if (family == 4) {
-    if (!param_made) {param <- exp(eta) + 1}
+    if (!param_made) param <- exp(eta) + 1
     Y <- cVCopula(U, copula = gumbelCopula, param = param, cdf = cdf, inverse = inverse)
   }
   else if (family == 5) {
-    if (!param_made) {param <- eta}
+    if (!param_made) param <- eta
     Y <- cVCopula(U, copula = frankCopula, param = param, cdf = cdf, inverse = inverse)
   }
   else if (family == 6) {
-    if (!param_made) {param <- exp(eta) + 1}
+    if (!param_made) param <- exp(eta) + 1
     Y <- cVCopula(U, copula = joeCopula, param = param, cdf = cdf, inverse = inverse)
   }
   else stop("family must be between 0 and 5")
@@ -268,6 +267,7 @@ rescale_cop <- function(U, X, family = 1, pars, df, inverse = TRUE, cdf = FALSE)
 }
 
 ##' @describeIn rescale_cop Old name, now deprecated
+##' @param beta vector of regression parameters
 ##' @export
 rescaleCop <- function(U, X, beta, family = 1, df) {
   .Defunct("rescale_cop", "causl")
