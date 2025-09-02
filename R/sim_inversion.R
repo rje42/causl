@@ -143,7 +143,7 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles,
     }
     ## rescale quantiles for pair-copula
     qs <- cbind(quantiles[[LHS_cop[[i]]]], qY)
-    qY <- rescale_cop(qs, X=X, par=pars[[2]][[i]], family=family[[2]][[i]],
+    qY <- rescale_cop(qs, X=X, pars=pars[[2]][[i]], family=family[[2]][[i]],
                       df=pars[[2]][[i]]$df)
     ##
     if (max(qY) > 1 - tol) {

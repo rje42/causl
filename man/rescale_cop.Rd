@@ -16,13 +16,15 @@ rescaleCop(U, X, beta, family = 1, df)
 
 \item{family}{variety of copula to use}
 
+\item{pars}{named list of parameters (see details)}
+
 \item{df}{degrees of freedom for t-Copula}
 
 \item{inverse}{should inverse CDF be returned?}
 
 \item{cdf}{should we evaluate the CDF copula, not the conditional?}
 
-\item{par}{named list of parameters (see details)}
+\item{beta}{vector of regression parameters}
 }
 \value{
 vector of rescaled quantiles
