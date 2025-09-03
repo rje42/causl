@@ -55,7 +55,7 @@ sim_inversion <- function (out, proc_inputs) {
         forms[[2]] <- `lhs<-`(forms[[2]], c(LHS_Z[rank(order[seq_len(dZ)])],
                                             LHS_Y[rank(order[dZ+dX+seq_len(i-1 - dZ-dX)])]))
       }
-
+      
       out <- sim_variable(n=nrow(out), formulas=forms, family=fams, pars=prs,
                           link=lnk, dat=out, quantiles=quantiles)
       quantiles <- attr(out, "quantiles")
@@ -141,6 +141,7 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles,
     if (tau && ncol(X) > 1) {
       stop("Not allowed to specify correlation tau unless marginal copula.")
     }
+
     ## rescale quantiles for pair-copula
     qs <- cbind(quantiles[[LHS_cop[[i]]]], qY)
     qY <- rescale_cop(qs, X=X, par=pars[[2]][[i]], family=family[[2]][[i]],
