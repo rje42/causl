@@ -47,7 +47,7 @@ same length as \code{formulas}, and in same order}
 
 \item{other_pars}{list of other parameters to use (e.g. degrees of freedom for a t-distribution)}
 
-\item{method}{currently only \code{"optim"} is supported}
+\item{method}{either \code{"optim"} or \code{"dissmann"}}
 
 \item{par2}{former name for \code{cop_pars} argument}
 

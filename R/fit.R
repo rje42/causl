@@ -11,7 +11,7 @@
 ## @param init should linear models be used to initialize starting point?
 ##' @param control list of parameters to be passed to `optim`
 ##' @param other_pars list of other parameters to use (e.g. degrees of freedom for a t-distribution)
-##' @param method currently only `"optim"` is supported
+##' @param method either `"optim"` or `"dissmann"`
 ##'
 ##' @details `formulas` is list of three or more formulae giving predictors of
 ##' y-margin, z-margin(s) and interaction parameters.  Fit is by maximum
@@ -136,7 +136,7 @@ fit_causl <- function(dat, formulas=list(y~x, z~1, ~x),
 
   if (method == "optim") {
     out <- fit_optim(dat=dat, full_form=full_form, family=fam, fam_cop=fam_cop,
-                     link=link, mm=mm, cop_pars=cop_pars, LHS=LHS,
+                     link=link, mm=mm, cop_pars=cop_pars, LHSs=LHS,
                      other_pars=other_pars, control=con, use_cpp=use_cpp)
   }
   else if (method == "dissmann") {

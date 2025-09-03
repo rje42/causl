@@ -18,7 +18,7 @@ cVCopula(U, copula, param, par2 = NULL, inverse = FALSE, cdf = FALSE)
 
 \item{inverse}{should inverse CDF be returned?}
 
-\item{cdf}{should we evaluate the cdf copula, not the conditional?}
+\item{cdf}{should we evaluate the CDF copula, not the conditional?}
 }
 \description{
 A faster Vectorized conditional copula function

@@ -12,7 +12,7 @@ fit_optim(
   link,
   mm,
   cop_pars,
-  LHS,
+  LHSs,
   other_pars,
   control,
   use_cpp
@@ -21,12 +21,20 @@ fit_optim(
 \arguments{
 \item{dat}{data frame of observations}
 
+\item{full_form}{full formula with all variables on right-hand side}
+
 \item{family}{families for variables and copula as above. Should be the
 same length as \code{formulas}, and in same order}
 
+\item{fam_cop}{the family of the copula}
+
 \item{link}{link functions for each variable}
 
+\item{mm}{model matrix}
+
 \item{cop_pars}{additional parameters for copula if required}
+
+\item{LHSs}{character string of left hand sides of formula}
 
 \item{other_pars}{list of other parameters to use (e.g. degrees of freedom for a t-distribution)}
 

@@ -1,0 +1,145 @@
+---
+title: "Introduction to causl"
+author: "Robin J. Evans"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+`causl` is a package for simulating from distributions such that a _marginal_
+causal distribution has a specific form.  As a simple example, consider the
+causal graph below, and suppose we are interested in the average causal effect 
+of $X$ on $Y$.
+```{mermaid}
+graph TD
+    A(Z) --> B(X)
+    B --> C(Y)
+    A --> C
+```
+
+In other words, we want the distribution of $Y(x)$, or equivalently 
+$Y \,|\, do(X=x)$.  Under the usual causal inference assumptions of consistency,
+positivity, and no unmeasured confounding, this can be written as 
+\begin{align*}
+P(Y(x) = y) &= \sum_{z} P(Z=z) \cdot P(Y = y \,|\, Z=z, X=x),
+\end{align*}
+and can be used to parameterize the _marginal structural model_ (Robins, 2000).
+
+<!-- ```{tikz CDAG, rv/.style={minimum size=7mm, inner sep=0.75mm}, node distance=20mm, >=stealth, -->
+<!-- caption="Two DAGs, (a) as generally observed and (b) after an intervention on $X$."] -->
+<!--   \pgfsetarrows{latex-latex}; -->
+<!-- \begin{scope} -->
+<!--   \node[rv]  (1)              {$Z$}; -->
+<!--   \node[rv, below of=1, yshift=7.5mm, xshift=-10mm] (2) {$X$}; -->
+<!--   \node[rv, right of=2] (3) {$Y$}; -->
+<!-- \node[left of=1, yshift=-5mm] {(a)}; -->
+<!--   \draw[->, very thick, color=blue] (1) -- (3); -->
+<!--   \draw[->, very thick, color=blue] (1) -- (2); -->
+<!--   \draw[->, very thick, color=blue] (2) -- (3); -->
+<!--   \end{scope} -->
+<!--   \begin{scope}[xshift=7cm] -->
+<!--   \node[rv]  (1)              {$Z$}; -->
+<!--   \node[rv, rectangle, below of=1, yshift=7.5mm, xshift=-10mm] (2) {$X$}; -->
+<!--   \node[rv, right of=2] (3) {$Y$}; -->
+<!--   \node[left of=1, yshift=-5mm] {(b)}; -->
+<!-- \draw[->, very thick, color=blue] (1) -- (3); -->
+<!--   \draw[->, very thick, color=blue] (2) -- (3); -->
+<!--   \end{scope} -->
+<!-- ``` -->
+
+`causl` allows us to simulate from models of this form, and fit them by maximum
+likelihood.  Start by loading the library.
+
+```{r lib, message=FALSE}
+library(causl)
+```
+
+# Simulation
+
+We can simulate from the model above by specifying three components:
+ - the structure of the model;
+ - the distribution of each random variable;
+ - the parameters of those random variables.
+
+To specify the structure, we set:
+```{r forms}
+forms <- list(Z ~ 1,  X ~ Z,  Y ~ X,  ~ 1)
+```
+This is a list of formulas, which contains four entries.  The first entry gives 
+the variables we do **not** want to appear in our output.  The second entry 
+gives the 'treatments', which we **do** want to appear in our output.  The third
+formula is for the outputs, and we specify that we want it to depend upon $X$.
+
+The final component controls the dependence structure between the variables in 
+the first and third entries of the list.  In this case, we assume that the 
+dependence is constant, but we could also allow it to depend upon $X$ if we so
+chose.
+
+Now we turn to the families.
+```{r fams}
+fams <- list("Gamma",  "binomial",  "gaussian",  1)
+```
+Again, the list has four entries, and corresponds to the formulas already 
+given.  We choose a Gaussian copula, as it has a relatively simple interpretation,
+but other possibilities are the t, Frank, Gumbel, Joe, or FGM copulas.
+
+Finally we consider the parameters.  
+```{r pars}
+pars <- list(Z = list(beta = 0, phi = 1),  
+             X = list(beta = c(0, 0.5)),  
+             Y = list(beta = c(-0.5, 1), phi = 0.5),
+             cop = list(beta = 1))
+```
+For each random variable, we specify a vector of regression parameters `beta`,
+one for each of the variables that appear when `model.matrix` is applied to its
+formula.  For example, `X ~ Z` gives an intercept and a slope, which we choose
+to be 0 and 0.5 respectively.  If the family has a variance, then we should 
+also choose a dispersion parameter `phi`.  Note that this is on the scale of the 
+_variance_, so for a Gaussian random variable choosing `phi = 2` would mean 
+that the standard deviation was $\sqrt{2}$.  
+
+We can now combine these three elements in a `causl_model` object:
+```{r cm}
+cm <- causl_model(formulas = forms, family = fams, pars = pars)
+cm
+```
+Then we can use the function `rfrugal()` to simulate some data.
+```{r sim}
+set.seed(123)
+dat <- rfrugal(n=500, cm)
+head(dat)
+```
+
+## Modifying a `causl_model`
+
+We can also modify a `causl_model` object by using `modify.causl_model`.  For
+example, 
+```{r mod_cm}
+cm2 <- modify.causl_model(cm, pars = list(X = list(beta = c(-0.25, 1))))
+cm2$pars
+```
+Note that the `beta` parameters for `X` have indeed changed.
+
+# Fitting a model to data
+
+We can also fit models using maximum likelihood.  For this we use the function
+`fit_causl()`.
+```{r fit}
+out <- fit_causl(dat, formulas = list(Z ~ 1, Y ~ X, ~ 1), family = c(3, 1, 1))
+out
+```
+We can see that the parameter estimates are all well within two standard errors
+of the values we initially put in.
+
+
+
+## References
+
+Robins, J.M. Marginal structural models versus structural nested models as tools 
+for causal inference. In _Statistical Models in Epidemiology, the Environment, 
+and Clinical Trials_ (pp. 95-133). New York, NY: Springer New York, 2000.

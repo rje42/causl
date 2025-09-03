@@ -2,9 +2,12 @@
 % Please edit documentation in R/causl_model.R
 \name{modify}
 \alias{modify}
+\alias{modify.default}
 \title{Generic for modify}
 \usage{
 modify(x, ...)
+
+\method{modify}{default}(x, ...)
 }
 \arguments{
 \item{x}{object to be modified}
@@ -14,14 +17,11 @@ modify(x, ...)
 \description{
 Generic for modify
 }
-\examples{
-cm <- causl_model(formulas = list(Z ~ 1, X~ Z, Y ~ 1, ~ 1),
-                  family = list(3, 1, 1, 1),
-                  pars = list(Z = list(beta = 1, phi = 1),
-                              X = list(beta = c(0.5, 1)),
-                              Y = list(beta = 0, phi = 1),
-                              cop = list(beta = 1)))
-modify(cm, pars = list(cop = list(beta = 1.5)))
-cm$pars
+\section{Methods (by class)}{
+\itemize{
+\item \code{modify(default)}: default method
 
+}}
+\seealso{
+\code{\link[=modify.causl_model]{modify.causl_model()}}
 }
