@@ -136,10 +136,10 @@ sim_variable <- function (n, formulas, family, pars, link, dat, quantiles,
   for (i in rev(seq_along(formulas[[2]]))) {
     X <- model.matrix(formulas[[2]][[i]], data=dat)
     # eta <- X %*% pars[[2]][[i]]$beta
-    # specify correlation \tau instead of beta if marginal copula
-    tau <- "tau" %in% names(pars[[2]])
-    if (tau && ncol(X) > 1) {
-      stop("Not allowed to specify correlation tau unless marginal copula.")
+    # specify correlation kendalls \tau instead of beta if marginal copula
+    k_tau <- "k_tau" %in% names(pars[[2]])
+    if (k_tau && ncol(X) > 1) {
+      stop("Not allowed to specify correlation k_tau unless marginal copula.")
     }
 
     ## rescale quantiles for pair-copula

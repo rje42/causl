@@ -1,5 +1,5 @@
 ---
-title: "Inversion Tutorial"
+title: "Power Calculations"
 author: "Chase Mathis"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
