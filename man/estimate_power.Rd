@@ -2,7 +2,7 @@
 % Please edit documentation in R/estimate_power.R
 \name{estimate_power}
 \alias{estimate_power}
-\title{Estimate the power under a causl_model and estimator}
+\title{Estimate statistical power for a causal effect estimator using Monte Carlo simulation}
 \usage{
 estimate_power(
   causl_model,
@@ -13,16 +13,20 @@ estimate_power(
 )
 }
 \arguments{
-\item{causl_model}{the specified causal model}
+\item{causl_model}{An object specifying the data-generating causal model from which to simulate datasets.}
 
-\item{n}{number of observations drawn from causal model}
+\item{n}{Integer. The number of observations to generate in each simulated dataset.}
 
-\item{estimator}{method to estimate the coefficient and standard errors}
+\item{estimator}{A list or function specifying the estimation procedure, including the outcome model and standard error computation.}
 
-\item{monte_carlo_sims}{the number of simulations. Defaults to 500}
+\item{monte_carlo_sims}{Integer. The number of Monte Carlo simulations to perform. Defaults to 500.}
 
-\item{alpha_level}{significance level one reject}
+\item{alpha_level}{Numeric. The significance level at which to test the null hypothesis (e.g., 0.05).}
+}
+\value{
+A data.frame summarizing the estimated power, significance level, sample size, and number of simulations.
 }
 \description{
-Estimate the power under a causl_model and estimator
+This function simulates data from a specified causal model multiple times, applies a given estimator to each simulated dataset,
+and calculates the proportion of times the null hypothesis is rejected at a specified significance level (i.e., the estimated power).
 }
