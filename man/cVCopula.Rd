@@ -2,8 +2,7 @@
 % Please edit documentation in R/copulas.R
 \name{cVCopula}
 \alias{cVCopula}
-\title{A faster Vectorized conditional copula function
-where we don't build redudendant copulas if unique(eta) is small}
+\title{Faster Vectorized conditional copula}
 \usage{
 cVCopula(U, copula, param, par2 = NULL, inverse = FALSE, cdf = FALSE)
 }
@@ -14,16 +13,16 @@ cVCopula(U, copula, param, par2 = NULL, inverse = FALSE, cdf = FALSE)
 
 \item{param}{vector of parameters}
 
-\item{par2}{Degrees of freedom for t-copula}
+\item{par2}{degrees of freedom for t-copula}
 
 \item{inverse}{should inverse CDF be returned?}
 
 \item{cdf}{should we evaluate the CDF copula, not the conditional?}
 }
 \description{
-A faster Vectorized conditional copula function
-where we don't build redudendant copulas if unique(eta) is small
+This is a faster version of \code{cCopula} where we don't build redundant
+copulas if \code{unique(eta)} is small.
 }
 \details{
-Should have \code{nrow(U) = length(param)}.
+Should have either \code{length(param) = 1} or \code{nrow(U) = length(param)}.
 }
