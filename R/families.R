@@ -411,11 +411,19 @@ ordinal_causl_fam <- function (link) {
 ##'
 ##' @param x a family, either numerical, a name, or a `causl_family` object
 ##'
-##' @details If the specific function does represent any family then `NA` is
+##' @details If the specific function does not represent any family then `NA` is
 ##' returned.
 ##' @name family_checks
 NULL
 
+##' @describeIn family_checks Check if object has class `causl_family`
+##'
+##' `is.causl_family` checks if object has `"causl_family"` in its class list.
+##'
+##' @export
+is.causl_family <- function (x) {
+  return("causl_family" %in% class(x))
+}
 
 ##' @describeIn family_checks Check if family is categorical
 ##'

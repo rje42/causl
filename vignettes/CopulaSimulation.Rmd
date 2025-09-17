@@ -50,13 +50,22 @@ set.seed(124)  # for consistency
 dat <- causalSamp(1e3, formulas=list(z~1, x~z, y~x, ~x), family=rep(1,4), pars=pars)
 pairs(dat)
 ```
-Note that the distribution is as we expect.  Regressing \code{x} on \code{z}
+Note that the distribution is as we expect.  Regressing `x` on `z`
 should give a coefficient close to 0.5.
 ```{r check}
 lmXZ <- lm(x ~ z, data=dat)
 summary(lmXZ)$coef
-# lmYX <- lm(y ~ x, data=dat, weights = 1/dnorm(predict(lmXZ)))
-# summary(lmYX)
+```
+
+Regressing `y` on a weighted `x` gives something which is slightly _further away_
+than the naïve estimator:
+```{r checkY}
+library(survey)
+dsgn <- svydesign(~1, data=dat, weights = 1/dnorm(predict(lmXZ)))
+lmYXn <- lm(y ~ x, data=dat)
+lmYX <- svyglm(y ~ x, design = dsgn)
+summary(lmYXn)$coefficients
+summary(lmYX)$coefficients
 ```
 Note that it is not necessary to use the standard variable names `z`, `x` and
 `y`, but if you choose not to then you must specify the names you want to use
