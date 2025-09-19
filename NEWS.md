@@ -1,3 +1,15 @@
+causl 0.10.4
+-------------------------------------------------------------------------------
+
+BUG FIXES
+
+ * Plasmode method fixed for `rfrugal()`.
+ 
+ * Corrected bug in `check_pars()`, which meant that names of supplied parameters
+ were not actually being checked.
+
+
+
 causl 0.10.3
 -------------------------------------------------------------------------------
 

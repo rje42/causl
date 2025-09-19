@@ -85,15 +85,16 @@
 rfrugal <- function (n, causl_model, control=list()) {
 
   # get control parameters or use defaults
-  con <- list(careful = FALSE, cop="cop", quiet = FALSE, quan_tol = 1e3*.Machine$double.eps,
+  con <- list(careful = FALSE, quiet = FALSE, cop="cop", quan_tol = 1e3*.Machine$double.eps,
               pm_cond = TRUE, pm_cor_thresh = 0.25, pm_nlevs = 5)
   matches <- match(names(control), names(con))
   con[matches] <- control[!is.na(matches)]
   if (any(is.na(matches))) warning("Some names in control not matched: ",
                                    paste(names(control[is.na(matches)]),
                                          sep = ", "))
-  ## get keyword for copula formula
-  kwd <- con$cop
+
+  ## add these arguments to causl_model
+  causl_model$con <- c(con, causl_model$con)
 
   ## set up output
   if (missing(n)) n <- nrow(causl_model$dat)
@@ -157,7 +158,7 @@ rfrugalParam <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x
 
   ## process the four main arguments (change to use causl_model())
   proc_inputs <- process_inputs(formulas=formulas, family=family, pars=pars,
-                                link=link, dat=dat, kwd=kwd, method=method, control=con)
+                                link=link, dat=dat, method=method, control=con)
 
   out <- rfrugal(n=n, causl_model=proc_inputs, control=con)
 

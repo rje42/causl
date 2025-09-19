@@ -25,10 +25,22 @@ causl_model <- function (formulas, family, pars, link, dat=NULL, method="inversi
                                          sep = ", "))
   ## get keyword for copula formula
   kwd <- con$cop
-  
+
+
+  # get control parameters or use defaults
+  con <- list(careful = FALSE, quiet = FALSE, cop = "cop",
+              quan_tol = 1e3*.Machine$double.eps,
+              pm_cond = TRUE, pm_cor_thresh = 0.25, pm_nlevs = 5)
+  matches <- match(names(control), names(con))
+  con[matches] <- control[!is.na(matches)]
+  if (any(is.na(matches))) warning("Some names in control not matched: ",
+                                   paste(names(control[is.na(matches)]),
+                                         sep = ", "))
+  # ## get keyword for copula formula
+  # kwd <- con$cop
 
   out <- process_inputs(formulas=formulas, family=family, pars=pars,
-                        link=link, dat=dat, kwd=kwd, method=method, control = con)
+                        link=link, dat=dat, method=method, control = con)
 
   class(out) <- "causl_model"
 
@@ -111,7 +123,7 @@ modify.causl_model <- function (x, over=FALSE, formulas, family, pars, link, dat
   if (missing(kwd)) kwd <- x$kwd
 
   out <- process_inputs(formulas=formulas, family=family, pars=pars,
-                        link=link, dat=dat, method=method, kwd=kwd)
+                        link=link, dat=dat, method=method, control=list(cop=kwd))
 
   return(out)
 }
