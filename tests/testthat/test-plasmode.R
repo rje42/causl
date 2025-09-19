@@ -17,10 +17,16 @@ pars <- list(A = list(beta=c(-0.5,0.5,0.25)), # list(beta=c(-0.5,0.5,0.25,-0.5))
 
 dat <- rfrugalParam(formulas = forms, family = fams, pars = pars, dat = df,
                     control = list(quiet=TRUE))
+cm <- causl_model(formulas = forms, family = fams, pars = pars, dat = df,
+                  control = list(quiet=TRUE))
+set.seed(123)
+dat2 <- rfrugal(causl_model = cm, control = list(quiet = TRUE))
 
 test_that("plasmode simulation works", {
   expect_equal(dim(dat), c(n, 4L))
   expect_false(any(is.na(dat)))
+  expect_equal(dim(dat2), c(n, 4L))
+  expect_false(any(is.na(dat2)))
 })
 
 ## obtain parameter estimates

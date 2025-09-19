@@ -1,7 +1,7 @@
 ##' Process formulas, families and parameters
 ##'
 ##' @inheritParams rfrugalParam
-##' @param kwd keyword for copula
+## @param kwd keyword for copula
 ## @param ordering logical: should an ordering of variables be computed?
 ## @param ... dots from rfrugalParam
 ##'
@@ -9,7 +9,11 @@
 ##' used for simulating data.  The `control` argument only requires values useful
 ##' for obtaining the empirical (conditional) quantiles of pre-specified data.
 ##'
-process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inversion", control=list()) {
+process_inputs <- function (formulas, family, pars, link, dat, method="inversion", control=list()) {
+
+  ## check for existence of keyword for copula
+  if (missing(control)) kwd <- "cop"
+  else kwd <- control$cop
 
   ## process univariate formulas and obtain dimensions of model
   formulas <- process_formulas(formulas)
@@ -102,7 +106,7 @@ process_inputs <- function (formulas, family, pars, link, dat, kwd, method="inve
 ##' @inheritParams process_inputs
 ##' @param len number of formulas
 ##' @describeIn process_inputs Process input for family variables
-process_formulas <- function (formulas, len=4) {
+process_formulas <- function (formulas, method, len=4) {
   ## check we have four groups of formulas
   if (length(formulas) != len) stop(paste0("Formulas must have length ", len))
 
@@ -110,6 +114,14 @@ process_formulas <- function (formulas, len=4) {
   if (any(sapply(formulas, class) == "formula")) {
     wh <- which(sapply(formulas, class) == "formula")
     for (i in wh) formulas[[i]] <- list(formulas[[i]])
+  }
+
+  ## check formulas are correct for inversion method
+  if (!missing(method) && method == "inversion") {
+    if (length(formulas[[len-1]]) != 1L && length(formulas[[len]]) == 1L) {
+      formulas[[len]] <- rep(formulas[[len]], length(formulas[[len-1]]))
+    }
+    else if (length(formulas[[len-1]]) == 1L && length(formulas[[len]]) != 1L) stop("Invalid formula construction: more formulas in copula than output variables")
   }
 
   return(formulas)
@@ -448,7 +460,7 @@ check_pars <- function (formulas, family, pars, dummy_dat, LHSs, kwd, dims) {
     stop(paste0("Variable ", paste(wh_nrep, collapse=", "), " not represented in the parameters list"))
   }
 
-
+  ## check parameter vectors have appropriate number of entries
   for (j in seq_along(LHSs)) for (i in seq_along(formulas[[j]])) {
     mod_mat <- model.matrix(formulas[[j]][[i]], data=dummy_dat)
     # npar <- length(attr(formsZ[[i]], "term.labels")) + attr(formsZ[[i]], "intercept")
@@ -460,29 +472,6 @@ check_pars <- function (formulas, family, pars, dummy_dat, LHSs, kwd, dims) {
     if (isTRUE(is.na(npar)) || length(npar) != 1) stop(paste0("Categorical variable '", LHSs[[j]][i], "' requires an 'nlevel' parameter"))
     if (length(pars[[LHSs[[j]][i]]]$beta) != npar) stop(paste0("dimension of model matrix for ", LHSs[[j]][i], " does not match number of coefficients provided"))
   }
-  # for (i in seq_along(formulas[[2]])) {
-  #   mod_mat <- model.matrix(formulas[[2]][[i]], data=dummy_dat)
-  #   # npar <- length(attr(formsX[[i]], "term.labels")) + attr(formsX[[i]], "intercept")
-  #   npar <- ncol(mod_mat)
-  #   if (is_categorical(family[[2]][i])) {
-  #     npar <- npar*(pars[[LHSs[[2]][i]]]$nlevel - 1)
-  #     if (!is.matrix(pars[[LHSs[[2]][i]]]$beta)) pars[[LHSs[[2]][i]]]$beta <- matrix(pars[[LHSs[[2]][i]]]$beta, nrow=ncol(mod_mat))
-  #   }
-  #   if (isTRUE(is.na(npar)) || length(npar) != 1) stop(paste0("Categorical variable '", LHSs[[2]][i], "' requires an 'nlevel' parameter"))
-  #   if (length(pars[[LHSs[[2]][i]]]$beta) != npar) stop(paste0("dimension of model matrix for '", LHSs[[2]][i], "' does not match number of coefficients provided"))
-  # }
-  # for (i in seq_along(formulas[[3]])) {
-  #   mod_mat <- model.matrix(formulas[[3]][[i]], data=dummy_dat)
-  #   # npar <- length(attr(formsY[[i]], "term.labels")) + attr(formsY[[i]], "intercept")
-  #   npar <- ncol(mod_mat)
-  #   if (is_categorical(family[[3]][i])) {
-  #     npar <- npar*(pars[[LHSs[[3]][i]]]$nlevel - 1)
-  #     if (!is.matrix(pars[[LHSs[[3]][i]]]$beta)) pars[[LHSs[[3]][i]]]$beta <- matrix(pars[[LHSs[[3]][i]]]$beta, nrow=ncol(mod_mat))
-  #   }
-  #   if (isTRUE(is.na(npar)) || length(npar) != 1) stop(paste0("Categorical variable '", LHSs[[3]][i], "' requires an 'nlevel' parameter"))
-  #   if (length(pars[[LHSs[[3]][i]]]$beta) != npar) stop(paste0("dimension of model matrix for ", LHSs[[3]][i], " does not match number of coefficients provided"))
-  # }
-
 
   ## check that families have necessary parameters
   for (j in seq_along(LHSs)) {
@@ -496,15 +485,18 @@ check_pars <- function (formulas, family, pars, dummy_dat, LHSs, kwd, dims) {
           stop(paste(LHSs[[j]][i], "needs a parameter for number of categories"))
       }
     }
-    else if (length(family[[j]]) > 0 && is(family[[j]][1], "causl_family")) {
+    else if (length(family[[j]]) > 0 && is(family[[j]][[1]], "causl_family")) {
       for (i in seq_along(family[[j]])) {
-        if (!all(family[[j]][i]$pars %in% names(pars[[LHSs[[j]][i]]]))) {
-          miss <- family[[j]][i]$pars[!family[[j]][i]$pars %in% names(pars[[LHSs[[j]][i]]])]
+        if (!all(setdiff(family[[j]][[i]]$pars, "mu") %in% names(pars[[LHSs[[j]][i]]]))) {
+          miss <- setdiff(family[[j]][[i]]$pars[!family[[j]][[i]]$pars %in% names(pars[[LHSs[[j]][[i]]]])], "mu")
           stop(paste0("Parameters ", paste(miss, collapse=", "), " missing for variable ", LHSs[[j]][i]))
         }
       }
     }
+    else stop(paste0("Unrecognized family structure in entry ", j))
   }
+
+  ## GET WORKING!
 
   ## check copula regression parameters are the correct length
   cop_pos <- length(LHSs) + 1   # should be 4 for causl
@@ -620,12 +612,11 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
         pars <- rep(list(list(list(beta=pars$beta))), length(LHS_Y))
         names(pars) <- LHS_Y
         ordY <- rank(ord[dZ+dX+seq_len(dY)])
-        if (nQ+dZ > 1 || dY > 1) {
-          for (i in seq_len(dY)) {
-            vnm <- LHS_Y[[ordY[i]]]
-            pars[[vnm]] <- rep(pars[[vnm]], nQ+dZ+i-1)
-            names(pars[[vnm]]) <- c(quans, LHS_Z, LHS_Y[ord[seq_len(i-1)]])
-          }
+
+        for (i in seq_len(dY)) {
+          vnm <- LHS_Y[[ordY[i]]]
+          pars[[vnm]] <- rep(pars[[vnm]], nQ+dZ+i-1)
+          names(pars[[vnm]]) <- c(quans, LHS_Z, LHS_Y[ord[seq_len(i-1)]])
         }
       }
       else {
@@ -640,7 +631,7 @@ pair_copula_setup <- function (formulas, family, pars, LHSs, quans, ord) {
     }
     else {
       # so both ways agree on parameterization
-      if(pluck_depth(pars) != 4){stop("Most likely forgot to format copula model correctly.")}
+      if (pluck_depth(pars) != 4) stop("Most likely forgot to format copula model correctly")
     }
     # else if (!all(sapply(pars, is.list))) {
     #   ## put some code in here to correct fact that some pairs aren't represented

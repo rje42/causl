@@ -1,8 +1,3 @@
-# ##' Process inputs given in linear form
-# process_inputs2(formulas, pars, family, link, kwd, ordering=FALSE) {
-#   if (length(formulas))
-# }
-
 ##' Sample from a causal model
 ##'
 ##' Obtain samples from a causal model using the rejection sampling approach of
@@ -105,12 +100,12 @@ causalSamp <- function(n, formulas = list(list(z ~ 1), list(x ~ z), list(y ~ x),
     con$max_oversamp <- ceiling(con$max_oversamp)
     message("max_oversamp not an integer, rounding up")
   }
-  ## get keyword for copula formula
-  kwd <- con$cop
+  # ## get keyword for copula formula
+  # kwd <- con$cop
 
   ## process the four main arguments
   tmp <- process_inputs(formulas=formulas, pars=pars, family=family, link=link,
-                        dat=NULL, kwd=kwd, method=method)
+                        dat=NULL, method=method)
   formulas <- tmp$formulas
   pars <- tmp$pars
   family <- tmp$family

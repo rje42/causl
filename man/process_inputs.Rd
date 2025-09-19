@@ -12,12 +12,11 @@ process_inputs(
   pars,
   link,
   dat,
-  kwd,
   method = "inversion",
   control = list()
 )
 
-process_formulas(formulas, len = 4)
+process_formulas(formulas, method, len = 4)
 
 process_family(family, dims, link = link, func_return = get_family)
 }
@@ -31,8 +30,6 @@ process_family(family, dims, link = link, func_return = get_family)
 \item{link}{list of link functions}
 
 \item{dat}{optional data frame of covariates}
-
-\item{kwd}{keyword for copula}
 
 \item{method}{either \code{"inversion"} (the default), \code{"inversion_mv"}, or \code{"rejection"}}
 
