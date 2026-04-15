@@ -1,3 +1,4 @@
+skip_if_not_installed("survey")
 suppressMessages(library(survey, quietly = TRUE))
 
 set.seed(131)

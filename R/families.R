@@ -70,7 +70,8 @@ get_family <- function (val) {
   }
 
   fmly <- family_vals[fm,]$family
-  if (is.numeric(val) && val > 5) stop("No function defined yet for this family")
+
+  #if (is.numeric(val) && val > 5) stop("No function defined yet for this family")
 
   return(get(paste0(fmly, "_causl_fam")))
 }
@@ -279,7 +280,7 @@ categorical_causl_fam <- function (link) {
     U <- runif(n)
     Y <- 1 + colSums(apply(mu, 1, cumsum) < rep(U, each=ncol(mu)))
     Y <- factor(Y, levels=seq_len(ncol(mu)))
-
+    Y <- as.character(Y) # change to character for easy downstraetm taksk
     attr(Y, "quantile") <- U
 
     return(Y)
@@ -411,11 +412,19 @@ ordinal_causl_fam <- function (link) {
 ##'
 ##' @param x a family, either numerical, a name, or a `causl_family` object
 ##'
-##' @details If the specific function does represent any family then `NA` is
+##' @details If the specific function does not represent any family then `NA` is
 ##' returned.
 ##' @name family_checks
 NULL
 
+##' @describeIn family_checks Check if object has class `causl_family`
+##'
+##' `is.causl_family` checks if object has `"causl_family"` in its class list.
+##'
+##' @export
+is.causl_family <- function (x) {
+  return("causl_family" %in% class(x))
+}
 
 ##' @describeIn family_checks Check if family is categorical
 ##'
@@ -451,11 +460,13 @@ theta_to_p_ord <- function (theta) {
   if (!is.matrix(theta)) theta <- matrix(theta, nrow=1)
 
   p <- expit(theta)
+  
   for (i in rev(seq_len(ncol(p))[-1])) {
     p[,i] <- p[,i] - p[,i-1]
   }
   p <- cbind(p, 1-rowSums(p))
   NArow <- apply(p, 1, function(x) any(x < 0))
+  if(any(NArow)) stop("Model probabilities sum > 1. Suggestion: make each level less likely.")
   p[NArow, ] <- NA  ## negative probabilities not allowed
 
   return(p)

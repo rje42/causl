@@ -379,21 +379,22 @@ dGaussDiscCop <- function(x, m, Sigma, eta, log=FALSE, use_cpp=TRUE) {
 }
 
 
-##' A faster Vectorized conditional copula function
-##' where we don't build redudendant copulas if unique(eta) is small
+##' Faster Vectorized conditional copula
+##'
+##' This is a faster version of `cCopula` where we don't build redundant
+##' copulas if `unique(eta)` is small.
 ##'
 ##' @param U matrix of quantiles
 ##' @param copula family of copula to use
 ##' @param param vector of parameters
-##' @param par2 Degrees of freedom for t-copula
+##' @param par2 degrees of freedom for t-copula
 ##' @param inverse should inverse CDF be returned?
 ##' @param cdf should we evaluate the CDF copula, not the conditional?
 ##'
-##' @details Should have \code{nrow(U) = length(param)}.
+##' @details Should have either `length(param) = 1` or \code{nrow(U) = length(param)}.
 ##' @importFrom copula cCopula pCopula
 ##'
-cVCopula <- function(U, copula, param,
-                     par2 = NULL, inverse = FALSE, cdf = FALSE) {
+cVCopula <- function(U, copula, param, par2 = NULL, inverse = FALSE, cdf = FALSE) {
   n <- nrow(U)
   if (length(param) == 1L) {
     param <- rep_len(param, n)
@@ -415,9 +416,9 @@ cVCopula <- function(U, copula, param,
   names(copula_objs) <- uniq_params
 
   # Preallocate output matrix
-  if(cdf){
+  if (cdf) {
     out <- matrix(NA_real_, nrow = n, ncol = 1)
-  }else{
+  } else {
     out <- matrix(NA_real_, nrow = n, ncol = ncol(U))
   }
 
@@ -425,9 +426,9 @@ cVCopula <- function(U, copula, param,
   for (key in uniq_params) {
     idx <- group_indices[[key]]
     cop <- copula_objs[[key]]
-    if(cdf){
+    if (cdf) {
       out[idx,] <- pCopula(U[idx, , drop = FALSE], cop)
-    }else{
+    } else {
       out[idx, ] <- cCopula(U[idx, , drop = FALSE], cop, inverse = inverse)
     }
 

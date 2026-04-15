@@ -1,4 +1,5 @@
-suppressMessages(library(survey))
+skip_if_not_installed("survey")
+suppressMessages(library(survey, quietly = TRUE))
 
 forms <- list(list(L0 ~ A0, L1 ~ A0),
               list(A0 ~ 1, A1 ~ A0*L0),

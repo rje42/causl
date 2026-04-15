@@ -2,7 +2,11 @@
 title: "Introduction to causl"
 author: "Robin J. Evans"
 date: "`r Sys.Date()`"
-output: html_document
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to causl}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
@@ -120,7 +124,7 @@ head(dat)
 We can also modify a `causl_model` object by using `modify.causl_model`.  For
 example, 
 ```{r mod_cm}
-cm2 <- modify.causl_model(cm, pars = list(X = list(beta = c(-0.25, 1))))
+cm2 <- modify(cm, pars = list(X = list(beta = c(-0.25, 1))))
 cm2$pars
 ```
 Note that the `beta` parameters for `X` have indeed changed.

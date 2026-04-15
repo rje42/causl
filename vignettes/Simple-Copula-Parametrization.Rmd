@@ -30,7 +30,7 @@ family=rep(1,4)
 ```
 
 When defining the `pars` variable
-we replace the familiar `beta` in the cop entry to a `tau`. If the user specifies
+we replace the familiar `beta` in the cop entry to a `k_tau`. If the user specifies
 a $\tau$, the program will convert the specified Kendall's $\tau$ to the correct
 parameter so that the copula between the outcome and confounder has a 
 Kendall correlation of $\tau$. This is a simpler way to encode the dependence information
@@ -40,7 +40,7 @@ as $\tau \in [-1,1]$ and easier to interpret. The code looks like.
 pars <- list(z = list(beta = 0, phi=1),
              x = list(beta = c(0,0.5), phi=1),
              y = list(beta = c(0,0.3), phi=1),
-             cop = list(y= list(z = list(tau = 0.25)))) # NOTE tau argument
+             cop = list(y= list(z = list(k_tau = 0.25)))) # NOTE k_tau argument
 ```
 
 We note that we define the dependence between y and z to be uncoditional 

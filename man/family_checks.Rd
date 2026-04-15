@@ -2,10 +2,13 @@
 % Please edit documentation in R/families.R
 \name{family_checks}
 \alias{family_checks}
+\alias{is.causl_family}
 \alias{is_categorical}
 \alias{is_discrete}
 \title{Check properties of family variables}
 \usage{
+is.causl_family(x)
+
 is_categorical(x)
 
 is_discrete(x)
@@ -17,7 +20,7 @@ is_discrete(x)
 Check properties of family variables
 }
 \details{
-If the specific function does represent any family then \code{NA} is
+If the specific function does not represent any family then \code{NA} is
 returned.
 
 \code{is_categorical} returns a logical indicating if the object is the
@@ -28,6 +31,10 @@ input object represents a discrete random variable.
 }
 \section{Functions}{
 \itemize{
+\item \code{is.causl_family()}: Check if object has class \code{causl_family}
+
+\code{is.causl_family} checks if object has \code{"causl_family"} in its class list.
+
 \item \code{is_categorical()}: Check if family is categorical
 
 \item \code{is_discrete()}: Check if family is discrete

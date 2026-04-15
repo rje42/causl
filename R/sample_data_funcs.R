@@ -193,7 +193,7 @@ link_apply <- function(eta, link, family_nm, inverse = TRUE) {
 ##' Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. `pars` should
 ##' contain either
 ##' regression parameters (labelled as `beta`) or a constant rank correlation
-##' `tau`; `df` must be specified if \code{family = 2}. `U` should have the
+##' `k_tau`; `df` must be specified if \code{family = 2}. `U` should have the
 ##' same length as `X` has rows, and `X`
 ##' should have the same number of columns as the length of \code{pars$beta}.
 ##'
@@ -215,13 +215,13 @@ rescale_cop <- function(U, X, family = 1, pars, df, inverse = TRUE, cdf = FALSE)
     eta <- X %*% beta
     param_made <- FALSE
   }
-  else if ("tau" %in% names(pars)) {
-    tau <- pars[["tau"]]
-    param <- matrix(BiCopTau2Par(family, tau, check.taus = TRUE),
+  else if ("k_tau" %in% names(pars)) {
+    k_tau <- pars[["k_tau"]]
+    param <- matrix(BiCopTau2Par(family, k_tau, check.taus = TRUE),
                     ncol = 1, nrow = nrow(U))
     param_made <- TRUE
   }
-  else stop("Neither 'beta' nor 'tau' specified")
+  else stop("Neither 'beta' nor 'k_tau' specified")
 
   ## make U normal, t or gamma
   if (family == 1) {

@@ -40,7 +40,7 @@ The variable to be transformed must be in the final column of
 Gumbel, 5 for Frank, 6 for Joe and 11 for FGM copulas. \code{pars} should
 contain either
 regression parameters (labelled as \code{beta}) or a constant rank correlation
-\code{tau}; \code{df} must be specified if \code{family = 2}. \code{U} should have the
+\code{k_tau}; \code{df} must be specified if \code{family = 2}. \code{U} should have the
 same length as \code{X} has rows, and \code{X}
 should have the same number of columns as the length of \code{pars$beta}.
 }

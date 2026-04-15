@@ -4,12 +4,23 @@ causl 0.10.4
 BUG FIXES
 
  * Plasmode method fixed for `rfrugal()`.
- 
+
  * Corrected bug in `check_pars()`, which meant that names of supplied parameters
  were not actually being checked.
 
 
+causl 0.10.3
+-------------------------------------------------------------------------------
 
+NEW FEATURES
+
+ * New function `is.causl_family()` to check if object has that class.
+
+
+UPDATE
+
+ * Modified `cVCopula()` documentation and code.
+ 
 causl 0.10.0
 -------------------------------------------------------------------------------
 

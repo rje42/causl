@@ -2,7 +2,11 @@
 title: "Copula Specification"
 author: "Robin Evans"
 date: "`r Sys.Date()`"
-output: html_document
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Copula Specification}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
@@ -68,7 +72,7 @@ at that time.
 cmr <- cm   # copy original model
 forms2 <- forms
 forms2[[4]] <- ~ X  # modify copula formula to include dependence upon X
-cmr <- modify.causl_model(cmr, formulas=forms2, method="rejection",
+cmr <- modify(cmr, formulas=forms2, method="rejection",
                           pars = list(cop = list(beta = matrix(c(0.3,0,
                                                                  0.5,0.3,
                                                                  0.3,-0.2), nrow=2))))
@@ -86,7 +90,7 @@ should be indexed by the variable being parameterized (so `Y` in our case), and 
 the variables that are being jointly modelled. 
 ```{r mod_pc, eval=TRUE}
 cmp <- cmr
-cmp <- modify.causl_model(cmp, method = "inversion",
+cmp <- modify(cmp, method = "inversion",
                           pars = list(cop=list(
                                  Y = list(Z1 = list(beta = c(0.5,-0.25)),
                                           Z2 = list(beta = c(0.3,0.15))))) )
@@ -104,7 +108,7 @@ Note also that above we have not modified the family variable, so the two
 bivariate copulas used are both Gaussian.  This is something that we could 
 change very easily.
 ```{r fam_pc}
-cmp2 <- modify.causl_model(cmp, family = list(c(1,1), 5, 1, c(3,1)))  # use Clayton+Gaussian copulas
+cmp2 <- modify(cmp, family = list(c(1,1), 5, 1, c(3,1)))  # use Clayton+Gaussian copulas
 dat_pc2 <- rfrugal(n=1e2, cmp2)
 ```
 

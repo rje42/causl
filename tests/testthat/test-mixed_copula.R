@@ -1,3 +1,6 @@
+skip_if_not_installed("survey")
+suppressMessages(library(survey, quietly = TRUE))
+
 ## check that dGDCop2_sig works in the way that is intended
 forms <- list(Z ~ 1, X ~ Z, Y ~ X, ~ X)
 pars <- list(Z = list(beta = 0, phi = 1),

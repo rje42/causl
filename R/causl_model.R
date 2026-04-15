@@ -15,6 +15,17 @@
 ##' @export
 causl_model <- function (formulas, family, pars, link, dat=NULL, method="inversion",
                          kwd="cop", control=list()) {
+  # get control parameters or use defaults
+  con <- list(careful = FALSE, quiet = FALSE, cop="cop", quan_tol = 1e3*.Machine$double.eps,
+              pm_cond = TRUE, pm_cor_thresh = 0.25, pm_nlevs = 5)
+  matches <- match(names(control), names(con))
+  con[matches] <- control[!is.na(matches)]
+  if (any(is.na(matches))) warning("Some names in control not matched: ",
+                                   paste(names(control[is.na(matches)]),
+                                         sep = ", "))
+  ## get keyword for copula formula
+  kwd <- con$cop
+  
 
   # get control parameters or use defaults
   con <- list(careful = FALSE, quiet = FALSE, cop = "cop",
@@ -30,7 +41,6 @@ causl_model <- function (formulas, family, pars, link, dat=NULL, method="inversi
 
   out <- process_inputs(formulas=formulas, family=family, pars=pars,
                         link=link, dat=dat, method=method, control = con)
-
   class(out) <- "causl_model"
 
   return(out)
@@ -85,7 +95,7 @@ modify.default <- function (x, ...) {
 ##' cm <- causl_model(formulas = list(Z ~ 1, X~ Z, Y ~ 1, ~ 1),
 ##'                   family = list(3, 1, 1, 1),
 ##'                   pars = list(Z = list(beta = 1, phi = 1),
-##'                               X = list(beta = c(0.5, 1)),
+##'                               X = list(beta = c(0.5, 1), phi = 1),
 ##'                               Y = list(beta = 0, phi = 1),
 ##'                               cop = list(beta = 1)))
 ##' modify(cm, pars = list(cop = list(beta = 1.5)))
